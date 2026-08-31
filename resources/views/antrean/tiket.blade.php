@@ -14,7 +14,8 @@
       body { font-family: 'Plus Jakarta Sans', sans-serif; }
     </style>
 </head>
-<body class="bg-[#F8F9FA] text-[#181C20] min-h-screen flex flex-col justify-between antialiased selection:bg-[#EE2E24] selection:text-white">
+<body class="bg-[#F8F9FA] text-[#181C20] min-h-screen flex flex-col justify-between antialiased selection:bg-[#EE2E24] selection:text-white"
+      x-data="{ audioEnabled: false, activateAudio() { this.audioEnabled = true; triggerNotifikasiPanggilan(); } }">
 
     <header class="bg-white/80 backdrop-blur-md border-b border-[#E0E3E8] sticky top-0 z-50">
       <div class="max-w-xl mx-auto px-4 py-3.5 flex items-center justify-between">
@@ -36,9 +37,20 @@
       </div>
     </header>
 
-    <main id="area-tiket-realtime" class="max-w-xl w-full mx-auto px-4 py-6 sm:py-8 flex-1">
+    <main id="area-tiket-realtime" data-status="{{ $tiket->status }}" class="max-w-xl w-full mx-auto px-4 py-6 sm:py-8 flex-1">
 
       @if($tiket->status == 'Menunggu')
+          <!-- BANNER AKTIFKAN SUARA DERING -->
+          <div x-show="!audioEnabled" class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between gap-2 shadow-sm">
+            <div class="flex items-center gap-2 text-xs text-amber-900 font-semibold">
+              <span class="material-symbols-outlined text-amber-600">volume_up</span>
+              <span>Aktifkan suara dering panggilan?</span>
+            </div>
+            <button @click="activateAudio()" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer">
+              Aktifkan
+            </button>
+          </div>
+
           <div class="bg-white rounded-3xl border border-[#E0E3E8] shadow-sm overflow-hidden transition-all">
               <div class="bg-amber-500/10 border-b border-amber-500/20 px-6 py-3 flex items-center justify-between">
                 <div class="flex items-center gap-2">
@@ -259,26 +271,100 @@
       <p>&copy; {{ date('Y') }} Indibiz Service Desk &bull; All Rights Reserved</p>
     </footer>
 
-    @if($tiket->status != 'Selesai' && $tiket->status != 'Batal')
     <script>
+        var sudahBunyi = false;
+        var audioCtx = null;
+        var intervalBuzzer = null;
+
+        function triggerNotifikasiPanggilan() {
+            if (sudahBunyi) return;
+            sudahBunyi = true;
+
+            // 1. GETARAN (VIBRATION API)
+            if ("vibrate" in navigator) {
+                navigator.vibrate([500, 250, 500, 250, 500, 250, 500, 250, 500]);
+            }
+
+            // 2. SUARA DERING (WEB AUDIO API)
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                function playTone(freq, duration) {
+                    if (!audioCtx) return;
+                    var osc = audioCtx.createOscillator();
+                    var gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + duration);
+                }
+
+                playTone(587.33, 0.4);
+                setTimeout(function() { playTone(880, 0.6); }, 400);
+
+                intervalBuzzer = setInterval(function() {
+                    playTone(587.33, 0.4);
+                    setTimeout(function() { playTone(880, 0.6); }, 400);
+                }, 1200);
+
+            } catch (e) {
+                console.log("Audio Context tidak didukung.");
+            }
+
+            // 3. AUTO STOP SETELAH 5 DETIK
+            setTimeout(function() {
+                if (intervalBuzzer) clearInterval(intervalBuzzer);
+                if ("vibrate" in navigator) navigator.vibrate(0);
+                if (audioCtx) {
+                    audioCtx.close();
+                    audioCtx = null;
+                }
+            }, 5000);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var el = document.getElementById('area-tiket-realtime');
+            if (el && el.getAttribute('data-status') === 'Diproses') {
+                triggerNotifikasiPanggilan();
+            }
+        });
+
+        // POLLING REALTIME MURNI JAVASCRIPT TANPA DIRECTIVE BLADE DI DALAM TAG SCRIPT
         setInterval(function() {
+            var elemenLama = document.getElementById('area-tiket-realtime');
+            if (!elemenLama) return;
+
+            var statusSaatIni = elemenLama.getAttribute('data-status');
+            if (statusSaatIni === 'Selesai' || statusSaatIni === 'Batal') return;
+
             fetch(window.location.href)
-                .then(response => response.text())
-                .then(html => {
-                    let parser = new DOMParser();
-                    let doc = parser.parseFromString(html, 'text/html');
+                .then(function(response) { 
+                    return response.text(); 
+                })
+                .then(function(html) {
+                    var parser = new DOMParser();
+                    var doc = parser.parseFromString(html, 'text/html');
                     
-                    let elemenBaru = doc.getElementById('area-tiket-realtime');
-                    let elemenLama = document.getElementById('area-tiket-realtime');
-                    
+                    var elemenBaru = doc.getElementById('area-tiket-realtime');
                     if (elemenBaru && elemenLama) {
+                        var statusBaru = elemenBaru.getAttribute('data-status');
                         elemenLama.innerHTML = elemenBaru.innerHTML;
+                        elemenLama.setAttribute('data-status', statusBaru);
+
+                        if (statusBaru === 'Diproses') {
+                            triggerNotifikasiPanggilan();
+                        }
                     }
                 })
-                .catch(error => console.error('Gagal memperbarui status tiket:', error));
+                .catch(function(error) { 
+                    console.error('Gagal memperbarui status tiket:', error); 
+                });
         }, 3000);
     </script>
-    @endif
 
 </body>
 </html>
