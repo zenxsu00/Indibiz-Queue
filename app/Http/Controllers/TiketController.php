@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\RateLimiter; // <-- PROTEKSI RATE LIMITING
 
 class TiketController extends Controller
 {
@@ -30,7 +31,21 @@ class TiketController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        // Proteksi Backend: Cek keberadaan petugas aktif (Admin / CS)
+        // 1. PROTEKSI BACKEND RATE LIMITER: Maksimal 1 request per 5 detik dari IP device yang sama
+        $executed = RateLimiter::attempt(
+            'ambil-tiket-ip:' . $request->ip(),
+            $perMinute = 1,
+            function() {
+                // Callback kosong
+            },
+            $decaySeconds = 5 // Cooldown 5 detik
+        );
+
+        if (!$executed) {
+            return back()->with('error', 'Harap tunggu 5 detik sebelum mengambil tiket antrean kembali.');
+        }
+
+        // 2. Proteksi Backend: Cek keberadaan petugas aktif (Admin / CS)
         $isOperational = User::where('is_active', true)->exists();
         if (!$isOperational) {
             return back()->with('error', 'Maaf, loket layanan saat ini sedang tutup / tidak beroperasi.');

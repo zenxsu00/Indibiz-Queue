@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class TiketAntrian extends Model
 {
-    // Aktifkan timestamps agar sinkron dengan $table->timestamps() di Migration
     public $timestamps = true; 
 
     protected $fillable = [
@@ -17,7 +16,7 @@ class TiketAntrian extends Model
         'user_id', 
         'keluhan_awal',
         'keluhan_final',
-        'catatan_cs',          // <-- Ditambahkan di sini
+        'catatan_cs',
         'metode_pembayaran',
         'nominal_pembayaran',
         'bukti_pembayaran',
@@ -28,13 +27,10 @@ class TiketAntrian extends Model
         'waktu_selesai'
     ];
 
-    // Auto-casting string timestamp menjadi objek Carbon/Datetime
+    // HAPUS CASTING 'datetime' AGAR TIDAK TERJADI DOUBLE TIMEZONE CONVERSION
     protected function casts(): array
     {
         return [
-            'waktu_dibuat' => 'datetime',
-            'waktu_diproses' => 'datetime',
-            'waktu_selesai' => 'datetime',
             'nominal_pembayaran' => 'float',
         ];
     }

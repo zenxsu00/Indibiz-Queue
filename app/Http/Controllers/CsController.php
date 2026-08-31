@@ -11,13 +11,11 @@ use Illuminate\Support\Facades\Auth;
 
 class CsController extends Controller
 {
-    // Helper Internal: Validasi Meja CS
     private function checkValidMeja()
     {
         /** @var User $user */
-        $user = User::find(Auth::id()); // Refresh data user terbaru dari DB
+        $user = User::find(Auth::id());
 
-        // Ambil nomor meja terbaru dari DB atau Session
         $nomorMeja = $user->nomor_meja ?? session('meja_terpilih');
         $isSpectator = (empty($nomorMeja) || $nomorMeja == 0) && $user->role === 'admin';
 
@@ -25,7 +23,6 @@ class CsController extends Controller
             return true;
         }
 
-        // Jika nomor meja kosong/0, atau meja fisiknya sudah tidak ada / nonaktif di MasterMeja
         if (empty($nomorMeja) || $nomorMeja == 0) {
             $this->resetUserState($user);
             return false;
@@ -51,7 +48,6 @@ class CsController extends Controller
         session()->forget('meja_terpilih');
     }
 
-    // Halaman Pilih Meja Loket
     public function selectMeja()
     {
         $masterMejas = MasterMeja::where('is_available', true)->orderBy('nomor_meja', 'asc')->get();
@@ -66,7 +62,6 @@ class CsController extends Controller
         return view('cs.select_meja', compact('masterMejas', 'mejaTerpakai'));
     }
 
-    // Proses Simpan Meja yang Dipilih
     public function setMeja(Request $request)
     {
         $request->validate([
@@ -89,14 +84,15 @@ class CsController extends Controller
         return redirect()->route('cs.index')->with('success', "Berhasil masuk ke Loket M{$request->nomor_meja}");
     }
 
-    // Halaman Utama CS Console
+    // Halaman Utama CS Console (PERBAIKAN TIMEZONE HAS BEEN APPLIED HERE)
     public function index()
     {
         if (!$this->checkValidMeja()) {
             return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus atau dinonaktifkan oleh Admin. Silakan pilih meja lain.');
         }
 
-        $hariIni = Carbon::today();
+        // PAKSA HARI INI KE ASIA/JAKARTA
+        $hariIni = Carbon::today('Asia/Jakarta');
         /** @var User $user */
         $user = User::find(Auth::id());
 
@@ -123,7 +119,6 @@ class CsController extends Controller
         return view('cs.index', compact('antreanMenunggu', 'antreanAktif', 'isSpectator', 'nomorMejaTerpilih'));
     }
 
-    // Panggil Urutan Teratas
     public function panggilSelanjutnya()
     {
         if (!$this->checkValidMeja()) {
@@ -137,7 +132,7 @@ class CsController extends Controller
             return back()->with('error', 'Selesaikan tiket aktif terlebih dahulu!');
         }
 
-        $tiket = TiketAntrian::whereDate('waktu_dibuat', Carbon::today())
+        $tiket = TiketAntrian::whereDate('waktu_dibuat', Carbon::today('Asia/Jakarta'))
                     ->where('status', 'Menunggu')
                     ->orderBy('waktu_dibuat', 'asc')
                     ->first();
@@ -146,14 +141,13 @@ class CsController extends Controller
             $tiket->update([
                 'status' => 'Diproses',
                 'user_id' => $user->id,
-                'waktu_diproses' => now(),
+                'waktu_diproses' => Carbon::now('Asia/Jakarta'),
             ]);
         }
 
         return back();
     }
 
-    // Panggil Nomor Spesifik
     public function panggilSpesifik(int $id)
     {
         if (!$this->checkValidMeja()) {
@@ -173,18 +167,17 @@ class CsController extends Controller
             $tiket->update([
                 'status' => 'Diproses',
                 'user_id' => $user->id,
-                'waktu_diproses' => now(),
+                'waktu_diproses' => Carbon::now('Asia/Jakarta'),
             ]);
         }
 
         return back();
     }
 
-    // Missed Call / Batal 2-Strike
     public function batalAtauKembalikan(int $id)
     {
         if (!$this->checkValidMeja()) {
-            return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus oleh Admin.');
+            return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda meka telah dihapus oleh Admin.');
         }
 
         $user = Auth::user();
@@ -203,13 +196,12 @@ class CsController extends Controller
         $tiket->update([
             'status' => 'Menunggu',
             'user_id' => null,
-            'waktu_dibuat' => now()
+            'waktu_dibuat' => Carbon::now('Asia/Jakarta')
         ]);
 
         return redirect()->route('cs.index')->with('success', "Tiket {$tiket->nomor_antrian} dipindahkan ke urutan antrean paling belakang.");
     }
 
-    // Selesaikan Tiket
     public function selesaikanTiket(Request $request, int $id)
     {
         if (!$this->checkValidMeja()) {
@@ -234,13 +226,12 @@ class CsController extends Controller
             'metode_pembayaran'  => $request->metode_pembayaran ?? 'Tanpa Transaksi',
             'nominal_pembayaran' => $request->nominal_pembayaran ?? 0,
             'bukti_pembayaran'   => $request->bukti_pembayaran,
-            'waktu_selesai'      => now(),
+            'waktu_selesai'      => Carbon::now('Asia/Jakarta'),
         ]);
 
         return redirect()->route('cs.index')->with('success', "Tiket {$tiket->nomor_antrian} berhasil diselesaikan.");
     }
 
-    // Switch Kembali ke Admin Dashboard
     public function leaveConsole()
     {
         /** @var User $user */

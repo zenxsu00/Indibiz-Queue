@@ -18,6 +18,7 @@
           nama: '',
           no_hp: '',
           errorMsg: '',
+          isSubmitting: false,
           validasiStep1() {
               if(!this.no_hp.trim() || !this.nama.trim()){
                   this.errorMsg = 'Harap isi Nomor HP dan Nama Lengkap terlebih dahulu!';
@@ -76,8 +77,16 @@
             </div>
         @else
             <!-- ================= FORM UTAMA PENGAMBILAN TIKET ================= -->
-            <form action="{{ route('antrean.store') }}" method="POST" class="w-full max-w-6xl z-10 my-auto">
+            <form action="{{ route('antrean.store') }}" method="POST" @submit="isSubmitting = true" class="w-full max-w-6xl z-10 my-auto">
                 @csrf
+
+                <!-- ALERTI NOTIFIKASI ERROR (BAIK DARI FRONTEND MAUPUN BACKEND FLASH SESSION) -->
+                @if(session('error'))
+                    <div class="w-full max-w-xl mx-auto mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl text-xs font-bold flex items-center gap-2">
+                        <span class="material-symbols-outlined text-base">error</span>
+                        <span>{{ session('error') }}</span>
+                    </div>
+                @endif
 
                 <!-- STEP 1: LOGIN / DATA DIRI -->
                 <div x-show="step === 1" x-transition.opacity.duration.300ms class="w-full max-w-xl mx-auto flex flex-col items-center text-center">
@@ -183,12 +192,28 @@
 
                                     <div class="flex flex-col gap-1.5">
                                         <label class="text-sm font-bold text-[#181C20]">Detail Keluhan / Keperluan <span class="text-[#EE2E24]">*</span></label>
-                                        <textarea name="keluhan_awal" rows="4" required placeholder="Jelaskan detail keluhan Anda secara singkat" class="w-full rounded-lg border border-[#E7BDB7] bg-[#F8F9FA] text-sm focus:bg-white focus:border-[#EE2E24] focus:ring-1 focus:ring-[#EE2E24] transition-colors p-3"></textarea>
+                                        <textarea name="keluhan_awal" rows="4" required placeholder="Jelaskan detail keluhan Anda secara singkat" class="w-full rounded-lg border border-[#E7BDB7] bg-[#F8F9FA] text-sm focus:bg-[#F8F9FA] focus:border-[#EE2E24] focus:ring-1 focus:ring-[#EE2E24] transition-colors p-3"></textarea>
                                     </div>
 
-                                    <button type="submit" class="w-full bg-[#EE2E24] hover:bg-[#CE1111] text-white text-sm font-extrabold py-3.5 px-6 rounded-lg transition-all shadow-md flex items-center justify-center gap-2 mt-2 cursor-pointer">
-                                        <span>Ambil Tiket Antrean</span>
-                                        <span class="material-symbols-outlined text-lg">confirmation_number</span>
+                                    <!-- TOMBOL SUBMIT DENGAN INDIKATOR LOADING & DISABLE AUTO -->
+                                    <button type="submit" 
+                                            :disabled="isSubmitting"
+                                            :class="isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#EE2E24] hover:bg-[#CE1111] cursor-pointer'"
+                                            class="w-full text-white text-sm font-extrabold py-3.5 px-6 rounded-lg transition-all shadow-md flex items-center justify-center gap-2 mt-2">
+                                        
+                                        <template x-if="!isSubmitting">
+                                            <div class="flex items-center gap-2">
+                                                <span>Ambil Tiket Antrean</span>
+                                                <span class="material-symbols-outlined text-lg">confirmation_number</span>
+                                            </div>
+                                        </template>
+
+                                        <template x-if="isSubmitting">
+                                            <div class="flex items-center gap-2">
+                                                <span class="material-symbols-outlined text-lg animate-spin">progress_activity</span>
+                                                <span>Memproses Antrean...</span>
+                                            </div>
+                                        </template>
                                     </button>
                                 </div>
                             </div>

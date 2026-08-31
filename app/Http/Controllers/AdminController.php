@@ -17,9 +17,15 @@ class AdminController extends Controller
      */
     public function index(Request $request)
     {
-        // Filter Tanggal untuk Tab Operations (Default hari ini)
-        $startDate = $request->start_date ? Carbon::parse($request->start_date)->startOfDay() : Carbon::today()->startOfDay();
-        $endDate   = $request->end_date ? Carbon::parse($request->end_date)->endOfDay() : Carbon::today()->endOfDay();
+        // Filter Tanggal untuk Tab Operations (Default hari ini dalam Asia/Jakarta)
+        $startDate = $request->start_date 
+            ? Carbon::parse($request->start_date, 'Asia/Jakarta')->startOfDay() 
+            : Carbon::today('Asia/Jakarta')->startOfDay();
+            
+        $endDate   = $request->end_date 
+            ? Carbon::parse($request->end_date, 'Asia/Jakarta')->endOfDay() 
+            : Carbon::today('Asia/Jakarta')->endOfDay();
+            
         $layananId = $request->layanan_id;
 
         // Query Filtered untuk Tab Operations
@@ -52,7 +58,7 @@ class AdminController extends Controller
         if ($tiketSelesaiBulan->count() > 0) {
             $totalDetikBulan = 0;
             foreach ($tiketSelesaiBulan as $t) {
-                $totalDetikBulan += Carbon::parse($t->waktu_diproses)->diffInSeconds(Carbon::parse($t->waktu_selesai));
+                $totalDetikBulan += Carbon::parse($t->waktu_diproses, 'Asia/Jakarta')->diffInSeconds(Carbon::parse($t->waktu_selesai, 'Asia/Jakarta'));
             }
             $avgDetikBulan = round($totalDetikBulan / $tiketSelesaiBulan->count());
             $menitBulan    = floor($avgDetikBulan / 60);
@@ -64,11 +70,11 @@ class AdminController extends Controller
 
         // 3. Tab Riwayat Bulanan (Tabel Per Hari selama 30 Hari Terakhir)
         $historyBulanan = [];
-        $period = Carbon::parse($satuBulanLalu)->daysUntil($sekarang);
+        $period = Carbon::parse($satuBulanLalu, 'Asia/Jakarta')->daysUntil($sekarang);
         
         foreach ($period as $date) {
             $tgl = $date->format('Y-m-d');
-            $tiketHari = $tiketSatuBulan->filter(fn($t) => Carbon::parse($t->waktu_dibuat)->format('Y-m-d') === $tgl);
+            $tiketHari = $tiketSatuBulan->filter(fn($t) => Carbon::parse($t->waktu_dibuat, 'Asia/Jakarta')->format('Y-m-d') === $tgl);
             $tiketHariSelesai = $tiketHari->where('status', 'Selesai');
 
             // Hitung SLA per hari
@@ -76,7 +82,7 @@ class AdminController extends Controller
             $countSlaHari = 0;
             foreach ($tiketHariSelesai as $th) {
                 if ($th->waktu_diproses && $th->waktu_selesai) {
-                    $totalDetikHari += Carbon::parse($th->waktu_diproses)->diffInSeconds(Carbon::parse($th->waktu_selesai));
+                    $totalDetikHari += Carbon::parse($th->waktu_diproses, 'Asia/Jakarta')->diffInSeconds(Carbon::parse($th->waktu_selesai, 'Asia/Jakarta'));
                     $countSlaHari++;
                 }
             }
@@ -108,8 +114,8 @@ class AdminController extends Controller
         foreach ($period as $date) {
             $formattedDate  = $date->format('Y-m-d');
             $chartDates[]   = $date->format('d M');
-            $chartTotal[]   = $tiketSatuBulan->filter(fn($t) => Carbon::parse($t->waktu_dibuat)->format('Y-m-d') === $formattedDate)->count();
-            $chartSelesai[] = $tiketSatuBulan->filter(fn($t) => $t->status === 'Selesai' && Carbon::parse($t->waktu_dibuat)->format('Y-m-d') === $formattedDate)->count();
+            $chartTotal[]   = $tiketSatuBulan->filter(fn($t) => Carbon::parse($t->waktu_dibuat, 'Asia/Jakarta')->format('Y-m-d') === $formattedDate)->count();
+            $chartSelesai[] = $tiketSatuBulan->filter(fn($t) => $t->status === 'Selesai' && Carbon::parse($t->waktu_dibuat, 'Asia/Jakarta')->format('Y-m-d') === $formattedDate)->count();
         }
 
         // Distribusi Layanan
@@ -173,8 +179,14 @@ class AdminController extends Controller
 
     public function cetakPdf(Request $request)
     {
-        $startDate = $request->start_date ? Carbon::parse($request->start_date)->startOfDay() : Carbon::today()->startOfDay();
-        $endDate   = $request->end_date ? Carbon::parse($request->end_date)->endOfDay() : Carbon::today()->endOfDay();
+        $startDate = $request->start_date 
+            ? Carbon::parse($request->start_date, 'Asia/Jakarta')->startOfDay() 
+            : Carbon::today('Asia/Jakarta')->startOfDay();
+            
+        $endDate   = $request->end_date 
+            ? Carbon::parse($request->end_date, 'Asia/Jakarta')->endOfDay() 
+            : Carbon::today('Asia/Jakarta')->endOfDay();
+            
         $layananId = $request->layanan_id;
 
         $query = TiketAntrian::with(['pelanggan', 'layanan', 'cs'])
