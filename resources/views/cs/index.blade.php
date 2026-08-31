@@ -193,7 +193,7 @@
                                 <div class="text-right bg-[#F8F9FA] px-2.5 py-1 rounded-lg border border-[#E0E3E8]">
                                     <span class="text-[8px] text-[#5D3F3B] font-bold uppercase tracking-wider block">Waktu Ambil</span>
                                     <p class="text-xs font-black text-[#181C20]">
-                                        {{ $antreanAktif->waktu_dibuat ? \Carbon\Carbon::parse($antreanAktif->waktu_dibuat)->timezone('Asia/Jakarta')->format('H:i') : '-' }} 
+                                        <span id="js-waktu-ambil" data-raw-time="{{ $antreanAktif->waktu_dibuat ? \Carbon\Carbon::parse($antreanAktif->waktu_dibuat)->format('Y-m-d\TH:i:s\Z') : '' }}">-</span>
                                         <span class="text-[9px] font-bold text-gray-500">WIB</span>
                                     </p>
                                 </div>
@@ -355,6 +355,20 @@
     </div>
 
     <script>
+        function renderWaktuLokal() {
+            var el = document.getElementById('js-waktu-ambil');
+            if (!el) return;
+            var rawTime = el.getAttribute('data-raw-time');
+            if (rawTime) {
+                var d = new Date(rawTime);
+                if (!isNaN(d.getTime())) {
+                    var jam = String(d.getHours()).padStart(2, '0');
+                    var menit = String(d.getMinutes()).padStart(2, '0');
+                    el.innerText = jam + ':' + menit;
+                }
+            }
+        }
+
         function submitSelesaiTiket() {
             let isAda = Alpine.$data(document.body).adaTransaksi;
             if(isAda) {
@@ -392,6 +406,9 @@
             });
         }
 
+        // INITIAL RENDER WAKTU LOKAL
+        document.addEventListener('DOMContentLoaded', renderWaktuLokal);
+
         // AUTO-REFRESH REALTIME DENGAN DETEKSI REDIRECT MEJA DIHAPUS
         setInterval(function() {
             fetch(window.location.href)
@@ -413,6 +430,9 @@
                     if (elemenBaru && elemenLama) {
                         elemenLama.innerHTML = elemenBaru.innerHTML;
                     }
+
+                    // Re-render waktu lokal setiap kali DOM diperbarui
+                    renderWaktuLokal();
                 })
                 .catch(function(error) { console.error('Gagal memperbarui antrean:', error); });
         }, 3000); 
