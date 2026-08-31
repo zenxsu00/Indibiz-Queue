@@ -13,7 +13,7 @@
     <style>
       body { font-family: 'Plus Jakarta Sans', sans-serif; }
       @keyframes flash-alert {
-        0%, 100% { background-color: #EE2E24; }
+        0%, 100% { background-color: #eeff00; }
         50% { background-color: #10B981; }
       }
       .animate-flash {
