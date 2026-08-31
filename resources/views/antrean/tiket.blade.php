@@ -14,8 +14,7 @@
       body { font-family: 'Plus Jakarta Sans', sans-serif; }
     </style>
 </head>
-<body class="bg-[#F8F9FA] text-[#181C20] min-h-screen flex flex-col justify-between antialiased selection:bg-[#EE2E24] selection:text-white"
-      x-data="{ audioEnabled: false, activateAudio() { this.audioEnabled = true; initAudioAndVibrationPermission(); } }">
+<body class="bg-[#F8F9FA] text-[#181C20] min-h-screen flex flex-col justify-between antialiased selection:bg-[#EE2E24] selection:text-white">
 
     <header class="bg-white/80 backdrop-blur-md border-b border-[#E0E3E8] sticky top-0 z-50">
       <div class="max-w-xl mx-auto px-4 py-3.5 flex items-center justify-between">
@@ -39,21 +38,10 @@
 
     <main id="area-tiket-realtime" 
           data-status="{{ $tiket->status }}" 
-          data-[#181C20]="{{ $tiket->jumlah_dipanggil ?? 0 }}" 
+          data-dipanggil="{{ $tiket->jumlah_dipanggil ?? 0 }}" 
           class="max-w-xl w-full mx-auto px-4 py-6 sm:py-8 flex-1">
 
       @if($tiket->status == 'Menunggu')
-          <!-- BANNER AKTIFKAN SUARA DERING & GETAR HP -->
-          <div x-show="!audioEnabled" class="mb-4 p-3.5 bg-red-50 border border-red-200 rounded-2xl flex items-center justify-between gap-2 shadow-sm">
-            <div class="flex items-center gap-2 text-xs text-red-900 font-semibold">
-              <span class="material-symbols-outlined text-[#EE2E24] animate-bounce">vibration</span>
-              <span>Aktifkan Dering Telepon & Getar HP?</span>
-            </div>
-            <button @click="activateAudio()" class="px-3.5 py-1.5 bg-[#EE2E24] hover:bg-[#CE1111] text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer">
-              Aktifkan
-            </button>
-          </div>
-
           <div class="bg-white rounded-3xl border border-[#E0E3E8] shadow-sm overflow-hidden transition-all">
               <div class="bg-amber-500/10 border-b border-amber-500/20 px-6 py-3 flex items-center justify-between">
                 <div class="flex items-center gap-2">
@@ -139,7 +127,7 @@
                   <span class="w-2.5 h-2.5 rounded-full bg-white animate-bounce"></span>
                   <span class="text-xs font-extrabold tracking-wider uppercase text-emerald-100">Dipanggil Petugas CS</span>
                 </div>
-                <span class="text-[11px] font-bold bg-white/20 px-2.5 py-0.5 rounded-full">CALL #{{ $tiket->jumlah_dipanggil ?? 1 }}</span>
+                <span class="text-[11px] font-bold bg-white/20 px-2.5 py-0.5 rounded-full">CALL #{{ ($tiket->jumlah_dipanggil ?? 0) + 1 }}</span>
               </div>
 
               <div class="p-6 sm:p-8 text-center">
@@ -277,9 +265,11 @@
     <script>
         var audioCtx = null;
         var intervalBuzzer = null;
-        var lastCallCount = 0;
+        var lastCallStatus = '';
+        var lastCallCount = -1;
 
-        function initAudioAndVibrationPermission() {
+        // BUKA IZIN HARDWARE (AUDIO & GETAR) SECARA OTOMATIS SAAT USER MENYENTUH/KLIK HALAMAN
+        function unlockHardwarePermissions() {
             try {
                 if (!audioCtx) {
                     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -287,31 +277,28 @@
                 if (audioCtx.state === 'suspended') {
                     audioCtx.resume();
                 }
-
-                // AKALAN PERMISSION GETAR: Memicu vibrate 1ms dari user click gesture langsung
                 if (navigator.vibrate) {
                     navigator.vibrate(100);
                 }
             } catch (e) {
-                console.log("Audio/Vibration Init:", e);
+                console.log("Hardware Unlock Exception:", e);
             }
         }
 
-        document.addEventListener('click', function() {
-            initAudioAndVibrationPermission();
-        }, { once: true });
+        document.addEventListener('touchstart', unlockHardwarePermissions, { once: true });
+        document.addEventListener('click', unlockHardwarePermissions, { once: true });
 
         function triggerNotifikasiPanggilan() {
-            // HENTIKAN SUARA & GETAR LAMA JIKA MASIH BERJALAN
+            // Hentikan notifikasi lama jika ada
             if (intervalBuzzer) clearInterval(intervalBuzzer);
             if (navigator.vibrate) navigator.vibrate(0);
 
             // 1. EFEK GETAR HP INTENSIF (Pola Getar Berulang 5 Detik)
             if (navigator.vibrate) {
                 try {
-                    navigator.vibrate([1000, 300, 1000, 300, 1000, 300, 1000]);
+                    navigator.vibrate([800, 200, 800, 200, 800, 200, 800, 200, 800]);
                 } catch (e) {
-                    console.log("Error Vibrate:", e);
+                    console.log("Vibrate Error:", e);
                 }
             }
 
@@ -359,24 +346,24 @@
                 }, 800);
 
             } catch (e) {
-                console.log("Audio Error:", e);
+                console.log("Audio Ringtone Error:", e);
             }
 
-            // 3. AUTO STOP TEPAT SETELAH 5 DETIK
+            // 3. AUTO STOP SETELAH 5 DETIK
             setTimeout(function() {
                 if (intervalBuzzer) clearInterval(intervalBuzzer);
                 if (navigator.vibrate) navigator.vibrate(0);
             }, 5000);
         }
 
+        // DILAKUKAN CEK DAN PEMICU PERTAMA KALI SAAT HALAMAN DIMUAT
         document.addEventListener('DOMContentLoaded', function() {
             var el = document.getElementById('area-tiket-realtime');
             if (el) {
-                var status = el.getAttribute('data-status');
-                var count = parseInt(el.getAttribute('data-[#181C20]') || '0');
-                lastCallCount = count;
+                lastCallStatus = el.getAttribute('data-status');
+                lastCallCount = parseInt(el.getAttribute('data-dipanggil') || '0');
 
-                if (status === 'Diproses') {
+                if (lastCallStatus === 'Diproses') {
                     triggerNotifikasiPanggilan();
                 }
             }
@@ -401,14 +388,20 @@
                     var elemenBaru = doc.getElementById('area-tiket-realtime');
                     if (elemenBaru && elemenLama) {
                         var statusBaru = elemenBaru.getAttribute('data-status');
-                        var countBaru = parseInt(elemenBaru.getAttribute('data-[#181C20]') || '0');
+                        var countBaru = parseInt(elemenBaru.getAttribute('data-dipanggil') || '0');
 
                         elemenLama.innerHTML = elemenBaru.innerHTML;
                         elemenLama.setAttribute('data-status', statusBaru);
-                        elemenLama.setAttribute('data-[#181C20]', countBaru);
+                        elemenLama.setAttribute('data-dipanggil', countBaru);
 
-                        // BUNYIKAN ULANG JIKA STATUS DIPROSES ATAL KETIKA JUMLAH PANGGILAN MENDADAK BERTIMBAH (PANGGILAN KE-2, KE-3 DST)
-                        if (statusBaru === 'Diproses' && countBaru !== lastCallCount) {
+                        // PEMICU BUNYI & GETAR:
+                        // 1. Panggilan Pertama (Status berubah dari 'Menunggu' ke 'Diproses')
+                        // 2. Panggilan Ulang Ke-2 (Status tetap 'Diproses' tapi data-dipanggil bertambah)
+                        var isFirstCall = (lastCallStatus !== 'Diproses' && statusBaru === 'Diproses');
+                        var isRecall = (statusBaru === 'Diproses' && countBaru !== lastCallCount);
+
+                        if (isFirstCall || isRecall) {
+                            lastCallStatus = statusBaru;
                             lastCallCount = countBaru;
                             triggerNotifikasiPanggilan();
                         }
