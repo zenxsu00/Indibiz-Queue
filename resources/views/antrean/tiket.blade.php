@@ -37,10 +37,13 @@
       </div>
     </header>
 
-    <main id="area-tiket-realtime" data-status="{{ $tiket->status }}" class="max-w-xl w-full mx-auto px-4 py-6 sm:py-8 flex-1">
+    <main id="area-tiket-realtime" 
+          data-status="{{ $tiket->status }}" 
+          data-[#181C20]="{{ $tiket->jumlah_dipanggil ?? 0 }}" 
+          class="max-w-xl w-full mx-auto px-4 py-6 sm:py-8 flex-1">
 
       @if($tiket->status == 'Menunggu')
-          <!-- BANNER WAJIB KLIK UNTUK MENGIZINKAN GETAR & NADA DERING NYARING -->
+          <!-- BANNER AKTIFKAN SUARA DERING & GETAR HP -->
           <div x-show="!audioEnabled" class="mb-4 p-3.5 bg-red-50 border border-red-200 rounded-2xl flex items-center justify-between gap-2 shadow-sm">
             <div class="flex items-center gap-2 text-xs text-red-900 font-semibold">
               <span class="material-symbols-outlined text-[#EE2E24] animate-bounce">vibration</span>
@@ -136,7 +139,7 @@
                   <span class="w-2.5 h-2.5 rounded-full bg-white animate-bounce"></span>
                   <span class="text-xs font-extrabold tracking-wider uppercase text-emerald-100">Dipanggil Petugas CS</span>
                 </div>
-                <span class="text-[11px] font-bold bg-white/20 px-2.5 py-0.5 rounded-full">NOW</span>
+                <span class="text-[11px] font-bold bg-white/20 px-2.5 py-0.5 rounded-full">CALL #{{ $tiket->jumlah_dipanggil ?? 1 }}</span>
               </div>
 
               <div class="p-6 sm:p-8 text-center">
@@ -272,11 +275,10 @@
     </footer>
 
     <script>
-        var sudahBunyi = false;
         var audioCtx = null;
         var intervalBuzzer = null;
+        var lastCallCount = 0;
 
-        // Inisialisasi audio & getar setelah pengguna mengklik tombol izin
         function initAudioAndVibrationPermission() {
             try {
                 if (!audioCtx) {
@@ -285,30 +287,35 @@
                 if (audioCtx.state === 'suspended') {
                     audioCtx.resume();
                 }
-                // Tes getar kecil 100ms sebagai pertanda izin getar diaktifkan
-                if ("vibrate" in navigator) {
+
+                // AKALAN PERMISSION GETAR: Memicu vibrate 1ms dari user click gesture langsung
+                if (navigator.vibrate) {
                     navigator.vibrate(100);
                 }
             } catch (e) {
-                console.log("Gagal mengaktifkan AudioContext:", e);
+                console.log("Audio/Vibration Init:", e);
             }
         }
 
-        // Otomatis tangkap sentuhan pertama di layar HP sebagai pengganti tombol
         document.addEventListener('click', function() {
             initAudioAndVibrationPermission();
         }, { once: true });
 
         function triggerNotifikasiPanggilan() {
-            if (sudahBunyi) return;
-            sudahBunyi = true;
+            // HENTIKAN SUARA & GETAR LAMA JIKA MASIH BERJALAN
+            if (intervalBuzzer) clearInterval(intervalBuzzer);
+            if (navigator.vibrate) navigator.vibrate(0);
 
             // 1. EFEK GETAR HP INTENSIF (Pola Getar Berulang 5 Detik)
-            if ("vibrate" in navigator) {
-                navigator.vibrate([800, 200, 800, 200, 800, 200, 800, 200, 800]);
+            if (navigator.vibrate) {
+                try {
+                    navigator.vibrate([1000, 300, 1000, 300, 1000, 300, 1000]);
+                } catch (e) {
+                    console.log("Error Vibrate:", e);
+                }
             }
 
-            // 2. SUARA DERING TELEPON NYARING & BERISIK (NADA DUAL-TONE FREKUENSI TINGGI)
+            // 2. SUARA DERING TELEPON BERISIK (Sawtooth + Square Wave)
             try {
                 if (!audioCtx) {
                     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -320,25 +327,23 @@
                 function playLoudRingtone() {
                     if (!audioCtx) return;
 
-                    // Nada Ganda 1 (Loud High Pitch)
                     var osc1 = audioCtx.createOscillator();
                     var gain1 = audioCtx.createGain();
-                    osc1.type = 'sawtooth'; // Gelombang sawtooth agar suara lebih tajam/berisik
-                    osc1.frequency.setValueAtTime(850, audioCtx.currentTime); // 850 Hz
-                    gain1.gain.setValueAtTime(0.8, audioCtx.currentTime); // Volume tinggi
+                    osc1.type = 'sawtooth';
+                    osc1.frequency.setValueAtTime(850, audioCtx.currentTime);
+                    gain1.gain.setValueAtTime(0.8, audioCtx.currentTime);
                     gain1.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.35);
                     osc1.connect(gain1);
                     gain1.connect(audioCtx.destination);
                     osc1.start();
                     osc1.stop(audioCtx.currentTime + 0.35);
 
-                    // Nada Ganda 2 (Secondary Harmonizer)
                     setTimeout(function() {
                         if (!audioCtx) return;
                         var osc2 = audioCtx.createOscillator();
                         var gain2 = audioCtx.createGain();
-                        osc2.type = 'square'; // Gelombang square agar mirip dering telepon klasik
-                        osc2.frequency.setValueAtTime(1150, audioCtx.currentTime); // 1150 Hz
+                        osc2.type = 'square';
+                        osc2.frequency.setValueAtTime(1150, audioCtx.currentTime);
                         gain2.gain.setValueAtTime(0.8, audioCtx.currentTime);
                         gain2.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.45);
                         osc2.connect(gain2);
@@ -348,33 +353,32 @@
                     }, 180);
                 }
 
-                // Bunyi pertama
                 playLoudRingtone();
-
-                // Loop bunyi setiap 800 milidetik (Mirip Ringtone Panggilan Masuk)
                 intervalBuzzer = setInterval(function() {
                     playLoudRingtone();
                 }, 800);
 
             } catch (e) {
-                console.log("Audio Context diblokir browser.");
+                console.log("Audio Error:", e);
             }
 
             // 3. AUTO STOP TEPAT SETELAH 5 DETIK
             setTimeout(function() {
                 if (intervalBuzzer) clearInterval(intervalBuzzer);
-                if ("vibrate" in navigator) navigator.vibrate(0);
-                if (audioCtx) {
-                    audioCtx.close();
-                    audioCtx = null;
-                }
+                if (navigator.vibrate) navigator.vibrate(0);
             }, 5000);
         }
 
         document.addEventListener('DOMContentLoaded', function() {
             var el = document.getElementById('area-tiket-realtime');
-            if (el && el.getAttribute('data-status') === 'Diproses') {
-                triggerNotifikasiPanggilan();
+            if (el) {
+                var status = el.getAttribute('data-status');
+                var count = parseInt(el.getAttribute('data-[#181C20]') || '0');
+                lastCallCount = count;
+
+                if (status === 'Diproses') {
+                    triggerNotifikasiPanggilan();
+                }
             }
         });
 
@@ -397,10 +401,15 @@
                     var elemenBaru = doc.getElementById('area-tiket-realtime');
                     if (elemenBaru && elemenLama) {
                         var statusBaru = elemenBaru.getAttribute('data-status');
+                        var countBaru = parseInt(elemenBaru.getAttribute('data-[#181C20]') || '0');
+
                         elemenLama.innerHTML = elemenBaru.innerHTML;
                         elemenLama.setAttribute('data-status', statusBaru);
+                        elemenLama.setAttribute('data-[#181C20]', countBaru);
 
-                        if (statusBaru === 'Diproses') {
+                        // BUNYIKAN ULANG JIKA STATUS DIPROSES ATAL KETIKA JUMLAH PANGGILAN MENDADAK BERTIMBAH (PANGGILAN KE-2, KE-3 DST)
+                        if (statusBaru === 'Diproses' && countBaru !== lastCallCount) {
+                            lastCallCount = countBaru;
                             triggerNotifikasiPanggilan();
                         }
                     }
