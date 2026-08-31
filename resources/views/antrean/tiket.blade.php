@@ -15,7 +15,7 @@
     </style>
 </head>
 <body class="bg-[#F8F9FA] text-[#181C20] min-h-screen flex flex-col justify-between antialiased selection:bg-[#EE2E24] selection:text-white"
-      x-data="{ audioEnabled: false, activateAudio() { this.audioEnabled = true; triggerNotifikasiPanggilan(); } }">
+      x-data="{ audioEnabled: false, activateAudio() { this.audioEnabled = true; initAudioAndVibrationPermission(); } }">
 
     <header class="bg-white/80 backdrop-blur-md border-b border-[#E0E3E8] sticky top-0 z-50">
       <div class="max-w-xl mx-auto px-4 py-3.5 flex items-center justify-between">
@@ -40,13 +40,13 @@
     <main id="area-tiket-realtime" data-status="{{ $tiket->status }}" class="max-w-xl w-full mx-auto px-4 py-6 sm:py-8 flex-1">
 
       @if($tiket->status == 'Menunggu')
-          <!-- BANNER AKTIFKAN SUARA DERING -->
-          <div x-show="!audioEnabled" class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between gap-2 shadow-sm">
-            <div class="flex items-center gap-2 text-xs text-amber-900 font-semibold">
-              <span class="material-symbols-outlined text-amber-600">volume_up</span>
-              <span>Aktifkan suara dering panggilan?</span>
+          <!-- BANNER WAJIB KLIK UNTUK MENGIZINKAN GETAR & NADA DERING NYARING -->
+          <div x-show="!audioEnabled" class="mb-4 p-3.5 bg-red-50 border border-red-200 rounded-2xl flex items-center justify-between gap-2 shadow-sm">
+            <div class="flex items-center gap-2 text-xs text-red-900 font-semibold">
+              <span class="material-symbols-outlined text-[#EE2E24] animate-bounce">vibration</span>
+              <span>Aktifkan Dering Telepon & Getar HP?</span>
             </div>
-            <button @click="activateAudio()" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer">
+            <button @click="activateAudio()" class="px-3.5 py-1.5 bg-[#EE2E24] hover:bg-[#CE1111] text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer">
               Aktifkan
             </button>
           </div>
@@ -276,46 +276,91 @@
         var audioCtx = null;
         var intervalBuzzer = null;
 
+        // Inisialisasi audio & getar setelah pengguna mengklik tombol izin
+        function initAudioAndVibrationPermission() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                // Tes getar kecil 100ms sebagai pertanda izin getar diaktifkan
+                if ("vibrate" in navigator) {
+                    navigator.vibrate(100);
+                }
+            } catch (e) {
+                console.log("Gagal mengaktifkan AudioContext:", e);
+            }
+        }
+
+        // Otomatis tangkap sentuhan pertama di layar HP sebagai pengganti tombol
+        document.addEventListener('click', function() {
+            initAudioAndVibrationPermission();
+        }, { once: true });
+
         function triggerNotifikasiPanggilan() {
             if (sudahBunyi) return;
             sudahBunyi = true;
 
-            // 1. GETARAN (VIBRATION API)
+            // 1. EFEK GETAR HP INTENSIF (Pola Getar Berulang 5 Detik)
             if ("vibrate" in navigator) {
-                navigator.vibrate([500, 250, 500, 250, 500, 250, 500, 250, 500]);
+                navigator.vibrate([800, 200, 800, 200, 800, 200, 800, 200, 800]);
             }
 
-            // 2. SUARA DERING (WEB AUDIO API)
+            // 2. SUARA DERING TELEPON NYARING & BERISIK (NADA DUAL-TONE FREKUENSI TINGGI)
             try {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                
-                function playTone(freq, duration) {
-                    if (!audioCtx) return;
-                    var osc = audioCtx.createOscillator();
-                    var gain = audioCtx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + duration);
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
                 }
 
-                playTone(587.33, 0.4);
-                setTimeout(function() { playTone(880, 0.6); }, 400);
+                function playLoudRingtone() {
+                    if (!audioCtx) return;
 
+                    // Nada Ganda 1 (Loud High Pitch)
+                    var osc1 = audioCtx.createOscillator();
+                    var gain1 = audioCtx.createGain();
+                    osc1.type = 'sawtooth'; // Gelombang sawtooth agar suara lebih tajam/berisik
+                    osc1.frequency.setValueAtTime(850, audioCtx.currentTime); // 850 Hz
+                    gain1.gain.setValueAtTime(0.8, audioCtx.currentTime); // Volume tinggi
+                    gain1.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.35);
+                    osc1.connect(gain1);
+                    gain1.connect(audioCtx.destination);
+                    osc1.start();
+                    osc1.stop(audioCtx.currentTime + 0.35);
+
+                    // Nada Ganda 2 (Secondary Harmonizer)
+                    setTimeout(function() {
+                        if (!audioCtx) return;
+                        var osc2 = audioCtx.createOscillator();
+                        var gain2 = audioCtx.createGain();
+                        osc2.type = 'square'; // Gelombang square agar mirip dering telepon klasik
+                        osc2.frequency.setValueAtTime(1150, audioCtx.currentTime); // 1150 Hz
+                        gain2.gain.setValueAtTime(0.8, audioCtx.currentTime);
+                        gain2.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.45);
+                        osc2.connect(gain2);
+                        gain2.connect(audioCtx.destination);
+                        osc2.start();
+                        osc2.stop(audioCtx.currentTime + 0.45);
+                    }, 180);
+                }
+
+                // Bunyi pertama
+                playLoudRingtone();
+
+                // Loop bunyi setiap 800 milidetik (Mirip Ringtone Panggilan Masuk)
                 intervalBuzzer = setInterval(function() {
-                    playTone(587.33, 0.4);
-                    setTimeout(function() { playTone(880, 0.6); }, 400);
-                }, 1200);
+                    playLoudRingtone();
+                }, 800);
 
             } catch (e) {
-                console.log("Audio Context tidak didukung.");
+                console.log("Audio Context diblokir browser.");
             }
 
-            // 3. AUTO STOP SETELAH 5 DETIK
+            // 3. AUTO STOP TEPAT SETELAH 5 DETIK
             setTimeout(function() {
                 if (intervalBuzzer) clearInterval(intervalBuzzer);
                 if ("vibrate" in navigator) navigator.vibrate(0);
@@ -333,7 +378,7 @@
             }
         });
 
-        // POLLING REALTIME MURNI JAVASCRIPT TANPA DIRECTIVE BLADE DI DALAM TAG SCRIPT
+        // REALTIME POLLING UPDATE
         setInterval(function() {
             var elemenLama = document.getElementById('area-tiket-realtime');
             if (!elemenLama) return;
