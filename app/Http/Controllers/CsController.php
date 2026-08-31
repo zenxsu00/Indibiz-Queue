@@ -1,0 +1,256 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\TiketAntrian;
+use App\Models\User;
+use App\Models\MasterMeja;
+use Illuminate\Http\Request;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
+
+class CsController extends Controller
+{
+    // Helper Internal: Validasi Meja CS
+    private function checkValidMeja()
+    {
+        /** @var User $user */
+        $user = User::find(Auth::id()); // Refresh data user terbaru dari DB
+
+        // Ambil nomor meja terbaru dari DB atau Session
+        $nomorMeja = $user->nomor_meja ?? session('meja_terpilih');
+        $isSpectator = (empty($nomorMeja) || $nomorMeja == 0) && $user->role === 'admin';
+
+        if ($isSpectator) {
+            return true;
+        }
+
+        // Jika nomor meja kosong/0, atau meja fisiknya sudah tidak ada / nonaktif di MasterMeja
+        if (empty($nomorMeja) || $nomorMeja == 0) {
+            $this->resetUserState($user);
+            return false;
+        }
+
+        $mejaValid = MasterMeja::where('nomor_meja', $nomorMeja)
+                        ->where('is_available', true)
+                        ->exists();
+
+        if (!$mejaValid) {
+            $this->resetUserState($user);
+            return false;
+        }
+
+        return true;
+    }
+
+    private function resetUserState($user)
+    {
+        $user->is_active = false;
+        $user->nomor_meja = null;
+        $user->save();
+        session()->forget('meja_terpilih');
+    }
+
+    // Halaman Pilih Meja Loket
+    public function selectMeja()
+    {
+        $masterMejas = MasterMeja::where('is_available', true)->orderBy('nomor_meja', 'asc')->get();
+        
+        $mejaTerpakai = User::where('is_active', true)
+            ->whereNotNull('nomor_meja')
+            ->where('nomor_meja', '!=', 0)
+            ->where('id', '!=', Auth::id())
+            ->pluck('nomor_meja')
+            ->toArray();
+
+        return view('cs.select_meja', compact('masterMejas', 'mejaTerpakai'));
+    }
+
+    // Proses Simpan Meja yang Dipilih
+    public function setMeja(Request $request)
+    {
+        $request->validate([
+            'nomor_meja' => 'required|integer|gt:0',
+        ]);
+
+        $meja = MasterMeja::where('nomor_meja', $request->nomor_meja)->where('is_available', true)->first();
+        if (!$meja) {
+            return redirect()->route('cs.select-meja')->with('error', 'Meja yang dipilih tidak tersedia atau telah dihapus.');
+        }
+
+        /** @var User $user */
+        $user = Auth::user();
+        $user->nomor_meja = $request->nomor_meja;
+        $user->is_active  = true;
+        $user->save();
+
+        session(['meja_terpilih' => $request->nomor_meja]);
+
+        return redirect()->route('cs.index')->with('success', "Berhasil masuk ke Loket M{$request->nomor_meja}");
+    }
+
+    // Halaman Utama CS Console
+    public function index()
+    {
+        if (!$this->checkValidMeja()) {
+            return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus atau dinonaktifkan oleh Admin. Silakan pilih meja lain.');
+        }
+
+        $hariIni = Carbon::today();
+        /** @var User $user */
+        $user = User::find(Auth::id());
+
+        $nomorMejaTerpilih = $user->nomor_meja ?? session('meja_terpilih');
+        $isSpectator = (empty($nomorMejaTerpilih) || $nomorMejaTerpilih == 0) && $user->role === 'admin';
+
+        if (!$isSpectator && !$user->is_active) {
+            $user->is_active = true;
+            $user->save();
+        }
+
+        $antreanMenunggu = TiketAntrian::with(['pelanggan', 'layanan'])
+                            ->whereDate('waktu_dibuat', $hariIni)
+                            ->where('status', 'Menunggu')
+                            ->orderBy('waktu_dibuat', 'asc')
+                            ->get();
+
+        $antreanAktif = TiketAntrian::with(['pelanggan', 'layanan'])
+                            ->whereDate('waktu_dibuat', $hariIni)
+                            ->where('status', 'Diproses')
+                            ->where('user_id', $user->id)
+                            ->first();
+
+        return view('cs.index', compact('antreanMenunggu', 'antreanAktif', 'isSpectator', 'nomorMejaTerpilih'));
+    }
+
+    // Panggil Urutan Teratas
+    public function panggilSelanjutnya()
+    {
+        if (!$this->checkValidMeja()) {
+            return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus oleh Admin.');
+        }
+
+        $user = Auth::user();
+
+        $cekAktif = TiketAntrian::where('status', 'Diproses')->where('user_id', $user->id)->first();
+        if ($cekAktif) {
+            return back()->with('error', 'Selesaikan tiket aktif terlebih dahulu!');
+        }
+
+        $tiket = TiketAntrian::whereDate('waktu_dibuat', Carbon::today())
+                    ->where('status', 'Menunggu')
+                    ->orderBy('waktu_dibuat', 'asc')
+                    ->first();
+
+        if ($tiket) {
+            $tiket->update([
+                'status' => 'Diproses',
+                'user_id' => $user->id,
+                'waktu_diproses' => now(),
+            ]);
+        }
+
+        return back();
+    }
+
+    // Panggil Nomor Spesifik
+    public function panggilSpesifik(int $id)
+    {
+        if (!$this->checkValidMeja()) {
+            return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus oleh Admin.');
+        }
+
+        $user = Auth::user();
+
+        $cekAktif = TiketAntrian::where('status', 'Diproses')->where('user_id', $user->id)->first();
+        if ($cekAktif) {
+            return back()->with('error', 'Selesaikan tiket aktif terlebih dahulu!');
+        }
+
+        $tiket = TiketAntrian::findOrFail($id);
+        
+        if ($tiket->status == 'Menunggu') {
+            $tiket->update([
+                'status' => 'Diproses',
+                'user_id' => $user->id,
+                'waktu_diproses' => now(),
+            ]);
+        }
+
+        return back();
+    }
+
+    // Missed Call / Batal 2-Strike
+    public function batalAtauKembalikan(int $id)
+    {
+        if (!$this->checkValidMeja()) {
+            return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus oleh Admin.');
+        }
+
+        $user = Auth::user();
+        $tiket = TiketAntrian::findOrFail($id);
+
+        $tiket->increment('jumlah_dipanggil');
+
+        if ($tiket->jumlah_dipanggil >= 2) {
+            $tiket->update([
+                'status' => 'Batal',
+                'user_id' => $user->id
+            ]);
+            return redirect()->route('cs.index')->with('success', "Tiket {$tiket->nomor_antrian} dibatalkan karena tidak hadir 2x.");
+        }
+
+        $tiket->update([
+            'status' => 'Menunggu',
+            'user_id' => null,
+            'waktu_dibuat' => now()
+        ]);
+
+        return redirect()->route('cs.index')->with('success', "Tiket {$tiket->nomor_antrian} dipindahkan ke urutan antrean paling belakang.");
+    }
+
+    // Selesaikan Tiket
+    public function selesaikanTiket(Request $request, int $id)
+    {
+        if (!$this->checkValidMeja()) {
+            return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus oleh Admin.');
+        }
+
+        $user = Auth::user();
+        $tiket = TiketAntrian::where('id', $id)->where('user_id', $user->id)->firstOrFail();
+        
+        $request->validate([
+            'keluhan_final'      => 'nullable|string',
+            'catatan_cs'         => 'nullable|string',
+            'metode_pembayaran'  => 'nullable|string',
+            'nominal_pembayaran' => 'nullable|numeric|min:0',
+            'bukti_pembayaran'   => 'nullable|string|max:100',
+        ]);
+
+        $tiket->update([
+            'status'             => 'Selesai',
+            'keluhan_final'      => $request->keluhan_final,
+            'catatan_cs'         => $request->catatan_cs,
+            'metode_pembayaran'  => $request->metode_pembayaran ?? 'Tanpa Transaksi',
+            'nominal_pembayaran' => $request->nominal_pembayaran ?? 0,
+            'bukti_pembayaran'   => $request->bukti_pembayaran,
+            'waktu_selesai'      => now(),
+        ]);
+
+        return redirect()->route('cs.index')->with('success', "Tiket {$tiket->nomor_antrian} berhasil diselesaikan.");
+    }
+
+    // Switch Kembali ke Admin Dashboard
+    public function leaveConsole()
+    {
+        /** @var User $user */
+        $user = Auth::user();
+        $user->is_active = false;
+        $user->nomor_meja = null;
+        $user->save();
+
+        session()->forget('meja_terpilih');
+
+        return redirect()->route('admin.dashboard');
+    }
+}
