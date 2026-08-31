@@ -12,9 +12,16 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
       body { font-family: 'Plus Jakarta Sans', sans-serif; }
+      @keyframes flash-alert {
+        0%, 100% { background-color: #EE2E24; }
+        50% { background-color: #10B981; }
+      }
+      .animate-flash {
+        animation: flash-alert 0.6s infinite;
+      }
     </style>
 </head>
-<body class="bg-[#F8F9FA] text-[#181C20] min-h-screen flex flex-col justify-between antialiased selection:bg-[#EE2E24] selection:text-white">
+<body id="body-container" class="bg-[#F8F9FA] text-[#181C20] min-h-screen flex flex-col justify-between antialiased selection:bg-[#EE2E24] selection:text-white transition-colors duration-300">
 
     <header class="bg-white/80 backdrop-blur-md border-b border-[#E0E3E8] sticky top-0 z-50">
       <div class="max-w-xl mx-auto px-4 py-3.5 flex items-center justify-between">
@@ -268,8 +275,17 @@
         var lastCallStatus = '';
         var lastCallCount = -1;
 
-        // BUKA IZIN HARDWARE (AUDIO & GETAR) SECARA OTOMATIS SAAT USER MENYENTUH/KLIK HALAMAN
-        function unlockHardwarePermissions() {
+        // 1. MINTA IZIN WEB NOTIFICATION SAAT HALAMAN DIBUKA
+        document.addEventListener('DOMContentLoaded', function() {
+            if ("Notification" in window) {
+                if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+                    Notification.requestPermission();
+                }
+            }
+        });
+
+        // UNLOCK IZIN AUDIO DENGAN TOUCH/KLIK
+        function unlockAudio() {
             try {
                 if (!audioCtx) {
                     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -277,32 +293,57 @@
                 if (audioCtx.state === 'suspended') {
                     audioCtx.resume();
                 }
-                if (navigator.vibrate) {
-                    navigator.vibrate(100);
-                }
             } catch (e) {
-                console.log("Hardware Unlock Exception:", e);
+                console.log("Audio Unlock Err:", e);
+            }
+        }
+        document.addEventListener('touchstart', unlockAudio, { once: true });
+        document.addEventListener('click', unlockAudio, { once: true });
+
+        // 2. FUNGSI UNTUK MEMUNCULKAN NOTIFIKASI BANNER SISTEM HP
+        function showPopUpNotification(nomorAntrian, nomorMeja) {
+            if ("Notification" in window && Notification.permission === "granted") {
+                try {
+                    var options = {
+                        body: 'Nomor Antrean ' + nomorAntrian + ' sedang dipanggil di MEJA LOKET ' + nomorMeja + '. Silakan menuju ke loket CS sekarang!',
+                        icon: '{{ asset("img/LogoIcon.png") }}',
+                        badge: '{{ asset("img/LogoIcon.png") }}',
+                        vibrate: [500, 200, 500, 200, 500],
+                        requireInteraction: true
+                    };
+                    var notif = new Notification('📢 GILDAN ANTREAN ANDA DIPANGGIL!', options);
+                    notif.onclick = function() {
+                        window.focus();
+                        this.close();
+                    };
+                } catch(e) {
+                    console.log("Web Notification error:", e);
+                }
             }
         }
 
-        document.addEventListener('touchstart', unlockHardwarePermissions, { once: true });
-        document.addEventListener('click', unlockHardwarePermissions, { once: true });
-
-        function triggerNotifikasiPanggilan() {
-            // Hentikan notifikasi lama jika ada
-            if (intervalBuzzer) clearInterval(intervalBuzzer);
-            if (navigator.vibrate) navigator.vibrate(0);
-
-            // 1. EFEK GETAR HP INTENSIF (Pola Getar Berulang 5 Detik)
-            if (navigator.vibrate) {
-                try {
-                    navigator.vibrate([800, 200, 800, 200, 800, 200, 800, 200, 800]);
-                } catch (e) {
-                    console.log("Vibrate Error:", e);
-                }
+        // 3. FUNGSI FLASH KEDIP LAYAR BERWARNA (VISUAL ALERT)
+        function triggerFlashVisual() {
+            var body = document.getElementById('body-container');
+            if (body) {
+                body.classList.add('animate-flash');
+                setTimeout(function() {
+                    body.classList.remove('animate-flash');
+                }, 5000);
             }
+        }
 
-            // 2. SUARA DERING TELEPON BERISIK (Sawtooth + Square Wave)
+        // 4. TRIGER UTAMA SAAT DIPANGGIL
+        function triggerNotifikasiPanggilan(nomorAntrian, nomorMeja) {
+            if (intervalBuzzer) clearInterval(intervalBuzzer);
+
+            // A. Panggil Web Banner Notification
+            showPopUpNotification(nomorAntrian, nomorMeja);
+
+            // B. Panggil Flash Kedip Layar Visual
+            triggerFlashVisual();
+
+            // C. Suara Dering Web Audio API (jika volume dinyalakan)
             try {
                 if (!audioCtx) {
                     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -313,7 +354,6 @@
 
                 function playLoudRingtone() {
                     if (!audioCtx) return;
-
                     var osc1 = audioCtx.createOscillator();
                     var gain1 = audioCtx.createGain();
                     osc1.type = 'sawtooth';
@@ -324,20 +364,6 @@
                     gain1.connect(audioCtx.destination);
                     osc1.start();
                     osc1.stop(audioCtx.currentTime + 0.35);
-
-                    setTimeout(function() {
-                        if (!audioCtx) return;
-                        var osc2 = audioCtx.createOscillator();
-                        var gain2 = audioCtx.createGain();
-                        osc2.type = 'square';
-                        osc2.frequency.setValueAtTime(1150, audioCtx.currentTime);
-                        gain2.gain.setValueAtTime(0.8, audioCtx.currentTime);
-                        gain2.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.45);
-                        osc2.connect(gain2);
-                        gain2.connect(audioCtx.destination);
-                        osc2.start();
-                        osc2.stop(audioCtx.currentTime + 0.45);
-                    }, 180);
                 }
 
                 playLoudRingtone();
@@ -346,17 +372,15 @@
                 }, 800);
 
             } catch (e) {
-                console.log("Audio Ringtone Error:", e);
+                console.log("Audio Error:", e);
             }
 
-            // 3. AUTO STOP SETELAH 5 DETIK
+            // D. Auto Stop Setelah 5 Detik
             setTimeout(function() {
                 if (intervalBuzzer) clearInterval(intervalBuzzer);
-                if (navigator.vibrate) navigator.vibrate(0);
             }, 5000);
         }
 
-        // DILAKUKAN CEK DAN PEMICU PERTAMA KALI SAAT HALAMAN DIMUAT
         document.addEventListener('DOMContentLoaded', function() {
             var el = document.getElementById('area-tiket-realtime');
             if (el) {
@@ -364,7 +388,7 @@
                 lastCallCount = parseInt(el.getAttribute('data-dipanggil') || '0');
 
                 if (lastCallStatus === 'Diproses') {
-                    triggerNotifikasiPanggilan();
+                    triggerNotifikasiPanggilan('{{ $tiket->nomor_antrian }}', '{{ $tiket->cs->nomor_meja ?? "1" }}');
                 }
             }
         });
@@ -394,16 +418,13 @@
                         elemenLama.setAttribute('data-status', statusBaru);
                         elemenLama.setAttribute('data-dipanggil', countBaru);
 
-                        // PEMICU BUNYI & GETAR:
-                        // 1. Panggilan Pertama (Status berubah dari 'Menunggu' ke 'Diproses')
-                        // 2. Panggilan Ulang Ke-2 (Status tetap 'Diproses' tapi data-dipanggil bertambah)
                         var isFirstCall = (lastCallStatus !== 'Diproses' && statusBaru === 'Diproses');
                         var isRecall = (statusBaru === 'Diproses' && countBaru !== lastCallCount);
 
                         if (isFirstCall || isRecall) {
                             lastCallStatus = statusBaru;
                             lastCallCount = countBaru;
-                            triggerNotifikasiPanggilan();
+                            triggerNotifikasiPanggilan('{{ $tiket->nomor_antrian }}', '{{ $tiket->cs->nomor_meja ?? "1" }}');
                         }
                     }
                 })
