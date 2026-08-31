@@ -12,12 +12,14 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
       body { font-family: 'Plus Jakarta Sans', sans-serif; }
-      @keyframes flash-alert {
-        0%, 100% { background-color: #eeff00; }
-        50% { background-color: #10B981; }
+      
+      /* ANIMASI KEDIP VISUAL (HIJAU - PUTIH) */
+      @keyframes flash-green-white {
+        0%, 100% { background-color: #10B981; } /* Hijau Emerald */
+        50% { background-color: #FFFFFF; }       /* Putih */
       }
-      .animate-flash {
-        animation: flash-alert 0.6s infinite;
+      .animate-flash-green {
+        animation: flash-green-white 0.5s infinite !important;
       }
     </style>
 </head>
@@ -275,7 +277,7 @@
         var lastCallStatus = '';
         var lastCallCount = -1;
 
-        // 1. MINTA IZIN WEB NOTIFICATION SAAT HALAMAN DIBUKA
+        // 1. MINTA IZIN WEB NOTIFICATION SAAT HALAMAN PERTAMA DIBUKA
         document.addEventListener('DOMContentLoaded', function() {
             if ("Notification" in window) {
                 if (Notification.permission !== "granted" && Notification.permission !== "denied") {
@@ -284,7 +286,7 @@
             }
         });
 
-        // UNLOCK IZIN AUDIO DENGAN TOUCH/KLIK
+        // UNLOCK IZIN AUDIO DENGAN TOUCH/KLIK LAYAR
         function unlockAudio() {
             try {
                 if (!audioCtx) {
@@ -294,13 +296,13 @@
                     audioCtx.resume();
                 }
             } catch (e) {
-                console.log("Audio Unlock Err:", e);
+                console.log("Audio Unlock Error:", e);
             }
         }
         document.addEventListener('touchstart', unlockAudio, { once: true });
         document.addEventListener('click', unlockAudio, { once: true });
 
-        // 2. FUNGSI UNTUK MEMUNCULKAN NOTIFIKASI BANNER SISTEM HP
+        // 2. FUNGSI NOTIFIKASI BANNER POP-UP HARI/HP
         function showPopUpNotification(nomorAntrian, nomorMeja) {
             if ("Notification" in window && Notification.permission === "granted") {
                 try {
@@ -308,10 +310,9 @@
                         body: 'Nomor Antrean ' + nomorAntrian + ' sedang dipanggil di MEJA LOKET ' + nomorMeja + '. Silakan menuju ke loket CS sekarang!',
                         icon: '{{ asset("img/LogoIcon.png") }}',
                         badge: '{{ asset("img/LogoIcon.png") }}',
-                        vibrate: [500, 200, 500, 200, 500],
                         requireInteraction: true
                     };
-                    var notif = new Notification('📢 GILDAN ANTREAN ANDA DIPANGGIL!', options);
+                    var notif = new Notification('📢 GILIRAN ANTREAN ANDA DIPANGGIL!', options);
                     notif.onclick = function() {
                         window.focus();
                         this.close();
@@ -322,25 +323,25 @@
             }
         }
 
-        // 3. FUNGSI FLASH KEDIP LAYAR BERWARNA (VISUAL ALERT)
+        // 3. FUNGSI FLASH KEDIP LAYAR VISUAL (HIJAU - PUTIH)
         function triggerFlashVisual() {
             var body = document.getElementById('body-container');
             if (body) {
-                body.classList.add('animate-flash');
+                body.classList.add('animate-flash-green');
                 setTimeout(function() {
-                    body.classList.remove('animate-flash');
-                }, 5000);
+                    body.classList.remove('animate-flash-green');
+                }, 5000); // Berkedip selama 5 detik
             }
         }
 
-        // 4. TRIGER UTAMA SAAT DIPANGGIL
+        // 4. TRIGER UTAMA NOTIFIKASI
         function triggerNotifikasiPanggilan(nomorAntrian, nomorMeja) {
             if (intervalBuzzer) clearInterval(intervalBuzzer);
 
-            // A. Panggil Web Banner Notification
+            // A. Panggil Web Banner Pop-up Notification
             showPopUpNotification(nomorAntrian, nomorMeja);
 
-            // B. Panggil Flash Kedip Layar Visual
+            // B. Panggil Flash Kedip Layar Visual Hijau-Putih
             triggerFlashVisual();
 
             // C. Suara Dering Web Audio API (jika volume dinyalakan)
@@ -375,7 +376,7 @@
                 console.log("Audio Error:", e);
             }
 
-            // D. Auto Stop Setelah 5 Detik
+            // D. Auto Stop Suara Setelah 5 Detik
             setTimeout(function() {
                 if (intervalBuzzer) clearInterval(intervalBuzzer);
             }, 5000);
