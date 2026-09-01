@@ -9,6 +9,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    
+    <!-- RESPONSIVEVOICE JS (UNTUK SUARA BOT INDONESIA NATIVE NATURAL) -->
+    <script src="https://code.responsivevoice.org/responsivevoice.js?key=FREE_KEY"></script>
+
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0F172A; }
     </style>
@@ -42,7 +46,6 @@
 
             <!-- CONTAINER CARD PANGGILAN UTAMA -->
             <div id="box-sedang-dipanggil" class="grid grid-cols-2 gap-4 flex-1 overflow-y-auto pr-2">
-                <!-- Data akan di-inject via JavaScript Polling -->
                 <div class="col-span-2 bg-slate-800/60 border border-slate-700 rounded-3xl flex flex-col items-center justify-center p-8 text-center text-slate-400">
                     <span class="material-symbols-outlined text-6xl mb-2 animate-spin">progress_activity</span>
                     <p class="text-base font-semibold">Menunggu panggilan antrean berikutnya...</p>
@@ -54,6 +57,7 @@
         <div class="col-span-4 flex flex-col gap-4">
             <div class="bg-slate-800 border border-slate-700 px-6 py-3 rounded-2xl flex items-center justify-between">
                 <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-amber-400">hourglass_top</span>
                     <h2 class="text-base font-bold uppercase tracking-wider text-slate-200">Antrean Berikutnya</h2>
                 </div>
                 <span class="text-xs bg-slate-700 px-2.5 py-1 rounded-lg text-slate-300 font-mono" id="total-menunggu">0 Orang</span>
@@ -61,7 +65,6 @@
 
             <!-- LIST ANTREAN MENUNGGU -->
             <div id="box-antrean-menunggu" class="flex flex-col gap-3 flex-1 overflow-y-auto pr-1">
-                <!-- Data list menunggu akan di-inject via JS -->
             </div>
         </div>
 
@@ -73,9 +76,10 @@
         <p class="text-slate-400 font-medium">Silakan duduk dengan nyaman dan perhatikan layar monitor serta pengeras suara.</p>
     </footer>
 
-    <!-- JAVASCRIPT LOGIC (POLLING & TEXT-TO-SPEECH BOT) -->
+    <!-- JAVASCRIPT LOGIC -->
     <script>
-        var lastSpokenTicketId = null;
+        // Pelacak unik kombinasi ID Tiket + Jumlah Dipanggil
+        var lastCallUniqueKey = '';
 
         // Jam Digital Realtime
         setInterval(function() {
@@ -86,40 +90,34 @@
             document.getElementById('live-clock').innerText = hours + ':' + minutes + ':' + seconds + ' WIB';
         }, 1000);
 
-        // Fungsi Suara Bot (Dioptimalkan agar logatnya lebih natural)
+        // FUNGSI SUARA BOT NATIVE INDONESIA (RESPONSIVEVOICE / WEB SPEECH FALLBACK)
         function speakQueueCall(nomorAntrian, nomorMeja) {
-            if ('speechSynthesis' in window) {
-                // Batalkan suara sebelumnya agar tidak bertumpuk
-                window.speechSynthesis.cancel();
+            // Pengucapan nomor diurai satu per satu (misal: "A 0 0 1")
+            var ejaanNomor = nomorAntrian.split('').join(' ');
+            var teksPanggilan = 'Nomor antrean, ' + ejaanNomor + '. Silakan menuju ke, Meja Loket ' + nomorMeja;
 
-                // Ubah format teks agar dieja perlahan dengan jeda spasi
-                // Contoh: "A strip 0 0 1" atau dipisah spasi agar pelafalan huruf tidak kaku
-                var formatNomor = nomorAntrian.split('').join(' ');
-                var textToSpeech = 'Nomor antrean, ' + formatNomor + '. Silakan menuju ke, Meja Loket ' + nomorMeja;
-                
-                var utterance = new SpeechSynthesisUtterance(textToSpeech);
-                utterance.rate = 0.85; // Sedikit diperlambat agar jelas dan tidak terburu-buru
-                utterance.pitch = 1.0;  // Nada suara normal
-
-                // Cari suara bahasa Indonesia (id-ID) yang tersedia di perangkat
-                var voices = window.speechSynthesis.getVoices();
-                var indonesianVoice = voices.find(function(voice) {
-                    return voice.lang === 'id-ID' || voice.lang === 'id_ID' || voice.name.toLowerCase().includes('indonesia');
+            // 1. Coba gunakan ResponsiveVoice (Suara Wanita Indonesia Asli)
+            if (typeof responsiveVoice !== 'undefined' && responsiveVoice.voiceSupport()) {
+                responsiveVoice.cancel(); // Hentikan jika ada suara sebelumnya
+                responsiveVoice.speak(teksPanggilan, "Indonesian Female", {
+                    pitch: 1,
+                    rate: 0.85,
+                    volume: 1
                 });
+            } 
+            // 2. Fallback jika ResponsiveVoice terblokir (Web Speech API)
+            else if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                var utterance = new SpeechSynthesisUtterance(teksPanggilan);
+                utterance.lang = 'id-ID';
+                utterance.rate = 0.85;
 
-                if (indonesianVoice) {
-                    utterance.voice = indonesianVoice;
-                }
+                var voices = window.speechSynthesis.getVoices();
+                var idVoice = voices.find(v => v.lang.includes('id') || v.name.toLowerCase().includes('indonesia'));
+                if (idVoice) utterance.voice = idVoice;
 
                 window.speechSynthesis.speak(utterance);
             }
-        }
-
-        // Pancing browser untuk memuat daftar suara perangkat terlebih dahulu
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.onvoiceschanged = function() {
-                window.speechSynthesis.getVoices();
-            };
         }
 
         // Fetch Data Realtime ke Server
@@ -133,7 +131,7 @@
                 .catch(error => console.error('Gagal mengambil data display:', error));
         }
 
-        // Render Kotak Sedang Dipanggil
+        // Render Kotak Sedang Dipanggil & Pemicu Suara 1 Kali Per Panggilan
         function renderSedangDipanggil(listDipanggil) {
             var container = document.getElementById('box-sedang-dipanggil');
             
@@ -147,25 +145,33 @@
                 return;
             }
 
-            var html = '';
-            // Ambil antrean yang paling baru dipanggil untuk dicek suaranya
+            // Ambil tiket yang paling terbaru dipanggil
             var currentActive = listDipanggil[0];
 
-            if (currentActive && currentActive.id !== lastSpokenTicketId) {
-                lastSpokenTicketId = currentActive.id;
-                var nomorMeja = currentActive.cs ? (currentActive.cs.nomor_meja || '1') : '1';
-                speakQueueCall(currentActive.nomor_antrian, nomorMeja);
+            if (currentActive) {
+                var countDipanggil = currentActive.jumlah_dipanggil || 0;
+                // Unik Key gabungan ID Tiket + Count (contoh: "15_1" untuk panggil ke-1, "15_2" untuk panggil ke-2)
+                var currentKey = currentActive.id + '_' + countDipanggil;
+
+                // Bunyikan HANYA JIKA KUNCI BARU (panggilan 1 atau panggil ulang ke-2)
+                if (currentKey !== lastCallUniqueKey) {
+                    lastCallUniqueKey = currentKey;
+                    var nomorMeja = currentActive.cs ? (currentActive.cs.nomor_meja || '1') : '1';
+                    speakQueueCall(currentActive.nomor_antrian, nomorMeja);
+                }
             }
 
+            var html = '';
             listDipanggil.forEach(function(item) {
                 var namaCs = item.cs ? item.cs.nama_lengkap : 'Customer Service';
                 var noMeja = item.cs ? (item.cs.nomor_meja || '1') : '1';
                 var namaLayanan = item.layanan ? item.layanan.nama_layanan : 'Layanan';
+                var callCount = (item.jumlah_dipanggil || 0) + 1;
 
                 html += `
                     <div class="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-emerald-500/50 rounded-3xl p-6 flex flex-col justify-between shadow-2xl relative overflow-hidden">
                         <div class="absolute top-0 right-0 bg-emerald-500 text-slate-950 font-extrabold text-[10px] px-4 py-1 rounded-bl-xl uppercase tracking-widest">
-                            Active Call
+                            CALL #${callCount}
                         </div>
                         <div>
                             <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Nomor Antrean</span>
