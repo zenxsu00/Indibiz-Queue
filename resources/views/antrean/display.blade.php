@@ -10,6 +10,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
 
+    <!-- LIBRARY VOICE AI WANITA INDONESIA NATIVE (RESPONSIVEVOICE) -->
+    <script src="https://code.responsivevoice.org/responsivevoice.js?key=FREE_KEY"></script>
+
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0F172A; }
     </style>
@@ -77,7 +80,7 @@
         <p class="text-slate-400 font-medium">Klik tombol "Aktifkan Suara TV" di atas agar audio panggilan dapat berbunyi.</p>
     </footer>
 
-    <!-- JAVASCRIPT LOGIC SUARA BANSER INDONESIA NATIVE -->
+    <!-- JAVASCRIPT LOGIC SUARA CS AI WANITA INDONESIA NATIVE -->
     <script>
         var lastCallUniqueKey = '';
         var audioCtx = null;
@@ -91,7 +94,7 @@
             document.getElementById('live-clock').innerText = hours + ':' + minutes + ':' + seconds + ' WIB';
         }, 1000);
 
-        // 1. SOUND CHIME (DING-DONG BELL BEL ANTREAN)
+        // 1. BEL DING-DONG ANTREAN
         function playChime(onComplete) {
             try {
                 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -121,38 +124,10 @@
             }
         }
 
-        // 2. TTS SUARA WANITA INDONESIA (MEMAKSA GOOGLE INDONESIA TTS / FALLBACK NATIVE)
-        function speakIndonesia(text) {
-            // URL Google TTS Bahasa Indonesia (id)
-            var url = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=id&q=' + encodeURIComponent(text);
-            var audio = new Audio(url);
-            
-            var playPromise = audio.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(function(error) {
-                    console.log("Fallback ke Web Speech API:", error);
-                    // Fallback jika API Google diblokir jaringan local
-                    if ('speechSynthesis' in window) {
-                        window.speechSynthesis.cancel();
-                        var utterance = new SpeechSynthesisUtterance(text);
-                        utterance.lang = 'id-ID';
-                        utterance.rate = 0.85;
-
-                        // Paksa cari voice apapun yang bernama Indonesia
-                        var voices = window.speechSynthesis.getVoices();
-                        var idVoice = voices.find(v => v.lang.includes('id') || v.name.toLowerCase().includes('indonesia'));
-                        if (idVoice) utterance.voice = idVoice;
-
-                        window.speechSynthesis.speak(utterance);
-                    }
-                });
-            }
-        }
-
-        // 3. SUARA PANGGILAN ANTREAN UTAMA
+        // 2. FUNGSI SUARA WANITA CS INDONESIA AI
         function speakQueueCall(nomorAntrian, nomorMeja) {
             playChime(function() {
-                // Eja nomor antrean (misal: "A kosong kosong satu")
+                // Eja angka secara halus dalam bahasa Indonesia
                 var ejaan = nomorAntrian
                     .replace(/0/g, ' kosong ')
                     .replace(/1/g, ' satu ')
@@ -166,8 +141,24 @@
                     .replace(/9/g, ' sembilan ')
                     .replace(/-/g, ' ');
 
-                var teksLengkap = 'Nomor antrean, ' + ejaan + '. Silakan menuju ke meja loket ' + nomorMeja;
-                speakIndonesia(teksLengkap);
+                var teksPanggilan = 'Nomor antrean, ' + ejaan + '. Silakan menuju ke meja loket ' + nomorMeja;
+
+                // MEMAKSA MENGGUNAKAN SUARA WANITA INDONESIA NATIVE (RESPONSIVEVOICE)
+                if (typeof responsiveVoice !== 'undefined') {
+                    responsiveVoice.cancel();
+                    responsiveVoice.speak(teksPanggilan, "Indonesian Female", {
+                        pitch: 1,
+                        rate: 0.85,
+                        volume: 1
+                    });
+                } else if ('speechSynthesis' in window) {
+                    // Fallback
+                    window.speechSynthesis.cancel();
+                    var utterance = new SpeechSynthesisUtterance(teksPanggilan);
+                    utterance.lang = 'id-ID';
+                    utterance.rate = 0.85;
+                    window.speechSynthesis.speak(utterance);
+                }
             });
         }
 
@@ -175,7 +166,7 @@
             speakQueueCall('A-001', '1');
         }
 
-        // 4. FETCH DATA REALTIME KE SERVER
+        // 3. FETCH DATA REALTIME KE SERVER
         function fetchDisplayData() {
             fetch('{{ url("/api/display-antrean-data") }}')
                 .then(response => response.json())
