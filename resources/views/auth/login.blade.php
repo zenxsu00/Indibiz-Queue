@@ -120,7 +120,7 @@
         </div>
 
         <div class="bg-[#F8F9FA] px-6 py-3 border-t border-[#E0E3E8] text-center text-xs text-[#5D3F3B] font-semibold">
-            Indibiz Staff Access v1.0
+            Indibiz Staff Access
         </div>
     </div>
 
