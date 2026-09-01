@@ -9,15 +9,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
-    
-    <!-- RESPONSIVEVOICE JS (UNTUK SUARA BOT INDONESIA NATIVE NATURAL) -->
-    <script src="https://code.responsivevoice.org/responsivevoice.js?key=FREE_KEY"></script>
 
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0F172A; }
     </style>
 </head>
-<body class="text-white h-screen flex flex-col justify-between overflow-hidden select-none">
+<body class="text-white h-screen flex flex-col justify-between overflow-hidden select-none" onclick="enableAudioOnFirstClick()">
 
     <!-- HEADER / TOP BAR -->
     <header class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 px-8 py-4 flex items-center justify-between shrink-0">
@@ -41,7 +38,7 @@
                     <span class="material-symbols-outlined text-2xl animate-bounce">campaign</span>
                     <h2 class="text-lg font-extrabold uppercase tracking-wider">Sedang Dipanggil</h2>
                 </div>
-                <span class="text-xs bg-black/20 px-3 py-1 rounded-lg font-semibold">Live Audio Bot Active</span>
+                <span class="text-xs bg-black/20 px-3 py-1 rounded-lg font-semibold">Google Neural Voice Active</span>
             </div>
 
             <!-- CONTAINER CARD PANGGILAN UTAMA -->
@@ -73,13 +70,24 @@
     <!-- FOOTER -->
     <footer class="bg-slate-900 border-t border-slate-800 px-8 py-3 text-center text-xs text-slate-500 shrink-0 flex items-center justify-between">
         <p>&copy; {{ date('Y') }} Indibiz Service Desk &bull; Sistem Antrean Terpadu</p>
-        <p class="text-slate-400 font-medium">Silakan duduk dengan nyaman dan perhatikan layar monitor serta pengeras suara.</p>
+        <p class="text-slate-400 font-medium">Klik sekali pada layar TV jika suara panggilan belum aktif.</p>
     </footer>
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
-        // Pelacak unik kombinasi ID Tiket + Jumlah Dipanggil
         var lastCallUniqueKey = '';
+        var currentAudio = null;
+        var audioUnlocked = false;
+
+        // Buka Kunci Audio Browser saat TV pertama kali di-klik
+        function enableAudioOnFirstClick() {
+            if (!audioUnlocked) {
+                audioUnlocked = true;
+                // Mainkan audio kosong singkat untuk melepaskan batasan Autoplay browser
+                var silentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==');
+                silentAudio.play().catch(e => console.log(e));
+            }
+        }
 
         // Jam Digital Realtime
         setInterval(function() {
@@ -90,34 +98,35 @@
             document.getElementById('live-clock').innerText = hours + ':' + minutes + ':' + seconds + ' WIB';
         }, 1000);
 
-        // FUNGSI SUARA BOT NATIVE INDONESIA (RESPONSIVEVOICE / WEB SPEECH FALLBACK)
+        // FUNGSI PANGGILAN SUARA WANITA GOOGLE ASLI (HUMAN-LIKE TTS)
         function speakQueueCall(nomorAntrian, nomorMeja) {
-            // Pengucapan nomor diurai satu per satu (misal: "A 0 0 1")
+            // Pengucapan nomor diurai dengan spasi (contoh: "A 0 0 1")
             var ejaanNomor = nomorAntrian.split('').join(' ');
-            var teksPanggilan = 'Nomor antrean, ' + ejaanNomor + '. Silakan menuju ke, Meja Loket ' + nomorMeja;
+            var teksPanggilan = 'Nomor antrean ' + ejaanNomor + ', silakan menuju ke meja loket ' + nomorMeja;
 
-            // 1. Coba gunakan ResponsiveVoice (Suara Wanita Indonesia Asli)
-            if (typeof responsiveVoice !== 'undefined' && responsiveVoice.voiceSupport()) {
-                responsiveVoice.cancel(); // Hentikan jika ada suara sebelumnya
-                responsiveVoice.speak(teksPanggilan, "Indonesian Female", {
-                    pitch: 1,
-                    rate: 0.85,
-                    volume: 1
-                });
-            } 
-            // 2. Fallback jika ResponsiveVoice terblokir (Web Speech API)
-            else if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                var utterance = new SpeechSynthesisUtterance(teksPanggilan);
-                utterance.lang = 'id-ID';
-                utterance.rate = 0.85;
-
-                var voices = window.speechSynthesis.getVoices();
-                var idVoice = voices.find(v => v.lang.includes('id') || v.name.toLowerCase().includes('indonesia'));
-                if (idVoice) utterance.voice = idVoice;
-
-                window.speechSynthesis.speak(utterance);
+            // Hentikan audio sebelumnya jika ada
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
             }
+
+            // Memanggil Google Voice Stream Engine (Bahasa Indonesia Native - Wanita)
+            var googleTtsUrl = 'https://translate.google.com/translate_tts?ie=UTF-8&q=' + 
+                                encodeURIComponent(teksPanggilan) + 
+                                '&tl=id&client=tw-ob';
+
+            currentAudio = new Audio(googleTtsUrl);
+            currentAudio.play().catch(function(error) {
+                console.log("Autoplay diblokir browser, klik layar TV sekali untuk mengizinkan:", error);
+                
+                // Fallback jika API Google Stream dibatasi browser
+                if ('speechSynthesis' in window) {
+                    var utterance = new SpeechSynthesisUtterance(teksPanggilan);
+                    utterance.lang = 'id-ID';
+                    utterance.rate = 0.85;
+                    window.speechSynthesis.speak(utterance);
+                }
+            });
         }
 
         // Fetch Data Realtime ke Server
@@ -131,7 +140,7 @@
                 .catch(error => console.error('Gagal mengambil data display:', error));
         }
 
-        // Render Kotak Sedang Dipanggil & Pemicu Suara 1 Kali Per Panggilan
+        // Render Kotak Sedang Dipanggil & Pemicu Suara
         function renderSedangDipanggil(listDipanggil) {
             var container = document.getElementById('box-sedang-dipanggil');
             
@@ -145,15 +154,13 @@
                 return;
             }
 
-            // Ambil tiket yang paling terbaru dipanggil
             var currentActive = listDipanggil[0];
 
             if (currentActive) {
                 var countDipanggil = currentActive.jumlah_dipanggil || 0;
-                // Unik Key gabungan ID Tiket + Count (contoh: "15_1" untuk panggil ke-1, "15_2" untuk panggil ke-2)
                 var currentKey = currentActive.id + '_' + countDipanggil;
 
-                // Bunyikan HANYA JIKA KUNCI BARU (panggilan 1 atau panggil ulang ke-2)
+                // Membunyikan suara HANYA 1x saat ada panggilan baru / panggil ulang
                 if (currentKey !== lastCallUniqueKey) {
                     lastCallUniqueKey = currentKey;
                     var nomorMeja = currentActive.cs ? (currentActive.cs.nomor_meja || '1') : '1';
@@ -233,7 +240,7 @@
             container.innerHTML = html;
         }
 
-        // Jalankan fetch pertama kali & polling setiap 3 detik
+        // Polling setiap 3 detik
         fetchDisplayData();
         setInterval(fetchDisplayData, 3000);
     </script>
