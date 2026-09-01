@@ -6,6 +6,7 @@ use App\Http\Controllers\TiketController;
 use App\Http\Controllers\CsController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\StaffManagementController;
+use App\Http\Controllers\DisplayController;
 
 /*
 |--------------------------------------------------------------------------
@@ -22,6 +23,10 @@ Route::get('/', function () {
 Route::get('/antrean', [TiketController::class, 'index'])->name('antrean.index');
 Route::post('/antrean', [TiketController::class, 'store'])->name('antrean.store');
 Route::get('/antrean/{id}', [TiketController::class, 'showTiket'])->name('antrean.tiket'); 
+
+// Halaman Publik Monitor TV Antrean & Endpoint Datanya
+Route::get('/display-antrean', [DisplayController::class, 'index'])->name('antrean.display');
+Route::get('/api/display-antrean-data', [DisplayController::class, 'getDataJson']);
 
 // 2. MODUL AUTHENTICATION (LOGIN/LOGOUT)
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
