@@ -54,7 +54,6 @@
         <div class="col-span-4 flex flex-col gap-4">
             <div class="bg-slate-800 border border-slate-700 px-6 py-3 rounded-2xl flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                    <span class="material-symbols-outlined text-amber-400">hourglass_top</span>
                     <h2 class="text-base font-bold uppercase tracking-wider text-slate-200">Antrean Berikutnya</h2>
                 </div>
                 <span class="text-xs bg-slate-700 px-2.5 py-1 rounded-lg text-slate-300 font-mono" id="total-menunggu">0 Orang</span>
