@@ -14,7 +14,7 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0F172A; }
     </style>
 </head>
-<body class="text-white h-screen flex flex-col justify-between overflow-hidden select-none" onclick="enableAudioOnFirstClick()">
+<body class="text-white h-screen flex flex-col justify-between overflow-hidden select-none">
 
     <!-- HEADER / TOP BAR -->
     <header class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 px-8 py-4 flex items-center justify-between shrink-0">
@@ -31,14 +31,17 @@
     <!-- MAIN CONTENT GRID (TV LAYOUT) -->
     <main class="grid grid-cols-12 gap-6 p-6 flex-1 overflow-hidden">
         
-        <!-- KOLOM KIRI: SEDANG DIPANGGIL (FOKUS UTAMA) -->
+        <!-- KOLOM KIRI: SEDANG DIPANGGIL -->
         <div class="col-span-8 flex flex-col gap-4">
             <div class="bg-gradient-to-r from-red-600 to-rose-700 px-6 py-3 rounded-2xl flex items-center justify-between shadow-lg">
                 <div class="flex items-center gap-3">
                     <span class="material-symbols-outlined text-2xl animate-bounce">campaign</span>
                     <h2 class="text-lg font-extrabold uppercase tracking-wider">Sedang Dipanggil</h2>
                 </div>
-                <span class="text-xs bg-black/20 px-3 py-1 rounded-lg font-semibold">Google Neural Voice Active</span>
+                <!-- TOMBOL TEST SUARA & UNLOCK AUTOPLAY -->
+                <button onclick="playTestChime()" class="text-xs bg-black/30 hover:bg-black/50 text-white border border-white/20 px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer">
+                    🔊 Klik 1x Untuk Tes Suara TV
+                </button>
             </div>
 
             <!-- CONTAINER CARD PANGGILAN UTAMA -->
@@ -70,24 +73,13 @@
     <!-- FOOTER -->
     <footer class="bg-slate-900 border-t border-slate-800 px-8 py-3 text-center text-xs text-slate-500 shrink-0 flex items-center justify-between">
         <p>&copy; {{ date('Y') }} Indibiz Service Desk &bull; Sistem Antrean Terpadu</p>
-        <p class="text-slate-400 font-medium">Klik sekali pada layar TV jika suara panggilan belum aktif.</p>
+        <p class="text-slate-400 font-medium">Klik tombol "Tes Suara TV" di atas saat pertama kali membuka halaman di layar monitor.</p>
     </footer>
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
         var lastCallUniqueKey = '';
-        var currentAudio = null;
-        var audioUnlocked = false;
-
-        // Buka Kunci Audio Browser saat TV pertama kali di-klik
-        function enableAudioOnFirstClick() {
-            if (!audioUnlocked) {
-                audioUnlocked = true;
-                // Mainkan audio kosong singkat untuk melepaskan batasan Autoplay browser
-                var silentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==');
-                silentAudio.play().catch(e => console.log(e));
-            }
-        }
+        var audioCtx = null;
 
         // Jam Digital Realtime
         setInterval(function() {
@@ -98,35 +90,82 @@
             document.getElementById('live-clock').innerText = hours + ':' + minutes + ':' + seconds + ' WIB';
         }, 1000);
 
-        // FUNGSI PANGGILAN SUARA WANITA GOOGLE ASLI (HUMAN-LIKE TTS)
-        function speakQueueCall(nomorAntrian, nomorMeja) {
-            // Pengucapan nomor diurai dengan spasi (contoh: "A 0 0 1")
-            var ejaanNomor = nomorAntrian.split('').join(' ');
-            var teksPanggilan = 'Nomor antrean ' + ejaanNomor + ', silakan menuju ke meja loket ' + nomorMeja;
+        // FUNGSI 1: SOUND CHIME / NADA DERING ANTREAN (DING-DONG)
+        function playChimeSound(callback) {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
 
-            // Hentikan audio sebelumnya jika ada
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudio = null;
+                function playTone(freq, duration, delay) {
+                    setTimeout(() => {
+                        var osc = audioCtx.createOscillator();
+                        var gain = audioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start();
+                        osc.stop(audioCtx.currentTime + duration);
+                    }, delay);
+                }
+
+                // Nada Ding-Dong (D5 -> G5)
+                playTone(587.33, 0.6, 0);   // Ding
+                playTone(783.99, 0.8, 500); // Dong
+
+                // Jalankan suara bot setelah chime selesai (1.3 detik)
+                if (callback) setTimeout(callback, 1300);
+            } catch (e) {
+                if (callback) callback();
+            }
+        }
+
+        function playTestChime() {
+            playChimeSound(function() {
+                speakQueueCall('A-001', '1', true);
+            });
+        }
+
+        // FUNGSI 2: SUARA BOT PENYEBUT ANTREAN (PAKSA ENGINE ID-ID)
+        function speakQueueCall(nomorAntrian, nomorMeja, isTest) {
+            if (!('speechSynthesis' in window)) return;
+
+            window.speechSynthesis.cancel();
+
+            // Urai huruf & angka (misal: "A 0 0 1" dipisah spasi)
+            var ejaanNomor = nomorAntrian.split('').join(' ');
+            var teksPanggilan = 'Nomor antrean, ' + ejaanNomor + '. Silakan menuju ke loket ' + nomorMeja;
+
+            var utterance = new SpeechSynthesisUtterance(teksPanggilan);
+            utterance.lang = 'id-ID';
+            utterance.rate = 0.82; // Tempo pembacaan rileks/jelas
+            utterance.pitch = 1.0;
+
+            // Cari Voice Engine khusus Indonesia
+            var voices = window.speechSynthesis.getVoices();
+            var indonesianVoice = voices.find(v => v.lang === 'id-ID' || v.lang === 'id_ID' || v.name.toLowerCase().includes('indonesia'));
+
+            if (indonesianVoice) {
+                utterance.voice = indonesianVoice;
             }
 
-            // Memanggil Google Voice Stream Engine (Bahasa Indonesia Native - Wanita)
-            var googleTtsUrl = 'https://translate.google.com/translate_tts?ie=UTF-8&q=' + 
-                                encodeURIComponent(teksPanggilan) + 
-                                '&tl=id&client=tw-ob';
-
-            currentAudio = new Audio(googleTtsUrl);
-            currentAudio.play().catch(function(error) {
-                console.log("Autoplay diblokir browser, klik layar TV sekali untuk mengizinkan:", error);
-                
-                // Fallback jika API Google Stream dibatasi browser
-                if ('speechSynthesis' in window) {
-                    var utterance = new SpeechSynthesisUtterance(teksPanggilan);
-                    utterance.lang = 'id-ID';
-                    utterance.rate = 0.85;
+            // Jika dipanggil dari sistem realtime, bunyikan chime dulu baru suara bot
+            if (!isTest) {
+                playChimeSound(function() {
                     window.speechSynthesis.speak(utterance);
-                }
-            });
+                });
+            } else {
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Memancing pendaftaran suara browser
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = function() {
+                window.speechSynthesis.getVoices();
+            };
         }
 
         // Fetch Data Realtime ke Server
@@ -140,7 +179,7 @@
                 .catch(error => console.error('Gagal mengambil data display:', error));
         }
 
-        // Render Kotak Sedang Dipanggil & Pemicu Suara
+        // Render Kotak Sedang Dipanggil
         function renderSedangDipanggil(listDipanggil) {
             var container = document.getElementById('box-sedang-dipanggil');
             
@@ -160,11 +199,11 @@
                 var countDipanggil = currentActive.jumlah_dipanggil || 0;
                 var currentKey = currentActive.id + '_' + countDipanggil;
 
-                // Membunyikan suara HANYA 1x saat ada panggilan baru / panggil ulang
+                // Bunyikan HANYA 1x saat ada panggil ke-1 atau panggil ulang ke-2
                 if (currentKey !== lastCallUniqueKey) {
                     lastCallUniqueKey = currentKey;
                     var nomorMeja = currentActive.cs ? (currentActive.cs.nomor_meja || '1') : '1';
-                    speakQueueCall(currentActive.nomor_antrian, nomorMeja);
+                    speakQueueCall(currentActive.nomor_antrian, nomorMeja, false);
                 }
             }
 
@@ -240,7 +279,7 @@
             container.innerHTML = html;
         }
 
-        // Polling setiap 3 detik
+        // Polling 3 detik
         fetchDisplayData();
         setInterval(fetchDisplayData, 3000);
     </script>
