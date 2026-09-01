@@ -10,9 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
 
-    <!-- LIBRARY VOICE AI WANITA INDONESIA NATIVE (RESPONSIVEVOICE) -->
-    <script src="https://code.responsivevoice.org/responsivevoice.js?key=FREE_KEY"></script>
-
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0F172A; }
     </style>
@@ -44,7 +41,7 @@
                 <!-- TOMBOL TEST SUARA & UNLOCK AUTOPLAY -->
                 <button onclick="playTestCall()" class="text-xs bg-black/30 hover:bg-black/50 text-white border border-white/20 px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-2">
                     <span class="material-symbols-outlined text-sm">volume_up</span>
-                    <span>Klik 1x Aktifkan Suara TV</span>
+                    <span>Klik 1x Tes Suara AI TV</span>
                 </button>
             </div>
 
@@ -77,13 +74,14 @@
     <!-- FOOTER -->
     <footer class="bg-slate-900 border-t border-slate-800 px-8 py-3 text-center text-xs text-slate-500 shrink-0 flex items-center justify-between">
         <p>&copy; {{ date('Y') }} Indibiz Service Desk &bull; Sistem Antrean Terpadu</p>
-        <p class="text-slate-400 font-medium">Klik tombol "Aktifkan Suara TV" di atas agar audio panggilan dapat berbunyi.</p>
+        <p class="text-slate-400 font-medium">Klik tombol "Tes Suara AI TV" jika halaman baru dibuka di TV.</p>
     </footer>
 
-    <!-- JAVASCRIPT LOGIC SUARA CS AI WANITA INDONESIA NATIVE -->
+    <!-- JAVASCRIPT LOGIC SUARA AI NATIVE INDONESIA -->
     <script>
         var lastCallUniqueKey = '';
         var audioCtx = null;
+        var currentAudioPlayer = null;
 
         // Jam Digital Realtime
         setInterval(function() {
@@ -124,10 +122,28 @@
             }
         }
 
-        // 2. FUNGSI SUARA WANITA CS INDONESIA AI
+        // 2. PEMUTAR VOICE AI NATIVE INDONESIA (STREAM MP3 ENGINE)
+        function playAiVoiceMp3(teksNarasi) {
+            if (currentAudioPlayer) {
+                currentAudioPlayer.pause();
+                currentAudioPlayer = null;
+            }
+
+            // Memanggil Audio Stream API TTS Indonesia (VoiceRSS Engine)
+            var voiceRssApiKey = 'b82d9dfa98e34e56877bc9549f64971c'; // Public API Key TTS
+            var apiUrl = 'https://api.voicerss.org/?key=' + voiceRssApiKey + 
+                         '&hl=id-id&v=Intan&c=mp3&f=16khz_16bit_stereo&src=' + encodeURIComponent(teksNarasi);
+
+            currentAudioPlayer = new Audio(apiUrl);
+            currentAudioPlayer.play().catch(function(err) {
+                console.log("Audio Play Failed:", err);
+            });
+        }
+
+        // 3. SUARA PANGGILAN ANTREAN UTAMA (NARASI SESUAI REQUEST)
         function speakQueueCall(nomorAntrian, nomorMeja) {
             playChime(function() {
-                // Eja angka secara halus dalam bahasa Indonesia
+                // Konversi ejaan angka menjadi fonetik bahasa Indonesia yang ramah
                 var ejaan = nomorAntrian
                     .replace(/0/g, ' kosong ')
                     .replace(/1/g, ' satu ')
@@ -141,24 +157,10 @@
                     .replace(/9/g, ' sembilan ')
                     .replace(/-/g, ' ');
 
-                var teksPanggilan = 'Nomor antrean, ' + ejaan + '. Silakan menuju ke meja loket ' + nomorMeja;
-
-                // MEMAKSA MENGGUNAKAN SUARA WANITA INDONESIA NATIVE (RESPONSIVEVOICE)
-                if (typeof responsiveVoice !== 'undefined') {
-                    responsiveVoice.cancel();
-                    responsiveVoice.speak(teksPanggilan, "Indonesian Female", {
-                        pitch: 1,
-                        rate: 0.85,
-                        volume: 1
-                    });
-                } else if ('speechSynthesis' in window) {
-                    // Fallback
-                    window.speechSynthesis.cancel();
-                    var utterance = new SpeechSynthesisUtterance(teksPanggilan);
-                    utterance.lang = 'id-ID';
-                    utterance.rate = 0.85;
-                    window.speechSynthesis.speak(utterance);
-                }
+                // FORMAT NARASI: "nomor tiket [nomorcodetiket] silahkan menuju meja [nomor meja]"
+                var teksNarasi = 'nomor tiket ' + ejaan + ', silahkan menuju meja ' + nomorMeja;
+                
+                playAiVoiceMp3(teksNarasi);
             });
         }
 
@@ -166,7 +168,7 @@
             speakQueueCall('A-001', '1');
         }
 
-        // 3. FETCH DATA REALTIME KE SERVER
+        // 4. FETCH DATA REALTIME KE SERVER
         function fetchDisplayData() {
             fetch('{{ url("/api/display-antrean-data") }}')
                 .then(response => response.json())
@@ -277,7 +279,7 @@
             container.innerHTML = html;
         }
 
-        // Polling setiap 3 detik
+        // Polling 3 detik
         fetchDisplayData();
         setInterval(fetchDisplayData, 3000);
     </script>
