@@ -27,6 +27,8 @@ Route::get('/antrean/{id}', [TiketController::class, 'showTiket'])->name('antrea
 // Halaman Publik Monitor TV Antrean & Endpoint Datanya
 Route::get('/display-antrean', [DisplayController::class, 'index'])->name('antrean.display');
 Route::get('/api/display-antrean-data', [DisplayController::class, 'getDataJson']);
+// Proxy ElevenLabs TTS untuk Display Monitor TV
+Route::post('/api/elevenlabs-tts', [DisplayController::class, 'ttsElevenLabs']);
 
 // 2. MODUL AUTHENTICATION (LOGIN/LOGOUT)
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Display Monitor Antrean - Indibiz Service Desk</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -41,7 +42,7 @@
                 <!-- TOMBOL TEST SUARA & UNLOCK AUTOPLAY -->
                 <button onclick="playTestCall()" class="text-xs bg-black/30 hover:bg-black/50 text-white border border-white/20 px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-2">
                     <span class="material-symbols-outlined text-sm">volume_up</span>
-                    <span>Klik 1x Tes Suara AI TV</span>
+                    <span>Klik 1x Tes Suara ElevenLabs AI</span>
                 </button>
             </div>
 
@@ -74,10 +75,10 @@
     <!-- FOOTER -->
     <footer class="bg-slate-900 border-t border-slate-800 px-8 py-3 text-center text-xs text-slate-500 shrink-0 flex items-center justify-between">
         <p>&copy; {{ date('Y') }} Indibiz Service Desk &bull; Sistem Antrean Terpadu</p>
-        <p class="text-slate-400 font-medium">Klik tombol "Tes Suara AI TV" jika halaman baru dibuka di TV.</p>
+        <p class="text-slate-400 font-medium">ElevenLabs Multilingual v2 Engine Active</p>
     </footer>
 
-    <!-- JAVASCRIPT LOGIC SUARA AI NATIVE INDONESIA -->
+    <!-- JAVASCRIPT LOGIC ELEVENLABS AI VOICE -->
     <script>
         var lastCallUniqueKey = '';
         var audioCtx = null;
@@ -122,45 +123,54 @@
             }
         }
 
-        // 2. PEMUTAR VOICE AI NATIVE INDONESIA (STREAM MP3 ENGINE)
-        function playAiVoiceMp3(teksNarasi) {
+        // 2. PROXY ELEVENLABS TTS FETCH
+        function playElevenLabsVoice(teksNarasi) {
             if (currentAudioPlayer) {
                 currentAudioPlayer.pause();
                 currentAudioPlayer = null;
             }
 
-            // Memanggil Audio Stream API TTS Indonesia (VoiceRSS Engine)
-            var voiceRssApiKey = 'b82d9dfa98e34e56877bc9549f64971c'; // Public API Key TTS
-            var apiUrl = 'https://api.voicerss.org/?key=' + voiceRssApiKey + 
-                         '&hl=id-id&v=Intan&c=mp3&f=16khz_16bit_stereo&src=' + encodeURIComponent(teksNarasi);
-
-            currentAudioPlayer = new Audio(apiUrl);
-            currentAudioPlayer.play().catch(function(err) {
-                console.log("Audio Play Failed:", err);
+            fetch('{{ url("/api/elevenlabs-tts") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ text: teksNarasi })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.blob();
+            })
+            .then(blob => {
+                var audioUrl = URL.createObjectURL(blob);
+                currentAudioPlayer = new Audio(audioUrl);
+                currentAudioPlayer.play().catch(e => console.log("Audio Autoplay blocked:", e));
+            })
+            .catch(error => {
+                console.error('ElevenLabs Error:', error);
             });
         }
 
-        // 3. SUARA PANGGILAN ANTREAN UTAMA (NARASI SESUAI REQUEST)
+        // 3. SUARA PANGGILAN ANTREAN UTAMA (FORMAT HEMAT ~27 KARAKTER)
         function speakQueueCall(nomorAntrian, nomorMeja) {
             playChime(function() {
-                // Konversi ejaan angka menjadi fonetik bahasa Indonesia yang ramah
                 var ejaan = nomorAntrian
-                    .replace(/0/g, ' kosong ')
-                    .replace(/1/g, ' satu ')
-                    .replace(/2/g, ' dua ')
-                    .replace(/3/g, ' tiga ')
-                    .replace(/4/g, ' empat ')
-                    .replace(/5/g, ' lima ')
-                    .replace(/6/g, ' enam ')
-                    .replace(/7/g, ' tujuh ')
-                    .replace(/8/g, ' delapan ')
-                    .replace(/9/g, ' sembilan ')
+                    .replace(/0/g, ' 0 ')
+                    .replace(/1/g, ' 1 ')
+                    .replace(/2/g, ' 2 ')
+                    .replace(/3/g, ' 3 ')
+                    .replace(/4/g, ' 4 ')
+                    .replace(/5/g, ' 5 ')
+                    .replace(/6/g, ' 6 ')
+                    .replace(/7/g, ' 7 ')
+                    .replace(/8/g, ' 8 ')
+                    .replace(/9/g, ' 9 ')
                     .replace(/-/g, ' ');
 
-                // FORMAT NARASI: "nomor tiket [nomorcodetiket] silahkan menuju meja [nomor meja]"
-                var teksNarasi = 'nomor tiket ' + ejaan + ', silahkan menuju meja ' + nomorMeja;
+                var teksNarasi = 'Tiket ' + ejaan + ', ke meja ' + nomorMeja;
                 
-                playAiVoiceMp3(teksNarasi);
+                playElevenLabsVoice(teksNarasi);
             });
         }
 
@@ -179,7 +189,6 @@
                 .catch(error => console.error('Gagal mengambil data display:', error));
         }
 
-        // Render Kotak Sedang Dipanggil
         function renderSedangDipanggil(listDipanggil) {
             var container = document.getElementById('box-sedang-dipanggil');
             
@@ -199,7 +208,6 @@
                 var countDipanggil = currentActive.jumlah_dipanggil || 0;
                 var currentKey = currentActive.id + '_' + countDipanggil;
 
-                // Membunyikan HANYA 1x untuk panggil ke-1 atau panggil ulang ke-2
                 if (currentKey !== lastCallUniqueKey) {
                     lastCallUniqueKey = currentKey;
                     var nomorMeja = currentActive.cs ? (currentActive.cs.nomor_meja || '1') : '1';
@@ -241,7 +249,6 @@
             container.innerHTML = html;
         }
 
-        // Render List Antrean Menunggu
         function renderAntreanMenunggu(listMenunggu) {
             var container = document.getElementById('box-antrean-menunggu');
             document.getElementById('total-menunggu').innerText = listMenunggu.length + ' Orang';
@@ -279,7 +286,6 @@
             container.innerHTML = html;
         }
 
-        // Polling 3 detik
         fetchDisplayData();
         setInterval(fetchDisplayData, 3000);
     </script>
