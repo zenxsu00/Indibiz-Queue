@@ -39,8 +39,9 @@
                     <h2 class="text-lg font-extrabold uppercase tracking-wider">Sedang Dipanggil</h2>
                 </div>
                 <!-- TOMBOL TEST SUARA & UNLOCK AUTOPLAY -->
-                <button onclick="playTestChime()" class="text-xs bg-black/30 hover:bg-black/50 text-white border border-white/20 px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer">
-                    🔊 Klik 1x Untuk Tes Suara TV
+                <button onclick="playTestCall()" class="text-xs bg-black/30 hover:bg-black/50 text-white border border-white/20 px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-2">
+                    <span class="material-symbols-outlined text-sm">volume_up</span>
+                    <span>Klik 1x Aktifkan Suara TV</span>
                 </button>
             </div>
 
@@ -73,10 +74,10 @@
     <!-- FOOTER -->
     <footer class="bg-slate-900 border-t border-slate-800 px-8 py-3 text-center text-xs text-slate-500 shrink-0 flex items-center justify-between">
         <p>&copy; {{ date('Y') }} Indibiz Service Desk &bull; Sistem Antrean Terpadu</p>
-        <p class="text-slate-400 font-medium">Klik tombol "Tes Suara TV" di atas saat pertama kali membuka halaman di layar monitor.</p>
+        <p class="text-slate-400 font-medium">Klik tombol "Aktifkan Suara TV" di atas agar audio panggilan dapat berbunyi.</p>
     </footer>
 
-    <!-- JAVASCRIPT LOGIC -->
+    <!-- JAVASCRIPT LOGIC SUARA BANSER INDONESIA NATIVE -->
     <script>
         var lastCallUniqueKey = '';
         var audioCtx = null;
@@ -90,13 +91,13 @@
             document.getElementById('live-clock').innerText = hours + ':' + minutes + ':' + seconds + ' WIB';
         }, 1000);
 
-        // FUNGSI 1: SOUND CHIME / NADA DERING ANTREAN (DING-DONG)
-        function playChimeSound(callback) {
+        // 1. SOUND CHIME (DING-DONG BELL BEL ANTREAN)
+        function playChime(onComplete) {
             try {
                 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
 
-                function playTone(freq, duration, delay) {
+                function tone(freq, duration, delay) {
                     setTimeout(() => {
                         var osc = audioCtx.createOscillator();
                         var gain = audioCtx.createGain();
@@ -111,64 +112,70 @@
                     }, delay);
                 }
 
-                // Nada Ding-Dong (D5 -> G5)
-                playTone(587.33, 0.6, 0);   // Ding
-                playTone(783.99, 0.8, 500); // Dong
+                tone(587.33, 0.6, 0);   // Ding
+                tone(783.99, 0.8, 500); // Dong
 
-                // Jalankan suara bot setelah chime selesai (1.3 detik)
-                if (callback) setTimeout(callback, 1300);
+                if (onComplete) setTimeout(onComplete, 1200);
             } catch (e) {
-                if (callback) callback();
+                if (onComplete) onComplete();
             }
         }
 
-        function playTestChime() {
-            playChimeSound(function() {
-                speakQueueCall('A-001', '1', true);
+        // 2. TTS SUARA WANITA INDONESIA (MEMAKSA GOOGLE INDONESIA TTS / FALLBACK NATIVE)
+        function speakIndonesia(text) {
+            // URL Google TTS Bahasa Indonesia (id)
+            var url = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=id&q=' + encodeURIComponent(text);
+            var audio = new Audio(url);
+            
+            var playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(function(error) {
+                    console.log("Fallback ke Web Speech API:", error);
+                    // Fallback jika API Google diblokir jaringan local
+                    if ('speechSynthesis' in window) {
+                        window.speechSynthesis.cancel();
+                        var utterance = new SpeechSynthesisUtterance(text);
+                        utterance.lang = 'id-ID';
+                        utterance.rate = 0.85;
+
+                        // Paksa cari voice apapun yang bernama Indonesia
+                        var voices = window.speechSynthesis.getVoices();
+                        var idVoice = voices.find(v => v.lang.includes('id') || v.name.toLowerCase().includes('indonesia'));
+                        if (idVoice) utterance.voice = idVoice;
+
+                        window.speechSynthesis.speak(utterance);
+                    }
+                });
+            }
+        }
+
+        // 3. SUARA PANGGILAN ANTREAN UTAMA
+        function speakQueueCall(nomorAntrian, nomorMeja) {
+            playChime(function() {
+                // Eja nomor antrean (misal: "A kosong kosong satu")
+                var ejaan = nomorAntrian
+                    .replace(/0/g, ' kosong ')
+                    .replace(/1/g, ' satu ')
+                    .replace(/2/g, ' dua ')
+                    .replace(/3/g, ' tiga ')
+                    .replace(/4/g, ' empat ')
+                    .replace(/5/g, ' lima ')
+                    .replace(/6/g, ' enam ')
+                    .replace(/7/g, ' tujuh ')
+                    .replace(/8/g, ' delapan ')
+                    .replace(/9/g, ' sembilan ')
+                    .replace(/-/g, ' ');
+
+                var teksLengkap = 'Nomor antrean, ' + ejaan + '. Silakan menuju ke meja loket ' + nomorMeja;
+                speakIndonesia(teksLengkap);
             });
         }
 
-        // FUNGSI 2: SUARA BOT PENYEBUT ANTREAN (PAKSA ENGINE ID-ID)
-        function speakQueueCall(nomorAntrian, nomorMeja, isTest) {
-            if (!('speechSynthesis' in window)) return;
-
-            window.speechSynthesis.cancel();
-
-            // Urai huruf & angka (misal: "A 0 0 1" dipisah spasi)
-            var ejaanNomor = nomorAntrian.split('').join(' ');
-            var teksPanggilan = 'Nomor antrean, ' + ejaanNomor + '. Silakan menuju ke loket ' + nomorMeja;
-
-            var utterance = new SpeechSynthesisUtterance(teksPanggilan);
-            utterance.lang = 'id-ID';
-            utterance.rate = 0.82; // Tempo pembacaan rileks/jelas
-            utterance.pitch = 1.0;
-
-            // Cari Voice Engine khusus Indonesia
-            var voices = window.speechSynthesis.getVoices();
-            var indonesianVoice = voices.find(v => v.lang === 'id-ID' || v.lang === 'id_ID' || v.name.toLowerCase().includes('indonesia'));
-
-            if (indonesianVoice) {
-                utterance.voice = indonesianVoice;
-            }
-
-            // Jika dipanggil dari sistem realtime, bunyikan chime dulu baru suara bot
-            if (!isTest) {
-                playChimeSound(function() {
-                    window.speechSynthesis.speak(utterance);
-                });
-            } else {
-                window.speechSynthesis.speak(utterance);
-            }
+        function playTestCall() {
+            speakQueueCall('A-001', '1');
         }
 
-        // Memancing pendaftaran suara browser
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.onvoiceschanged = function() {
-                window.speechSynthesis.getVoices();
-            };
-        }
-
-        // Fetch Data Realtime ke Server
+        // 4. FETCH DATA REALTIME KE SERVER
         function fetchDisplayData() {
             fetch('{{ url("/api/display-antrean-data") }}')
                 .then(response => response.json())
@@ -199,11 +206,11 @@
                 var countDipanggil = currentActive.jumlah_dipanggil || 0;
                 var currentKey = currentActive.id + '_' + countDipanggil;
 
-                // Bunyikan HANYA 1x saat ada panggil ke-1 atau panggil ulang ke-2
+                // Membunyikan HANYA 1x untuk panggil ke-1 atau panggil ulang ke-2
                 if (currentKey !== lastCallUniqueKey) {
                     lastCallUniqueKey = currentKey;
                     var nomorMeja = currentActive.cs ? (currentActive.cs.nomor_meja || '1') : '1';
-                    speakQueueCall(currentActive.nomor_antrian, nomorMeja, false);
+                    speakQueueCall(currentActive.nomor_antrian, nomorMeja);
                 }
             }
 
@@ -279,7 +286,7 @@
             container.innerHTML = html;
         }
 
-        // Polling 3 detik
+        // Polling setiap 3 detik
         fetchDisplayData();
         setInterval(fetchDisplayData, 3000);
     </script>
