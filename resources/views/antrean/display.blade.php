@@ -87,20 +87,40 @@
             document.getElementById('live-clock').innerText = hours + ':' + minutes + ':' + seconds + ' WIB';
         }, 1000);
 
-        // Fungsi Suara Bot (Text-to-Speech Bahasa Indonesia)
+        // Fungsi Suara Bot (Dioptimalkan agar logatnya lebih natural)
         function speakQueueCall(nomorAntrian, nomorMeja) {
             if ('speechSynthesis' in window) {
-                // Batalkan suara sebelumnya agar tidak menumpuk
+                // Batalkan suara sebelumnya agar tidak bertumpuk
                 window.speechSynthesis.cancel();
 
-                var textToSpeech = 'Nomor antrean ' + nomorAntrian.split('').join(' ') + ', silakan menuju ke Meja Loket ' + nomorMeja;
+                // Ubah format teks agar dieja perlahan dengan jeda spasi
+                // Contoh: "A strip 0 0 1" atau dipisah spasi agar pelafalan huruf tidak kaku
+                var formatNomor = nomorAntrian.split('').join(' ');
+                var textToSpeech = 'Nomor antrean, ' + formatNomor + '. Silakan menuju ke, Meja Loket ' + nomorMeja;
+                
                 var utterance = new SpeechSynthesisUtterance(textToSpeech);
-                utterance.lang = 'id-ID';
-                utterance.rate = 0.9; // Kecepatan normal/stabil
-                utterance.pitch = 1.0;
+                utterance.rate = 0.85; // Sedikit diperlambat agar jelas dan tidak terburu-buru
+                utterance.pitch = 1.0;  // Nada suara normal
+
+                // Cari suara bahasa Indonesia (id-ID) yang tersedia di perangkat
+                var voices = window.speechSynthesis.getVoices();
+                var indonesianVoice = voices.find(function(voice) {
+                    return voice.lang === 'id-ID' || voice.lang === 'id_ID' || voice.name.toLowerCase().includes('indonesia');
+                });
+
+                if (indonesianVoice) {
+                    utterance.voice = indonesianVoice;
+                }
 
                 window.speechSynthesis.speak(utterance);
             }
+        }
+
+        // Pancing browser untuk memuat daftar suara perangkat terlebih dahulu
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = function() {
+                window.speechSynthesis.getVoices();
+            };
         }
 
         // Fetch Data Realtime ke Server
