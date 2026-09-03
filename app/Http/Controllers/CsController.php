@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\TiketAntrian;
 use App\Models\User;
 use App\Models\MasterMeja;
+use App\Events\TiketDipanggil;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -169,7 +170,6 @@ class CsController extends Controller
                     ->first();
 
         if ($tiket) {
-            // Atomic Update untuk mencegah bentrokan pemanggilan tanpa menimbulkan kuncian deadlock
             $updated = TiketAntrian::where('id', $tiket->id)
                 ->where('status', 'Menunggu')
                 ->update([
@@ -180,6 +180,11 @@ class CsController extends Controller
                 ]);
 
             if ($updated) {
+                $tiketFresh = TiketAntrian::find($tiket->id);
+                if ($tiketFresh) {
+                    event(new TiketDipanggil($tiketFresh));
+                }
+
                 return back()->with('success', "Memanggil antrean {$tiket->nomor_antrian}");
             }
         }
@@ -214,6 +219,11 @@ class CsController extends Controller
             ]);
 
         if ($updated) {
+            $tiketFresh = TiketAntrian::find($id);
+            if ($tiketFresh) {
+                event(new TiketDipanggil($tiketFresh));
+            }
+
             return back()->with('success', "Memanggil antrean spesifik.");
         }
 
@@ -236,16 +246,17 @@ class CsController extends Controller
                 'status'  => 'Batal',
                 'user_id' => $user->id
             ]);
-            return redirect()->route('cs.index')->with('success', "Tiket {$tiket->nomor_antrian} dibatalkan karena tidak hadir 2x.");
+        } else {
+            $tiket->update([
+                'status'       => 'Menunggu',
+                'user_id'      => null,
+                'waktu_dibuat' => Carbon::now('Asia/Jakarta')
+            ]);
         }
 
-        $tiket->update([
-            'status'       => 'Menunggu',
-            'user_id'      => null,
-            'waktu_dibuat' => Carbon::now('Asia/Jakarta')
-        ]);
+        event(new TiketDipanggil($tiket));
 
-        return redirect()->route('cs.index')->with('success', "Tiket {$tiket->nomor_antrian} dipindahkan ke urutan antrean paling belakang.");
+        return redirect()->route('cs.index')->with('success', "Status tiket {$tiket->nomor_antrian} berhasil diperbarui.");
     }
 
     public function selesaikanTiket(Request $request, int $id)
@@ -274,6 +285,8 @@ class CsController extends Controller
             'bukti_pembayaran'   => $request->bukti_pembayaran,
             'waktu_selesai'      => Carbon::now('Asia/Jakarta'),
         ]);
+
+        event(new TiketDipanggil($tiket));
 
         return redirect()->route('cs.index')->with('success', "Tiket {$tiket->nomor_antrian} berhasil diselesaikan.");
     }

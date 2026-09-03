@@ -392,8 +392,8 @@
             });
         }
 
-        // AUTO-REFRESH REALTIME DENGAN DETEKSI REDIRECT MEJA DIHAPUS
-        setInterval(function() {
+        // FUNGSI PEMBARUAN ANTREAN REALTIME BERBASIS EVENT
+        function refreshAntreanData() {
             fetch(window.location.href)
                 .then(function(response) {
                     if (response.redirected) {
@@ -415,9 +415,9 @@
                     }
                 })
                 .catch(function(error) { console.error('Gagal memperbarui antrean:', error); });
-        }, 3000); 
+        }
 
-        // HEARTBEAT PING SYSTEM (AUTO-OFFLINE 3 MENIT JIKA TAB DITUTUP SAKLAR)
+        // HEARTBEAT PING SYSTEM (AUTO-OFFLINE JIKA TAB DITUTUP)
         function sendHeartbeat() {
             fetch('{{ route("cs.ping") }}', {
                 method: 'POST',
@@ -428,10 +428,34 @@
             }).catch(err => console.log('Heartbeat failed:', err));
         }
 
-        // Kirim ping awal
         sendHeartbeat();
-        // Kirim ping otomatis setiap 30 detik
         setInterval(sendHeartbeat, 30000);
+    </script>
+
+    <!-- LISTENER WEBSOCKET REALTIME (REVERB / PUSHER) -->
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+    <script>
+        var pusherKey = "{{ env('PUSHER_APP_KEY') }}";
+        var pusherCluster = "{{ env('PUSHER_APP_CLUSTER', 'mt1') }}";
+        var pusherHost = "{{ env('PUSHER_HOST', '127.0.0.1') }}";
+        var pusherPort = parseInt("{{ env('PUSHER_PORT', 8080) }}") || 8080;
+        var isSecure = "{{ env('PUSHER_SCHEME') }}" === "https";
+
+        if (pusherKey) {
+            var pusher = new Pusher(pusherKey, {
+                cluster: pusherCluster,
+                wsHost: pusherHost,
+                wsPort: pusherPort,
+                wssPort: pusherPort,
+                forceTLS: isSecure,
+                enabledTransports: ['ws', 'wss']
+            });
+
+            var channel = pusher.subscribe('antrean-channel');
+            channel.bind('tiket.updated', function(data) {
+                refreshAntreanData();
+            });
+        }
     </script>
 </body>
 </html>

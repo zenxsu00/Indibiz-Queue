@@ -1,3 +1,5 @@
+<?php
+
 namespace App\Events;
 
 use App\Models\TiketAntrian;
@@ -9,12 +11,13 @@ class TiketDipanggil implements ShouldBroadcastNow
 {
     use InteractsWithSockets;
 
-    public $tiket;
+    public int $tiketId;
+    public string $status;
 
     public function __construct(TiketAntrian $tiket)
     {
-        // Load relasi yang dibutuhkan oleh frontend
-        $this->tiket = $tiket->load(['pelanggan', 'layanan', 'cs']);
+        $this->tiketId = $tiket->id;
+        $this->status  = $tiket->status;
     }
 
     public function broadcastOn()
@@ -24,6 +27,6 @@ class TiketDipanggil implements ShouldBroadcastNow
 
     public function broadcastAs()
     {
-        return 'tiket.dipanggil';
+        return 'tiket.updated';
     }
 }
