@@ -43,7 +43,7 @@ class CsController extends Controller
 
     private function resetUserState($user)
     {
-        // Tetap biarkan is_active = true agar akun terikat bahwa sedang login, hanya kosongkan mejanya
+        // Kosongkan nomor meja tanpa meriset status is_active agar tidak bisa login ganda saat di-back
         $user->nomor_meja = null;
         $user->save();
         session()->forget('meja_terpilih');
@@ -69,7 +69,6 @@ class CsController extends Controller
             'nomor_meja' => 'required|integer|gt:0',
         ]);
 
-        // Cek apakah meja sedang dipakai CS lain yang sedang aktif
         $mejaSedangDipakai = User::where('is_active', true)
             ->where('nomor_meja', $request->nomor_meja)
             ->where('id', '!=', Auth::id())
@@ -128,7 +127,7 @@ class CsController extends Controller
         return view('cs.index', compact('antreanMenunggu', 'antreanAktif', 'isSpectator', 'nomorMejaTerpilih'));
     }
 
-    // PEMBANGGILAN AMAN DENGAN DATABASE LOCKING (Mencegah CS 2 Terkunci)
+    // PEMBANGGILAN AMAN ANTI-CRASH (DENGAN lockForUpdate & skipLocked)
     public function panggilSelanjutnya()
     {
         if (!$this->checkValidMeja()) {
@@ -137,7 +136,6 @@ class CsController extends Controller
 
         $user = Auth::user();
 
-        // Cek jika CS masih punya tiket aktif
         $cekAktif = TiketAntrian::where('status', 'Diproses')->where('user_id', $user->id)->first();
         if ($cekAktif) {
             return back()->with('error', 'Selesaikan tiket aktif terlebih dahulu!');
@@ -145,11 +143,12 @@ class CsController extends Controller
 
         DB::beginTransaction();
         try {
-            // Ambil antrean teratas dan kunci baris data (lockForUpdate)
+            // lockForUpdate + skipLocked melepaskan CS dari kuncian antar-transaksi secara halus
             $tiket = TiketAntrian::whereDate('waktu_dibuat', Carbon::today('Asia/Jakarta'))
                         ->where('status', 'Menunggu')
                         ->orderBy('waktu_dibuat', 'asc')
                         ->lockForUpdate()
+                        ->skipLocked()
                         ->first();
 
             if ($tiket) {
@@ -158,17 +157,20 @@ class CsController extends Controller
                 $tiket->waktu_diproses = Carbon::now('Asia/Jakarta');
                 $tiket->jumlah_dipanggil = ($tiket->jumlah_dipanggil ?? 0) + 1;
                 $tiket->save();
+
+                DB::commit();
+                return back();
             }
 
             DB::commit();
-            return back();
+            return back()->with('error', 'Tidak ada antrean menunggu saat ini.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Gagal memanggil antrean: ' . $e->getMessage());
+            return back()->with('error', 'Gagal memanggil antrean. Silakan coba lagi.');
         }
     }
 
-    // PEMBANGGILAN SPESIFIK
+    // PEMBANGGILAN SPESIFIK ANTI-CRASH
     public function panggilSpesifik(int $id)
     {
         if (!$this->checkValidMeja()) {
@@ -184,18 +186,21 @@ class CsController extends Controller
 
         DB::beginTransaction();
         try {
-            $tiket = TiketAntrian::where('id', $id)->lockForUpdate()->firstOrFail();
+            $tiket = TiketAntrian::where('id', $id)->lockForUpdate()->skipLocked()->first();
             
-            if ($tiket->status == 'Menunggu') {
+            if ($tiket && $tiket->status == 'Menunggu') {
                 $tiket->status = 'Diproses';
                 $tiket->user_id = $user->id;
                 $tiket->waktu_diproses = Carbon::now('Asia/Jakarta');
                 $tiket->jumlah_dipanggil = ($tiket->jumlah_dipanggil ?? 0) + 1;
                 $tiket->save();
+
+                DB::commit();
+                return back();
             }
 
             DB::commit();
-            return back();
+            return back()->with('error', 'Tiket sedang diproses oleh CS lain.');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Gagal memanggil tiket.');

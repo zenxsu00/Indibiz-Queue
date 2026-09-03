@@ -12,6 +12,7 @@ class AuthController extends Controller
     public function showLogin()
     {
         if (Auth::check()) {
+            /** @var \App\Models\User $user */
             $user = Auth::user();
             $role = strtolower($user->role ?? '');
 
@@ -19,11 +20,13 @@ class AuthController extends Controller
                 return redirect()->route('admin.dashboard');
             }
 
-            if (!$user->nomor_meja) {
-                return redirect()->route('cs.select-meja');
+            // Jika user sudah memiliki nomor meja, langsung lempar ke CS Desk
+            if ($user->nomor_meja) {
+                return redirect()->route('cs.index');
             }
 
-            return redirect()->route('cs.index');
+            // Jika belum punya meja, paksa ke halaman pilih meja (tidak bisa di login page lagi)
+            return redirect()->route('cs.select-meja');
         }
 
         return view('auth.login');
@@ -38,7 +41,7 @@ class AuthController extends Controller
 
         $loginType = strtolower($request->input('login_type', 'cs'));
 
-        // 1. CEK DULU APAKAH USERNAME ADA DAN SEDANG LOGIN/AKTIF DI PERANGKAT LAIN
+        // Cek dulu apakah username sedang aktif di perangkat lain
         $userCheck = User::where('username', $credentials['username'])->first();
 
         if ($userCheck && $userCheck->role === 'cs' && $userCheck->is_active) {
@@ -53,7 +56,7 @@ class AuthController extends Controller
             $user     = Auth::user();
             $userRole = strtolower($user->role ?? '');
 
-            // PROTEKSI STATUS KERJA: Cek Cuti / Izin / Ditangguhkan
+            // PROTEKSI STATUS KERJA
             if ($userRole === 'cs' && $user->status_kerja !== 'aktif') {
                 Auth::logout();
                 $pesan = match($user->status_kerja) {
@@ -65,7 +68,6 @@ class AuthController extends Controller
                 return back()->with('error', $pesan);
             }
 
-            // JIKA LOGIN VIA TAB SUPER ADMIN
             if ($loginType === 'admin') {
                 if ($userRole === 'cs' && strtolower($user->username) !== 'admin') {
                     Auth::logout();
@@ -76,14 +78,16 @@ class AuthController extends Controller
                 return redirect()->route('admin.dashboard');
             }
 
-            // JIKA LOGIN VIA TAB CS: TANDAI SEBAGAI ONLINE/AKTIF SEJAK LOGIN BERHASIL
+            // Tandai user langsung AKTIF saat login berhasil
             $user->update(['is_active' => true]);
 
-            if (!$user->nomor_meja) {
-                return redirect()->route('cs.select-meja');
+            // Jika user sudah punya meja tersimpan dari sesi sebelumnya, langsung masuk CS Desk
+            if ($user->nomor_meja && MasterMeja::where('nomor_meja', $user->nomor_meja)->where('is_available', true)->exists()) {
+                session(['meja_terpilih' => $user->nomor_meja]);
+                return redirect()->route('cs.index');
             }
 
-            return redirect()->route('cs.index');
+            return redirect()->route('cs.select-meja');
         }
 
         return back()->withErrors([
@@ -91,9 +95,6 @@ class AuthController extends Controller
         ])->onlyInput('username');
     }
 
-    /**
-     * Tampilan Halaman / Modal Pilih Slot Meja CS
-     */
     public function showSelectMeja()
     {
         /** @var \App\Models\User $user */
@@ -103,10 +104,13 @@ class AuthController extends Controller
             return redirect()->route('login');
         }
 
-        // Ambil semua master meja yang diizinkan Admin
+        // Auto-Jump: Jika CS sudah punya meja aktif di database, tidak perlu pilih meja lagi
+        if ($user->nomor_meja && MasterMeja::where('nomor_meja', $user->nomor_meja)->where('is_available', true)->exists()) {
+            return redirect()->route('cs.index');
+        }
+
         $masterMejas = MasterMeja::where('is_available', true)->get();
 
-        // Ambil nomor meja yang sedang dipakai oleh CS lain yang ONLINE
         $mejaTerpakai = User::where('role', 'cs')
             ->where('is_active', true)
             ->whereNotNull('nomor_meja')
@@ -117,15 +121,11 @@ class AuthController extends Controller
         return view('cs.select_meja', compact('masterMejas', 'mejaTerpakai'));
     }
 
-    /**
-     * Memproses Meja yang Dipilih oleh CS / Admin
-     */
     public function processSelectMeja(Request $request)
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        // JIKA ADMIN MEMILIH UNTUK MASUK MODE SPECTATOR TANPA MEJA
         if ($request->has('mode_spectator') && strtolower($user->role) === 'admin') {
             $user->update([
                 'nomor_meja' => null,
@@ -138,7 +138,6 @@ class AuthController extends Controller
             'nomor_meja' => 'required|integer|exists:master_mejas,nomor_meja',
         ]);
 
-        // PROTEKSI GANDA: Cek apakah meja tersebut sedang diduduki CS lain
         $isUsed = User::where('is_active', true)
             ->where('nomor_meja', $request->nomor_meja)
             ->where('id', '!=', $user->id)
@@ -148,7 +147,7 @@ class AuthController extends Controller
             return back()->with('error', 'Maaf! Meja tersebut sedang digunakan oleh CS lain. Silakan pilih meja lain.');
         }
 
-        // Simpan Meja dan Pastikan Status User Tetap Aktif
+        // Simpan meja secara permanen di database user
         $user->update([
             'nomor_meja' => $request->nomor_meja,
             'is_active'  => true,
@@ -165,6 +164,7 @@ class AuthController extends Controller
         $user = Auth::user();
 
         if ($user) {
+            // HANYA reset is_active & nomor_meja saat benar-benar menekan tombol Logout
             $user->update([
                 'is_active'  => false,
                 'nomor_meja' => null,
