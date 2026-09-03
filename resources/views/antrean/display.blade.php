@@ -11,9 +11,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
 
-    <!-- ResponsiveVoice Engine (Unlimited Free TTS) -->
-    <script src="https://code.responsivevoice.org/responsivevoice.js?key=FREE_KEY"></script>
-
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0F172A; }
     </style>
@@ -42,11 +39,18 @@
                     <span class="material-symbols-outlined text-2xl animate-bounce">campaign</span>
                     <h2 class="text-lg font-extrabold uppercase tracking-wider">Sedang Dipanggil</h2>
                 </div>
-                <!-- TOMBOL TEST SUARA & UNLOCK AUTOPLAY -->
-                <button onclick="playTestCall()" class="text-xs bg-black/30 hover:bg-black/50 text-white border border-white/20 px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-2">
-                    <span class="material-symbols-outlined text-sm">volume_up</span>
-                    <span>Klik 1x Tes Suara ResponsiveVoice</span>
-                </button>
+
+                <!-- DROPDOWN PILIHAN SUARA & TEST BUTTON -->
+                <div class="flex items-center gap-2">
+                    <select id="voice-select" class="bg-slate-900/80 text-white border border-white/20 text-xs rounded-xl px-3 py-1.5 font-semibold focus:outline-none focus:ring-2 focus:ring-red-400">
+                        <option value="">Memuat Pilihan Suara...</option>
+                    </select>
+                    
+                    <button onclick="playTestCall()" class="text-xs bg-black/30 hover:bg-black/50 text-white border border-white/20 px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">volume_up</span>
+                        <span>Tes Suara</span>
+                    </button>
+                </div>
             </div>
 
             <!-- CONTAINER CARD PANGGILAN UTAMA -->
@@ -78,13 +82,14 @@
     <!-- FOOTER -->
     <footer class="bg-slate-900 border-t border-slate-800 px-8 py-3 text-center text-xs text-slate-500 shrink-0 flex items-center justify-between">
         <p>&copy; {{ date('Y') }} Indibiz Service Desk &bull; Sistem Antrean Terpadu</p>
-        <p class="text-slate-400 font-medium">ResponsiveVoice Indonesian Engine Active</p>
+        <p class="text-slate-400 font-medium" id="voice-status">Pilih karakter suara pada header di atas.</p>
     </footer>
 
-    <!-- JAVASCRIPT LOGIC RESPONSIVEVOICE TTS -->
+    <!-- JAVASCRIPT LOGIC SELECTABLE & FORCED INDONESIAN VOICE -->
     <script>
         var lastCallUniqueKey = '';
         var audioCtx = null;
+        var availableVoices = [];
 
         // Jam Digital Realtime
         setInterval(function() {
@@ -94,6 +99,50 @@
             var seconds = String(now.getSeconds()).padStart(2, '0');
             document.getElementById('live-clock').innerText = hours + ':' + minutes + ':' + seconds + ' WIB';
         }, 1000);
+
+        // Populate Dropdown Suara yang Tersedia di Browser
+        function populateVoiceList() {
+            if (!('speechSynthesis' in window)) return;
+            
+            availableVoices = window.speechSynthesis.getVoices();
+            var selectElem = document.getElementById('voice-select');
+            selectElem.innerHTML = '';
+
+            if (availableVoices.length === 0) return;
+
+            // Prioritaskan Suara Bahasa Indonesia
+            var indoVoices = availableVoices.filter(function(v) {
+                return v.lang.includes('id') || v.lang.includes('ID') || v.name.toLowerCase().includes('indonesi');
+            });
+
+            // Jika ada suara Bahasa Indonesia, tampilkan paling atas
+            var displayVoices = indoVoices.length > 0 ? indoVoices : availableVoices;
+
+            displayVoices.forEach(function(voice, index) {
+                var option = document.createElement('option');
+                option.value = voice.name;
+                option.textContent = voice.name + ' (' + voice.lang + ')';
+                
+                // Set default jika mengandung kata Gadis/Indonesian/Google
+                if (voice.name.includes('Gadis') || voice.name.includes('Indonesian') || voice.lang === 'id-ID') {
+                    option.selected = true;
+                }
+                
+                selectElem.appendChild(option);
+            });
+
+            var statusElem = document.getElementById('voice-status');
+            if (indoVoices.length > 0) {
+                statusElem.innerText = "Ditemukan " + indoVoices.length + " Karakter Suara Bahasa Indonesia di Perangkat Ini.";
+            } else {
+                statusElem.innerText = "Sistem menggunakan paksaan bahasa Indonesia (id-ID) pada engine bawaan.";
+            }
+        }
+
+        if ('speechSynthesis' in window) {
+            populateVoiceList();
+            window.speechSynthesis.onvoiceschanged = populateVoiceList;
+        }
 
         // 1. BEL DING-DONG ANTREAN
         function playChime(onComplete) {
@@ -125,41 +174,56 @@
             }
         }
 
-        // 2. SUARA PANGGILAN ANTREAN (NATIVE BROWSER SPEECH SYNTHESIS)
-function speakQueueCall(nomorAntrian, nomorMeja) {
-    playChime(function() {
-        var ejaan = nomorAntrian
-            .replace(/0/g, ' 0 ')
-            .replace(/1/g, ' 1 ')
-            .replace(/2/g, ' 2 ')
-            .replace(/3/g, ' 3 ')
-            .replace(/4/g, ' 4 ')
-            .replace(/5/g, ' 5 ')
-            .replace(/6/g, ' 6 ')
-            .replace(/7/g, ' 7 ')
-            .replace(/8/g, ' 8 ')
-            .replace(/9/g, ' 9 ')
-            .replace(/-/g, ' ');
-
-        var teksNarasi = 'Tiket ' + ejaan + ', ke meja ' + nomorMeja;
-        
-        // Menggunakan Web Speech API Bawaan OS / Browser
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel(); // Hentikan suara sebelumnya jika ada
-            var utterance = new SpeechSynthesisUtterance(teksNarasi);
-            utterance.lang = 'id-ID-Gadis'; // Set Bahasa Indonesia
-            utterance.rate = 0.9;     // Kecepatan bicara
-            utterance.pitch = 1;
-            
-            window.speechSynthesis.speak(utterance);
-        } else {
-            console.error("Browser ini tidak mendukung Web Speech API.");
+        // Konversi Angka ke Kata Bahasa Indonesia Murni
+        function formatEjaanIndonesia(nomor) {
+            return nomor
+                .replace(/0/g, ' nol ')
+                .replace(/1/g, ' satu ')
+                .replace(/2/g, ' dua ')
+                .replace(/3/g, ' tiga ')
+                .replace(/4/g, ' empat ')
+                .replace(/5/g, ' lima ')
+                .replace(/6/g, ' enam ')
+                .replace(/7/g, ' tujuh ')
+                .replace(/8/g, ' delapan ')
+                .replace(/9/g, ' sembilan ')
+                .replace(/-/g, ' ');
         }
-    });
-}
+
+        // 2. SUARA PANGGILAN ANTREAN
+        function speakQueueCall(nomorAntrian, nomorMeja) {
+            playChime(function() {
+                var ejaanNomor = formatEjaanIndonesia(nomorAntrian);
+                var ejaanMeja = formatEjaanIndonesia(nomorMeja.toString());
+
+                var teksNarasi = 'Nomor tiket ' + ejaanNomor + ', silakan menuju ke meja ' + ejaanMeja;
+
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel(); // Riset antrean audio sebelumnya
+                    
+                    var utterance = new SpeechSynthesisUtterance(teksNarasi);
+                    
+                    // MEMAKSAKAN BAHASA KE INDONESIA
+                    utterance.lang = 'id-ID';
+                    utterance.rate = 0.85;  // Tempo pengucapan
+                    utterance.pitch = 1.1;   // Pitch agak tinggi (suara wanita)
+
+                    // Ambil suara terpilih dari Dropdown Select
+                    var selectedVoiceName = document.getElementById('voice-select').value;
+                    if (selectedVoiceName && availableVoices.length > 0) {
+                        var chosenVoice = availableVoices.find(v => v.name === selectedVoiceName);
+                        if (chosenVoice) {
+                            utterance.voice = chosenVoice;
+                        }
+                    }
+
+                    window.speechSynthesis.speak(utterance);
+                }
+            });
+        }
 
         function playTestCall() {
-            speakQueueCall('A-001', '1');
+            speakQueueCall('A-005', '1');
         }
 
         // 3. FETCH DATA REALTIME KE SERVER
