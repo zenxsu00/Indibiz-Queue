@@ -175,7 +175,33 @@
         }
 
         // Konversi Angka ke Kata Bahasa Indonesia Murni
+        // Konversi Angka ke Kata Bahasa Indonesia Murni dengan Jeda setelah Kode Layanan
         function formatEjaanIndonesia(nomor) {
+            // Pemisahan huruf kode dan angka
+            var bagian = nomor.split('-');
+            
+            if (bagian.length > 1) {
+                var kodeHuruf = bagian[0]; // Misal "A"
+                var angkaStr = bagian[1];   // Misal "005"
+                
+                // Membaca angka satu per satu
+                var ejaanAngka = angkaStr
+                    .replace(/0/g, ' nol ')
+                    .replace(/1/g, ' satu ')
+                    .replace(/2/g, ' dua ')
+                    .replace(/3/g, ' tiga ')
+                    .replace(/4/g, ' empat ')
+                    .replace(/5/g, ' lima ')
+                    .replace(/6/g, ' enam ')
+                    .replace(/7/g, ' tujuh ')
+                    .replace(/8/g, ' delapan ')
+                    .replace(/9/g, ' sembilan ');
+
+                // Tanda koma setelah kodeHuruf memberikan jeda napas halus
+                return kodeHuruf + ', ' + ejaanAngka;
+            }
+
+            // Fallback jika format tidak menggunakan tanda strip (-)
             return nomor
                 .replace(/0/g, ' nol ')
                 .replace(/1/g, ' satu ')
@@ -186,8 +212,7 @@
                 .replace(/6/g, ' enam ')
                 .replace(/7/g, ' tujuh ')
                 .replace(/8/g, ' delapan ')
-                .replace(/9/g, ' sembilan ')
-                .replace(/-/g, ' ');
+                .replace(/9/g, ' sembilan ');
         }
 
         // 2. SUARA PANGGILAN ANTREAN
