@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\MasterMeja;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class AuthController extends Controller
 {
@@ -20,12 +21,10 @@ class AuthController extends Controller
                 return redirect()->route('admin.dashboard');
             }
 
-            // Jika user sudah memiliki nomor meja, langsung lempar ke CS Desk
             if ($user->nomor_meja) {
                 return redirect()->route('cs.index');
             }
 
-            // Jika belum punya meja, paksa ke halaman pilih meja (tidak bisa di login page lagi)
             return redirect()->route('cs.select-meja');
         }
 
@@ -41,11 +40,28 @@ class AuthController extends Controller
 
         $loginType = strtolower($request->input('login_type', 'cs'));
 
-        // Cek dulu apakah username sedang aktif di perangkat lain
+        // 1. CEK AUTOLOGOUT DENGAN TIMEOUT 3 MENIT
         $userCheck = User::where('username', $credentials['username'])->first();
 
         if ($userCheck && $userCheck->role === 'cs' && $userCheck->is_active) {
-            return back()->with('error', 'Akun ' . $userCheck->username . ' sedang aktif/login di perangkat lain. Silakan keluar terlebih dahulu.');
+            // Jika last_seen_at ada dan sudah lebih dari 3 menit yang lalu
+            $isTimeout = false;
+            if ($userCheck->last_seen_at) {
+                $isTimeout = Carbon::parse($userCheck->last_seen_at)->diffInMinutes(Carbon::now('Asia/Jakarta')) >= 3;
+            } else {
+                // Jika tidak ada last_seen_at (data lama), anggap timeout
+                $isTimeout = true;
+            }
+
+            if ($isTimeout) {
+                // AUTO LOGOUT: Bebaskan akun yang nyangkut
+                $userCheck->update([
+                    'is_active' => false,
+                    'nomor_meja' => null
+                ]);
+            } else {
+                return back()->with('error', 'Akun ' . $userCheck->username . ' sedang aktif di perangkat lain. Tunggu 3 menit atau keluar dari perangkat tersebut.');
+            }
         }
 
         if (Auth::attempt($credentials)) {
@@ -56,13 +72,12 @@ class AuthController extends Controller
             $user     = Auth::user();
             $userRole = strtolower($user->role ?? '');
 
-            // PROTEKSI STATUS KERJA
             if ($userRole === 'cs' && $user->status_kerja !== 'aktif') {
                 Auth::logout();
                 $pesan = match($user->status_kerja) {
-                    'cuti'         => 'Akun Anda sedang dalam masa CUTI. Silakan hubungi Admin.',
-                    'izin'         => 'Akun Anda sedang berstatus IZIN. Silakan hubungi Admin.',
-                    'ditangguhkan' => 'Akun Anda sedang DITANGGUHKAN/SUSPEND. Akses ditolak.',
+                    'cuti'         => 'Akun Anda sedang dalam masa CUTI.',
+                    'izin'         => 'Akun Anda sedang berstatus IZIN.',
+                    'ditangguhkan' => 'Akun Anda DITANGGUHKAN. Akses ditolak.',
                     default        => 'Akun Anda tidak aktif saat ini.',
                 };
                 return back()->with('error', $pesan);
@@ -74,14 +89,19 @@ class AuthController extends Controller
                     return back()->with('error', 'Akses Ditolak! Akun CS tidak diizinkan masuk melalui Portal Admin.');
                 }
                 
-                $user->update(['is_active' => true]);
+                $user->update([
+                    'is_active' => true,
+                    'last_seen_at' => Carbon::now('Asia/Jakarta')
+                ]);
                 return redirect()->route('admin.dashboard');
             }
 
-            // Tandai user langsung AKTIF saat login berhasil
-            $user->update(['is_active' => true]);
+            // Tandai user aktif & set last_seen_at pertama kali
+            $user->update([
+                'is_active' => true,
+                'last_seen_at' => Carbon::now('Asia/Jakarta')
+            ]);
 
-            // Jika user sudah punya meja tersimpan dari sesi sebelumnya, langsung masuk CS Desk
             if ($user->nomor_meja && MasterMeja::where('nomor_meja', $user->nomor_meja)->where('is_available', true)->exists()) {
                 session(['meja_terpilih' => $user->nomor_meja]);
                 return redirect()->route('cs.index');
@@ -104,7 +124,6 @@ class AuthController extends Controller
             return redirect()->route('login');
         }
 
-        // Auto-Jump: Jika CS sudah punya meja aktif di database, tidak perlu pilih meja lagi
         if ($user->nomor_meja && MasterMeja::where('nomor_meja', $user->nomor_meja)->where('is_available', true)->exists()) {
             return redirect()->route('cs.index');
         }
@@ -130,6 +149,7 @@ class AuthController extends Controller
             $user->update([
                 'nomor_meja' => null,
                 'is_active'  => true,
+                'last_seen_at' => Carbon::now('Asia/Jakarta')
             ]);
             return redirect()->route('cs.index');
         }
@@ -144,13 +164,13 @@ class AuthController extends Controller
             ->exists();
 
         if ($isUsed) {
-            return back()->with('error', 'Maaf! Meja tersebut sedang digunakan oleh CS lain. Silakan pilih meja lain.');
+            return back()->with('error', 'Meja tersebut sedang digunakan oleh CS lain.');
         }
 
-        // Simpan meja secara permanen di database user
         $user->update([
             'nomor_meja' => $request->nomor_meja,
             'is_active'  => true,
+            'last_seen_at' => Carbon::now('Asia/Jakarta')
         ]);
 
         session(['meja_terpilih' => $request->nomor_meja]);
@@ -164,10 +184,10 @@ class AuthController extends Controller
         $user = Auth::user();
 
         if ($user) {
-            // HANYA reset is_active & nomor_meja saat benar-benar menekan tombol Logout
             $user->update([
                 'is_active'  => false,
                 'nomor_meja' => null,
+                'last_seen_at' => null
             ]);
         }
 

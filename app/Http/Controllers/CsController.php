@@ -49,6 +49,25 @@ class CsController extends Controller
         session()->forget('meja_terpilih');
     }
 
+    /**
+     * Endpoint Heartbeat Ping (Diakses JS setiap 30 detik untuk memperbarui last_seen_at)
+     */
+    public function pingHeartbeat()
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        if ($user) {
+            $user->update([
+                'is_active'    => true,
+                'last_seen_at' => Carbon::now('Asia/Jakarta')
+            ]);
+            return response()->json(['status' => 'ok']);
+        }
+
+        return response()->json(['status' => 'unauthorized'], 401);
+    }
+
     public function selectMeja()
     {
         $masterMejas = MasterMeja::where('is_available', true)->orderBy('nomor_meja', 'asc')->get();
@@ -85,8 +104,9 @@ class CsController extends Controller
 
         /** @var User $user */
         $user = Auth::user();
-        $user->nomor_meja = $request->nomor_meja;
-        $user->is_active  = true;
+        $user->nomor_meja   = $request->nomor_meja;
+        $user->is_active    = true;
+        $user->last_seen_at = Carbon::now('Asia/Jakarta');
         $user->save();
 
         session(['meja_terpilih' => $request->nomor_meja]);
@@ -107,8 +127,9 @@ class CsController extends Controller
         $nomorMejaTerpilih = $user->nomor_meja ?? session('meja_terpilih');
         $isSpectator = (empty($nomorMejaTerpilih) || $nomorMejaTerpilih == 0) && $user->role === 'admin';
 
-        if (!$isSpectator && !$user->is_active) {
-            $user->is_active = true;
+        if (!$isSpectator) {
+            $user->is_active    = true;
+            $user->last_seen_at = Carbon::now('Asia/Jakarta');
             $user->save();
         }
 
@@ -143,7 +164,6 @@ class CsController extends Controller
 
         DB::beginTransaction();
         try {
-            // lockForUpdate + skipLocked melepaskan CS dari kuncian antar-transaksi secara halus
             $tiket = TiketAntrian::whereDate('waktu_dibuat', Carbon::today('Asia/Jakarta'))
                         ->where('status', 'Menunggu')
                         ->orderBy('waktu_dibuat', 'asc')

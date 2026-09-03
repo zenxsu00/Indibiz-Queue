@@ -416,6 +416,22 @@
                 })
                 .catch(function(error) { console.error('Gagal memperbarui antrean:', error); });
         }, 3000); 
+
+        // HEARTBEAT PING SYSTEM (AUTO-OFFLINE 3 MENIT JIKA TAB DITUTUP SAKLAR)
+        function sendHeartbeat() {
+            fetch('{{ route("cs.ping") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            }).catch(err => console.log('Heartbeat failed:', err));
+        }
+
+        // Kirim ping awal
+        sendHeartbeat();
+        // Kirim ping otomatis setiap 30 detik
+        setInterval(sendHeartbeat, 30000);
     </script>
 </body>
 </html>

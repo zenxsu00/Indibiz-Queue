@@ -40,6 +40,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/cs/pilih-meja', [CsController::class, 'selectMeja'])->name('cs.select-meja');
     Route::post('/cs/pilih-meja', [CsController::class, 'setMeja'])->name('cs.process-meja');
     Route::get('/cs/leave', [CsController::class, 'leaveConsole'])->name('cs.leave');
+    
+    // ENDPOINT HEARTBEAT PING CS DESK
+    Route::post('/cs/ping-heartbeat', [CsController::class, 'pingHeartbeat'])->name('cs.ping');
 });
 
 // 3. MODUL DENGAN PROTEKSI LOGIN
