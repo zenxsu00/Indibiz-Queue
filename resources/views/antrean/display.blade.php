@@ -125,32 +125,38 @@
             }
         }
 
-        // 2. SUARA PANGGILAN ANTREAN (RESPONSIVEVOICE INDONESIA)
-        function speakQueueCall(nomorAntrian, nomorMeja) {
-            playChime(function() {
-                var ejaan = nomorAntrian
-                    .replace(/0/g, ' 0 ')
-                    .replace(/1/g, ' 1 ')
-                    .replace(/2/g, ' 2 ')
-                    .replace(/3/g, ' 3 ')
-                    .replace(/4/g, ' 4 ')
-                    .replace(/5/g, ' 5 ')
-                    .replace(/6/g, ' 6 ')
-                    .replace(/7/g, ' 7 ')
-                    .replace(/8/g, ' 8 ')
-                    .replace(/9/g, ' 9 ')
-                    .replace(/-/g, ' ');
+        // 2. SUARA PANGGILAN ANTREAN (NATIVE BROWSER SPEECH SYNTHESIS)
+function speakQueueCall(nomorAntrian, nomorMeja) {
+    playChime(function() {
+        var ejaan = nomorAntrian
+            .replace(/0/g, ' 0 ')
+            .replace(/1/g, ' 1 ')
+            .replace(/2/g, ' 2 ')
+            .replace(/3/g, ' 3 ')
+            .replace(/4/g, ' 4 ')
+            .replace(/5/g, ' 5 ')
+            .replace(/6/g, ' 6 ')
+            .replace(/7/g, ' 7 ')
+            .replace(/8/g, ' 8 ')
+            .replace(/9/g, ' 9 ')
+            .replace(/-/g, ' ');
 
-                var teksNarasi = 'Tiket ' + ejaan + ', ke meja ' + nomorMeja;
-                
-                // Menggunakan ResponsiveVoice Bahasa Indonesia
-                if (window.responsiveVoice) {
-                    responsiveVoice.speak(teksNarasi, "Indonesian Female", { rate: 0.9, pitch: 1 });
-                } else {
-                    console.error("ResponsiveVoice library belum ter-load.");
-                }
-            });
+        var teksNarasi = 'Tiket ' + ejaan + ', ke meja ' + nomorMeja;
+        
+        // Menggunakan Web Speech API Bawaan OS / Browser
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel(); // Hentikan suara sebelumnya jika ada
+            var utterance = new SpeechSynthesisUtterance(teksNarasi);
+            utterance.lang = 'id-ID'; // Set Bahasa Indonesia
+            utterance.rate = 0.9;     // Kecepatan bicara
+            utterance.pitch = 1;
+            
+            window.speechSynthesis.speak(utterance);
+        } else {
+            console.error("Browser ini tidak mendukung Web Speech API.");
         }
+    });
+}
 
         function playTestCall() {
             speakQueueCall('A-001', '1');
