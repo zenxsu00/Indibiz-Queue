@@ -115,15 +115,13 @@
                 return v.lang.includes('id') || v.lang.includes('ID') || v.name.toLowerCase().includes('indonesi');
             });
 
-            // Jika ada suara Bahasa Indonesia, tampilkan paling atas
             var displayVoices = indoVoices.length > 0 ? indoVoices : availableVoices;
 
-            displayVoices.forEach(function(voice, index) {
+            displayVoices.forEach(function(voice) {
                 var option = document.createElement('option');
                 option.value = voice.name;
                 option.textContent = voice.name + ' (' + voice.lang + ')';
                 
-                // Set default jika mengandung kata Gadis/Indonesian/Google
                 if (voice.name.includes('Gadis') || voice.name.includes('Indonesian') || voice.lang === 'id-ID') {
                     option.selected = true;
                 }
@@ -174,17 +172,14 @@
             }
         }
 
-        // Konversi Angka ke Kata Bahasa Indonesia Murni
         // Konversi Angka ke Kata Bahasa Indonesia Murni dengan Jeda setelah Kode Layanan
         function formatEjaanIndonesia(nomor) {
-            // Pemisahan huruf kode dan angka
             var bagian = nomor.split('-');
             
             if (bagian.length > 1) {
-                var kodeHuruf = bagian[0]; // Misal "A"
-                var angkaStr = bagian[1];   // Misal "005"
+                var kodeHuruf = bagian[0]; 
+                var angkaStr = bagian[1];   
                 
-                // Membaca angka satu per satu
                 var ejaanAngka = angkaStr
                     .replace(/0/g, ' nol ')
                     .replace(/1/g, ' satu ')
@@ -197,13 +192,11 @@
                     .replace(/8/g, ' delapan ')
                     .replace(/9/g, ' sembilan ');
 
-                // Tanda koma setelah kodeHuruf memberikan jeda napas halus
                 return kodeHuruf + ', ' + ejaanAngka;
             }
 
-            // Fallback jika format tidak menggunakan tanda strip (-)
             return nomor
-                .replace(/0/g, ' kosong ')
+                .replace(/0/g, ' nol ')
                 .replace(/1/g, ' satu ')
                 .replace(/2/g, ' dua ')
                 .replace(/3/g, ' tiga ')
@@ -224,16 +217,13 @@
                 var teksNarasi = 'Nomor tiket ' + ejaanNomor + ', silakan menuju ke meja ' + ejaanMeja;
 
                 if ('speechSynthesis' in window) {
-                    window.speechSynthesis.cancel(); // Riset antrean audio sebelumnya
+                    window.speechSynthesis.cancel(); 
                     
                     var utterance = new SpeechSynthesisUtterance(teksNarasi);
-                    
-                    // MEMAKSAKAN BAHASA KE INDONESIA
                     utterance.lang = 'id-ID';
-                    utterance.rate = 0.85;  // Tempo pengucapan
-                    utterance.pitch = 1.1;   // Pitch agak tinggi (suara wanita)
+                    utterance.rate = 0.85;  
+                    utterance.pitch = 1.1;   
 
-                    // Ambil suara terpilih dari Dropdown Select
                     var selectedVoiceName = document.getElementById('voice-select').value;
                     if (selectedVoiceName && availableVoices.length > 0) {
                         var chosenVoice = availableVoices.find(v => v.name === selectedVoiceName);
@@ -279,7 +269,10 @@
 
             if (currentActive) {
                 var countDipanggil = currentActive.jumlah_dipanggil || 0;
-                var currentKey = currentActive.id + '_' + countDipanggil;
+                var csId = currentActive.user_id || (currentActive.cs ? currentActive.cs.id : '0');
+                
+                // PERBAIKAN: Sertakan CS ID agar CS 2 tidak dianggap duplikat oleh CS 1
+                var currentKey = currentActive.id + '_cs' + csId + '_' + countDipanggil;
 
                 if (currentKey !== lastCallUniqueKey) {
                     lastCallUniqueKey = currentKey;

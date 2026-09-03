@@ -39,6 +39,9 @@ class AuthController extends Controller
         $loginType = strtolower($request->input('login_type', 'cs'));
 
         if (Auth::attempt($credentials)) {
+            // 1. CEK & KELUARKAN SESI AKUN INI DI PERANGKAT LAIN (Prevent Double Login Akun Sama)
+            Auth::logoutOtherDevices($credentials['password']);
+
             $request->session()->regenerate();
             session()->forget('url.intended');
 
@@ -97,6 +100,7 @@ class AuthController extends Controller
         $mejaTerpakai = User::where('role', 'cs')
             ->where('is_active', true)
             ->whereNotNull('nomor_meja')
+            ->where('id', '!=', $user->id)
             ->pluck('nomor_meja')
             ->toArray();
 
@@ -124,15 +128,14 @@ class AuthController extends Controller
             'nomor_meja' => 'required|integer|exists:master_mejas,nomor_meja',
         ]);
 
-        // Cek kembali apakah meja tersebut mendadak terpakai oleh CS lain
-        $isUsed = User::where('role', 'cs')
-            ->where('is_active', true)
+        // PROTEKSI GANDA: Cek apakah meja tersebut sedang diduduki CS lain
+        $isUsed = User::where('is_active', true)
             ->where('nomor_meja', $request->nomor_meja)
             ->where('id', '!=', $user->id)
             ->exists();
 
         if ($isUsed) {
-            return back()->with('error', 'Maaf! Meja tersebut baru saja dipilih oleh CS lain. Silakan pilih meja lain.');
+            return back()->with('error', 'Maaf! Meja tersebut sedang digunakan oleh CS lain. Silakan pilih meja lain.');
         }
 
         // Simpan Meja dan Aktifkan Status User
@@ -140,6 +143,8 @@ class AuthController extends Controller
             'nomor_meja' => $request->nomor_meja,
             'is_active'  => true,
         ]);
+
+        session(['meja_terpilih' => $request->nomor_meja]);
 
         return redirect()->route('cs.index');
     }
