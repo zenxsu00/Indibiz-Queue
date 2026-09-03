@@ -38,10 +38,14 @@ class AuthController extends Controller
 
         $loginType = strtolower($request->input('login_type', 'cs'));
 
-        if (Auth::attempt($credentials)) {
-            // 1. CEK & KELUARKAN SESI AKUN INI DI PERANGKAT LAIN (Prevent Double Login Akun Sama)
-            Auth::logoutOtherDevices($credentials['password']);
+        // 1. CEK DULU APAKAH USERNAME ADA DAN SEDANG LOGIN/AKTIF DI PERANGKAT LAIN
+        $userCheck = User::where('username', $credentials['username'])->first();
 
+        if ($userCheck && $userCheck->role === 'cs' && $userCheck->is_active) {
+            return back()->with('error', 'Akun ' . $userCheck->username . ' sedang aktif/login di perangkat lain. Silakan keluar terlebih dahulu.');
+        }
+
+        if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
             session()->forget('url.intended');
 
@@ -72,8 +76,14 @@ class AuthController extends Controller
                 return redirect()->route('admin.dashboard');
             }
 
-            // JIKA LOGIN VIA TAB CS
-            return redirect()->route('cs.select-meja');
+            // JIKA LOGIN VIA TAB CS: TANDAI SEBAGAI ONLINE/AKTIF SEJAK LOGIN BERHASIL
+            $user->update(['is_active' => true]);
+
+            if (!$user->nomor_meja) {
+                return redirect()->route('cs.select-meja');
+            }
+
+            return redirect()->route('cs.index');
         }
 
         return back()->withErrors([
@@ -138,7 +148,7 @@ class AuthController extends Controller
             return back()->with('error', 'Maaf! Meja tersebut sedang digunakan oleh CS lain. Silakan pilih meja lain.');
         }
 
-        // Simpan Meja dan Aktifkan Status User
+        // Simpan Meja dan Pastikan Status User Tetap Aktif
         $user->update([
             'nomor_meja' => $request->nomor_meja,
             'is_active'  => true,

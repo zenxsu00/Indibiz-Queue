@@ -43,7 +43,7 @@ class CsController extends Controller
 
     private function resetUserState($user)
     {
-        $user->is_active = false;
+        // Tetap biarkan is_active = true agar akun terikat bahwa sedang login, hanya kosongkan mejanya
         $user->nomor_meja = null;
         $user->save();
         session()->forget('meja_terpilih');
