@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\TiketController;
 use App\Http\Controllers\CsController;
@@ -17,6 +18,20 @@ use App\Http\Controllers\DisplayController;
 // Redirect Halaman Utama ke Antrean
 Route::get('/', function () {
     return redirect()->route('antrean.index');
+});
+
+// ROUTE PEMBERSIH CACHE UNTUK HOSTING (AKSES: domain.com/clear-all-cache?key=indibiz123)
+Route::get('/clear-all-cache', function () {
+    if (request('key') !== 'indibiz123') {
+        return response('Akses ditolak! Kunci rahasia salah.', 403);
+    }
+
+    Artisan::call('config:clear');
+    Artisan::call('route:clear');
+    Artisan::call('cache:clear');
+    Artisan::call('view:clear');
+
+    return 'Semua cache Laravel (config, route, cache, view) berhasil dibersihkan!';
 });
 
 // 1. MODUL PELANGGAN (PUBLIC)
