@@ -11,6 +11,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
 
+    <!-- ResponsiveVoice Engine (Unlimited Free TTS) -->
+    <script src="https://code.responsivevoice.org/responsivevoice.js?key=FREE_KEY"></script>
+
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0F172A; }
     </style>
@@ -42,7 +45,7 @@
                 <!-- TOMBOL TEST SUARA & UNLOCK AUTOPLAY -->
                 <button onclick="playTestCall()" class="text-xs bg-black/30 hover:bg-black/50 text-white border border-white/20 px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-2">
                     <span class="material-symbols-outlined text-sm">volume_up</span>
-                    <span>Klik 1x Tes Suara ElevenLabs AI</span>
+                    <span>Klik 1x Tes Suara ResponsiveVoice</span>
                 </button>
             </div>
 
@@ -75,14 +78,13 @@
     <!-- FOOTER -->
     <footer class="bg-slate-900 border-t border-slate-800 px-8 py-3 text-center text-xs text-slate-500 shrink-0 flex items-center justify-between">
         <p>&copy; {{ date('Y') }} Indibiz Service Desk &bull; Sistem Antrean Terpadu</p>
-        <p class="text-slate-400 font-medium">ElevenLabs Multilingual v2 Engine Active</p>
+        <p class="text-slate-400 font-medium">ResponsiveVoice Indonesian Engine Active</p>
     </footer>
 
-    <!-- JAVASCRIPT LOGIC ELEVENLABS AI VOICE -->
+    <!-- JAVASCRIPT LOGIC RESPONSIVEVOICE TTS -->
     <script>
         var lastCallUniqueKey = '';
         var audioCtx = null;
-        var currentAudioPlayer = null;
 
         // Jam Digital Realtime
         setInterval(function() {
@@ -123,36 +125,7 @@
             }
         }
 
-        // 2. PROXY ELEVENLABS TTS FETCH
-        function playElevenLabsVoice(teksNarasi) {
-            if (currentAudioPlayer) {
-                currentAudioPlayer.pause();
-                currentAudioPlayer = null;
-            }
-
-            fetch('{{ url("/api/elevenlabs-tts") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: JSON.stringify({ text: teksNarasi })
-            })
-            .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok');
-                return response.blob();
-            })
-            .then(blob => {
-                var audioUrl = URL.createObjectURL(blob);
-                currentAudioPlayer = new Audio(audioUrl);
-                currentAudioPlayer.play().catch(e => console.log("Audio Autoplay blocked:", e));
-            })
-            .catch(error => {
-                console.error('ElevenLabs Error:', error);
-            });
-        }
-
-        // 3. SUARA PANGGILAN ANTREAN UTAMA (FORMAT HEMAT ~27 KARAKTER)
+        // 2. SUARA PANGGILAN ANTREAN (RESPONSIVEVOICE INDONESIA)
         function speakQueueCall(nomorAntrian, nomorMeja) {
             playChime(function() {
                 var ejaan = nomorAntrian
@@ -170,7 +143,12 @@
 
                 var teksNarasi = 'Tiket ' + ejaan + ', ke meja ' + nomorMeja;
                 
-                playElevenLabsVoice(teksNarasi);
+                // Menggunakan ResponsiveVoice Bahasa Indonesia
+                if (window.responsiveVoice) {
+                    responsiveVoice.speak(teksNarasi, "Indonesian Female", { rate: 0.9, pitch: 1 });
+                } else {
+                    console.error("ResponsiveVoice library belum ter-load.");
+                }
             });
         }
 
@@ -178,7 +156,7 @@
             speakQueueCall('A-001', '1');
         }
 
-        // 4. FETCH DATA REALTIME KE SERVER
+        // 3. FETCH DATA REALTIME KE SERVER
         function fetchDisplayData() {
             fetch('{{ url("/api/display-antrean-data") }}')
                 .then(response => response.json())
