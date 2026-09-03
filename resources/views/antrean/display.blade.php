@@ -11,9 +11,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
 
-    <!-- ResponsiveVoice Engine (Unlimited Free TTS) -->
-    <script src="https://code.responsivevoice.org/responsivevoice.js?key=FREE_KEY"></script>
-
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0F172A; }
     </style>
@@ -45,7 +42,7 @@
                 <!-- TOMBOL TEST SUARA & UNLOCK AUTOPLAY -->
                 <button onclick="playTestCall()" class="text-xs bg-black/30 hover:bg-black/50 text-white border border-white/20 px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-2">
                     <span class="material-symbols-outlined text-sm">volume_up</span>
-                    <span>Klik 1x Tes Suara ResponsiveVoice</span>
+                    <span>Klik 1x Tes Suara Native TTS</span>
                 </button>
             </div>
 
@@ -78,13 +75,26 @@
     <!-- FOOTER -->
     <footer class="bg-slate-900 border-t border-slate-800 px-8 py-3 text-center text-xs text-slate-500 shrink-0 flex items-center justify-between">
         <p>&copy; {{ date('Y') }} Indibiz Service Desk &bull; Sistem Antrean Terpadu</p>
-        <p class="text-slate-400 font-medium">ResponsiveVoice Indonesian Engine Active</p>
+        <p class="text-slate-400 font-medium">Native Browser Speech Synthesis Active</p>
     </footer>
 
-    <!-- JAVASCRIPT LOGIC RESPONSIVEVOICE TTS -->
+    <!-- JAVASCRIPT LOGIC NATIVE SPEECH SYNTHESIS TTS -->
     <script>
         var lastCallUniqueKey = '';
         var audioCtx = null;
+        var availableVoices = [];
+
+        // Preload daftar voice dari browser
+        function loadVoices() {
+            if ('speechSynthesis' in window) {
+                availableVoices = window.speechSynthesis.getVoices();
+            }
+        }
+
+        if ('speechSynthesis' in window) {
+            loadVoices();
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+        }
 
         // Jam Digital Realtime
         setInterval(function() {
@@ -126,37 +136,47 @@
         }
 
         // 2. SUARA PANGGILAN ANTREAN (NATIVE BROWSER SPEECH SYNTHESIS)
-function speakQueueCall(nomorAntrian, nomorMeja) {
-    playChime(function() {
-        var ejaan = nomorAntrian
-            .replace(/0/g, ' 0 ')
-            .replace(/1/g, ' 1 ')
-            .replace(/2/g, ' 2 ')
-            .replace(/3/g, ' 3 ')
-            .replace(/4/g, ' 4 ')
-            .replace(/5/g, ' 5 ')
-            .replace(/6/g, ' 6 ')
-            .replace(/7/g, ' 7 ')
-            .replace(/8/g, ' 8 ')
-            .replace(/9/g, ' 9 ')
-            .replace(/-/g, ' ');
+        function speakQueueCall(nomorAntrian, nomorMeja) {
+            playChime(function() {
+                var ejaan = nomorAntrian
+                    .replace(/0/g, ' 0 ')
+                    .replace(/1/g, ' 1 ')
+                    .replace(/2/g, ' 2 ')
+                    .replace(/3/g, ' 3 ')
+                    .replace(/4/g, ' 4 ')
+                    .replace(/5/g, ' 5 ')
+                    .replace(/6/g, ' 6 ')
+                    .replace(/7/g, ' 7 ')
+                    .replace(/8/g, ' 8 ')
+                    .replace(/9/g, ' 9 ')
+                    .replace(/-/g, ' ');
 
-        var teksNarasi = 'Tiket ' + ejaan + ', ke meja ' + nomorMeja;
-        
-        // Menggunakan Web Speech API Bawaan OS / Browser
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel(); // Hentikan suara sebelumnya jika ada
-            var utterance = new SpeechSynthesisUtterance(teksNarasi);
-            utterance.lang = 'id-ID-Gadis'; // Set Bahasa Indonesia
-            utterance.rate = 0.9;     // Kecepatan bicara
-            utterance.pitch = 1;
-            
-            window.speechSynthesis.speak(utterance);
-        } else {
-            console.error("Browser ini tidak mendukung Web Speech API.");
+                var teksNarasi = 'Tiket ' + ejaan + ', ke meja ' + nomorMeja;
+                
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel(); // Reset audio queue
+                    var utterance = new SpeechSynthesisUtterance(teksNarasi);
+                    utterance.lang = 'id-ID'; 
+                    utterance.rate = 0.9;     
+                    utterance.pitch = 1;
+
+                    // Cari voice Bahasa Indonesia
+                    if (availableVoices.length === 0) loadVoices();
+                    
+                    var indonesianVoice = availableVoices.find(function(v) {
+                        return v.lang === 'id-ID' || v.lang === 'id_ID' || v.name.includes('Indonesian') || v.name.includes('Gadis') || v.name.includes('Ardi');
+                    });
+
+                    if (indonesianVoice) {
+                        utterance.voice = indonesianVoice;
+                    }
+
+                    window.speechSynthesis.speak(utterance);
+                } else {
+                    console.error("Browser ini tidak mendukung Web Speech API.");
+                }
+            });
         }
-    });
-}
 
         function playTestCall() {
             speakQueueCall('A-001', '1');
