@@ -43,14 +43,13 @@ class CsController extends Controller
 
     private function resetUserState($user)
     {
-        // Kosongkan nomor meja tanpa meriset status is_active agar tidak bisa login ganda saat di-back
         $user->nomor_meja = null;
         $user->save();
         session()->forget('meja_terpilih');
     }
 
     /**
-     * Endpoint Heartbeat Ping (Diakses JS setiap 30 detik untuk memperbarui last_seen_at)
+     * Endpoint Heartbeat Ping
      */
     public function pingHeartbeat()
     {
@@ -148,7 +147,7 @@ class CsController extends Controller
         return view('cs.index', compact('antreanMenunggu', 'antreanAktif', 'isSpectator', 'nomorMejaTerpilih'));
     }
 
-    // PEMBANGGILAN AMAN ANTI-CRASH (DENGAN lockForUpdate & skipLocked)
+    // PEMBANGGILAN ANTREAN UTAMA
     public function panggilSelanjutnya()
     {
         if (!$this->checkValidMeja()) {
@@ -157,18 +156,23 @@ class CsController extends Controller
 
         $user = Auth::user();
 
-        $cekAktif = TiketAntrian::where('status', 'Diproses')->where('user_id', $user->id)->first();
+        // Cek jika CS masih punya tiket aktif yang belum diselesaikan
+        $cekAktif = TiketAntrian::where('status', 'Diproses')
+            ->where('user_id', $user->id)
+            ->whereDate('waktu_dibuat', Carbon::today('Asia/Jakarta'))
+            ->first();
+
         if ($cekAktif) {
-            return back()->with('error', 'Selesaikan tiket aktif terlebih dahulu!');
+            return back()->with('error', 'Selesaikan tiket ' . $cekAktif->nomor_antrian . ' terlebih dahulu!');
         }
 
         DB::beginTransaction();
         try {
+            // Ambil antrean teratas hari ini dengan lockForUpdate
             $tiket = TiketAntrian::whereDate('waktu_dibuat', Carbon::today('Asia/Jakarta'))
                         ->where('status', 'Menunggu')
                         ->orderBy('waktu_dibuat', 'asc')
                         ->lockForUpdate()
-                        ->skipLocked()
                         ->first();
 
             if ($tiket) {
@@ -179,18 +183,18 @@ class CsController extends Controller
                 $tiket->save();
 
                 DB::commit();
-                return back();
+                return back()->with('success', "Memanggil antrean {$tiket->nomor_antrian}");
             }
 
             DB::commit();
             return back()->with('error', 'Tidak ada antrean menunggu saat ini.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Gagal memanggil antrean. Silakan coba lagi.');
+            return back()->with('error', 'Gagal memanggil antrean: ' . $e->getMessage());
         }
     }
 
-    // PEMBANGGILAN SPESIFIK ANTI-CRASH
+    // PEMBANGGILAN SPESIFIK
     public function panggilSpesifik(int $id)
     {
         if (!$this->checkValidMeja()) {
@@ -199,14 +203,18 @@ class CsController extends Controller
 
         $user = Auth::user();
 
-        $cekAktif = TiketAntrian::where('status', 'Diproses')->where('user_id', $user->id)->first();
+        $cekAktif = TiketAntrian::where('status', 'Diproses')
+            ->where('user_id', $user->id)
+            ->whereDate('waktu_dibuat', Carbon::today('Asia/Jakarta'))
+            ->first();
+
         if ($cekAktif) {
             return back()->with('error', 'Selesaikan tiket aktif terlebih dahulu!');
         }
 
         DB::beginTransaction();
         try {
-            $tiket = TiketAntrian::where('id', $id)->lockForUpdate()->skipLocked()->first();
+            $tiket = TiketAntrian::where('id', $id)->lockForUpdate()->first();
             
             if ($tiket && $tiket->status == 'Menunggu') {
                 $tiket->status = 'Diproses';
@@ -216,14 +224,14 @@ class CsController extends Controller
                 $tiket->save();
 
                 DB::commit();
-                return back();
+                return back()->with('success', "Memanggil antrean {$tiket->nomor_antrian}");
             }
 
             DB::commit();
-            return back()->with('error', 'Tiket sedang diproses oleh CS lain.');
+            return back()->with('error', 'Tiket sudah tidak tersedia atau sedang diproses oleh CS lain.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Gagal memanggil tiket.');
+            return back()->with('error', 'Gagal memanggil tiket spesifik.');
         }
     }
 
