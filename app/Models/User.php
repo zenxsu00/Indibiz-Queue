@@ -22,6 +22,7 @@ class User extends Authenticatable
         'is_active',
         'status_kerja',
         'keterangan_status',
+        'last_seen_at', // Didaftarkan agar Heartbeat Ping tersimpan
     ];
 
     protected $hidden = [
@@ -32,8 +33,9 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'password' => 'hashed',
-            'is_active' => 'boolean',
+            'password'     => 'hashed',
+            'is_active'    => 'boolean',
+            'last_seen_at' => 'datetime',
         ];
     }
 }

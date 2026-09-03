@@ -48,6 +48,7 @@
     <main id="area-tiket-realtime" 
           data-status="{{ $tiket->status }}" 
           data-dipanggil="{{ $tiket->jumlah_dipanggil ?? 0 }}" 
+          data-meja="{{ $tiket->cs->nomor_meja ?? 1 }}"
           class="max-w-xl w-full mx-auto px-4 py-6 sm:py-8 flex-1">
 
       @if($tiket->status == 'Menunggu')
@@ -302,7 +303,7 @@
         document.addEventListener('touchstart', unlockAudio, { once: true });
         document.addEventListener('click', unlockAudio, { once: true });
 
-        // 2. FUNGSI NOTIFIKASI BANNER POP-UP HARI/HP
+        // 2. FUNGSI NOTIFIKASI BANNER POP-UP HP
         function showPopUpNotification(nomorAntrian, nomorMeja) {
             if ("Notification" in window && Notification.permission === "granted") {
                 try {
@@ -389,12 +390,13 @@
                 lastCallCount = parseInt(el.getAttribute('data-dipanggil') || '0');
 
                 if (lastCallStatus === 'Diproses') {
-                    triggerNotifikasiPanggilan('{{ $tiket->nomor_antrian }}', '{{ $tiket->cs->nomor_meja ?? "1" }}');
+                    var mejanum = el.getAttribute('data-meja') || '1';
+                    triggerNotifikasiPanggilan('{{ $tiket->nomor_antrian }}', mejanum);
                 }
             }
         });
 
-        // REALTIME POLLING UPDATE
+        // REALTIME POLLING UPDATE DINAMIS
         setInterval(function() {
             var elemenLama = document.getElementById('area-tiket-realtime');
             if (!elemenLama) return;
@@ -414,10 +416,12 @@
                     if (elemenBaru && elemenLama) {
                         var statusBaru = elemenBaru.getAttribute('data-status');
                         var countBaru = parseInt(elemenBaru.getAttribute('data-dipanggil') || '0');
+                        var nomorMejaBaru = elemenBaru.getAttribute('data-meja') || '1';
 
                         elemenLama.innerHTML = elemenBaru.innerHTML;
                         elemenLama.setAttribute('data-status', statusBaru);
                         elemenLama.setAttribute('data-dipanggil', countBaru);
+                        elemenLama.setAttribute('data-meja', nomorMejaBaru);
 
                         var isFirstCall = (lastCallStatus !== 'Diproses' && statusBaru === 'Diproses');
                         var isRecall = (statusBaru === 'Diproses' && countBaru !== lastCallCount);
@@ -425,7 +429,7 @@
                         if (isFirstCall || isRecall) {
                             lastCallStatus = statusBaru;
                             lastCallCount = countBaru;
-                            triggerNotifikasiPanggilan('{{ $tiket->nomor_antrian }}', '{{ $tiket->cs->nomor_meja ?? "1" }}');
+                            triggerNotifikasiPanggilan('{{ $tiket->nomor_antrian }}', nomorMejaBaru);
                         }
                     }
                 })

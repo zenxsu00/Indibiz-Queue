@@ -48,9 +48,6 @@ class CsController extends Controller
         session()->forget('meja_terpilih');
     }
 
-    /**
-     * Endpoint Heartbeat Ping
-     */
     public function pingHeartbeat()
     {
         /** @var User $user */
@@ -135,7 +132,7 @@ class CsController extends Controller
         $antreanMenunggu = TiketAntrian::with(['pelanggan', 'layanan'])
                             ->whereDate('waktu_dibuat', $hariIni)
                             ->where('status', 'Menunggu')
-                            ->orderBy('waktu_dibuat', 'asc')
+                            ->orderBy('id', 'asc')
                             ->get();
 
         $antreanAktif = TiketAntrian::with(['pelanggan', 'layanan'])
@@ -147,16 +144,15 @@ class CsController extends Controller
         return view('cs.index', compact('antreanMenunggu', 'antreanAktif', 'isSpectator', 'nomorMejaTerpilih'));
     }
 
-    // PEMBANGGILAN ANTREAN UTAMA
     public function panggilSelanjutnya()
     {
         if (!$this->checkValidMeja()) {
-            return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus oleh Admin.');
+            return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda tidak valid.');
         }
 
         $user = Auth::user();
 
-        // Cek jika CS masih punya tiket aktif yang belum diselesaikan
+        // Cek jika CS masih punya tiket aktif
         $cekAktif = TiketAntrian::where('status', 'Diproses')
             ->where('user_id', $user->id)
             ->whereDate('waktu_dibuat', Carbon::today('Asia/Jakarta'))
@@ -166,39 +162,35 @@ class CsController extends Controller
             return back()->with('error', 'Selesaikan tiket ' . $cekAktif->nomor_antrian . ' terlebih dahulu!');
         }
 
-        DB::beginTransaction();
-        try {
-            // Ambil antrean teratas hari ini dengan lockForUpdate
-            $tiket = TiketAntrian::whereDate('waktu_dibuat', Carbon::today('Asia/Jakarta'))
-                        ->where('status', 'Menunggu')
-                        ->orderBy('waktu_dibuat', 'asc')
-                        ->lockForUpdate()
-                        ->first();
+        // Ambil tiket antrean teratas hari ini
+        $tiket = TiketAntrian::whereDate('waktu_dibuat', Carbon::today('Asia/Jakarta'))
+                    ->where('status', 'Menunggu')
+                    ->orderBy('id', 'asc')
+                    ->first();
 
-            if ($tiket) {
-                $tiket->status = 'Diproses';
-                $tiket->user_id = $user->id;
-                $tiket->waktu_diproses = Carbon::now('Asia/Jakarta');
-                $tiket->jumlah_dipanggil = ($tiket->jumlah_dipanggil ?? 0) + 1;
-                $tiket->save();
+        if ($tiket) {
+            // Atomic Update untuk mencegah bentrokan pemanggilan tanpa menimbulkan kuncian deadlock
+            $updated = TiketAntrian::where('id', $tiket->id)
+                ->where('status', 'Menunggu')
+                ->update([
+                    'status'           => 'Diproses',
+                    'user_id'          => $user->id,
+                    'waktu_diproses'   => Carbon::now('Asia/Jakarta'),
+                    'jumlah_dipanggil' => DB::raw('jumlah_dipanggil + 1')
+                ]);
 
-                DB::commit();
+            if ($updated) {
                 return back()->with('success', "Memanggil antrean {$tiket->nomor_antrian}");
             }
-
-            DB::commit();
-            return back()->with('error', 'Tidak ada antrean menunggu saat ini.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Gagal memanggil antrean: ' . $e->getMessage());
         }
+
+        return back()->with('error', 'Tidak ada antrean menunggu saat ini.');
     }
 
-    // PEMBANGGILAN SPESIFIK
     public function panggilSpesifik(int $id)
     {
         if (!$this->checkValidMeja()) {
-            return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus oleh Admin.');
+            return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda tidak valid.');
         }
 
         $user = Auth::user();
@@ -212,33 +204,26 @@ class CsController extends Controller
             return back()->with('error', 'Selesaikan tiket aktif terlebih dahulu!');
         }
 
-        DB::beginTransaction();
-        try {
-            $tiket = TiketAntrian::where('id', $id)->lockForUpdate()->first();
-            
-            if ($tiket && $tiket->status == 'Menunggu') {
-                $tiket->status = 'Diproses';
-                $tiket->user_id = $user->id;
-                $tiket->waktu_diproses = Carbon::now('Asia/Jakarta');
-                $tiket->jumlah_dipanggil = ($tiket->jumlah_dipanggil ?? 0) + 1;
-                $tiket->save();
+        $updated = TiketAntrian::where('id', $id)
+            ->where('status', 'Menunggu')
+            ->update([
+                'status'           => 'Diproses',
+                'user_id'          => $user->id,
+                'waktu_diproses'   => Carbon::now('Asia/Jakarta'),
+                'jumlah_dipanggil' => DB::raw('jumlah_dipanggil + 1')
+            ]);
 
-                DB::commit();
-                return back()->with('success', "Memanggil antrean {$tiket->nomor_antrian}");
-            }
-
-            DB::commit();
-            return back()->with('error', 'Tiket sudah tidak tersedia atau sedang diproses oleh CS lain.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Gagal memanggil tiket spesifik.');
+        if ($updated) {
+            return back()->with('success', "Memanggil antrean spesifik.");
         }
+
+        return back()->with('error', 'Tiket sudah tidak tersedia atau sedang diproses oleh CS lain.');
     }
 
     public function batalAtauKembalikan(int $id)
     {
         if (!$this->checkValidMeja()) {
-            return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus oleh Admin.');
+            return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda tidak valid.');
         }
 
         $user = Auth::user();
@@ -248,15 +233,15 @@ class CsController extends Controller
 
         if ($tiket->jumlah_dipanggil >= 2) {
             $tiket->update([
-                'status' => 'Batal',
+                'status'  => 'Batal',
                 'user_id' => $user->id
             ]);
             return redirect()->route('cs.index')->with('success', "Tiket {$tiket->nomor_antrian} dibatalkan karena tidak hadir 2x.");
         }
 
         $tiket->update([
-            'status' => 'Menunggu',
-            'user_id' => null,
+            'status'       => 'Menunggu',
+            'user_id'      => null,
             'waktu_dibuat' => Carbon::now('Asia/Jakarta')
         ]);
 
@@ -266,7 +251,7 @@ class CsController extends Controller
     public function selesaikanTiket(Request $request, int $id)
     {
         if (!$this->checkValidMeja()) {
-            return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus oleh Admin.');
+            return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda tidak valid.');
         }
 
         $user = Auth::user();
