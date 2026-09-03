@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class CsController extends Controller
 {
@@ -47,6 +48,18 @@ class CsController extends Controller
         $user->nomor_meja = null;
         $user->save();
         session()->forget('meja_terpilih');
+    }
+
+    private function safeBroadcast($tiket)
+    {
+        try {
+            if ($tiket) {
+                broadcast(new TiketDipanggil($tiket))->toOthers();
+            }
+        } catch (Throwable $e) {
+            // Mengabaikan error jika broadcast server / websocket sedang offline
+            logger()->error("Broadcast Error: " . $e->getMessage());
+        }
     }
 
     public function pingHeartbeat()
@@ -181,9 +194,7 @@ class CsController extends Controller
 
             if ($updated) {
                 $tiketFresh = TiketAntrian::find($tiket->id);
-                if ($tiketFresh) {
-                    event(new TiketDipanggil($tiketFresh));
-                }
+                $this->safeBroadcast($tiketFresh);
 
                 return back()->with('success', "Memanggil antrean {$tiket->nomor_antrian}");
             }
@@ -220,9 +231,7 @@ class CsController extends Controller
 
         if ($updated) {
             $tiketFresh = TiketAntrian::find($id);
-            if ($tiketFresh) {
-                event(new TiketDipanggil($tiketFresh));
-            }
+            $this->safeBroadcast($tiketFresh);
 
             return back()->with('success', "Memanggil antrean spesifik.");
         }
@@ -254,7 +263,7 @@ class CsController extends Controller
             ]);
         }
 
-        event(new TiketDipanggil($tiket));
+        $this->safeBroadcast($tiket);
 
         return redirect()->route('cs.index')->with('success', "Status tiket {$tiket->nomor_antrian} berhasil diperbarui.");
     }
@@ -286,7 +295,7 @@ class CsController extends Controller
             'waktu_selesai'      => Carbon::now('Asia/Jakarta'),
         ]);
 
-        event(new TiketDipanggil($tiket));
+        $this->safeBroadcast($tiket);
 
         return redirect()->route('cs.index')->with('success', "Tiket {$tiket->nomor_antrian} berhasil diselesaikan.");
     }

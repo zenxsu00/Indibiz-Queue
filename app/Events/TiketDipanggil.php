@@ -6,10 +6,12 @@ use App\Models\TiketAntrian;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\SerializesModels;
 
 class TiketDipanggil implements ShouldBroadcastNow
 {
-    use InteractsWithSockets;
+    use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public int $tiketId;
     public string $status;
@@ -20,12 +22,14 @@ class TiketDipanggil implements ShouldBroadcastNow
         $this->status  = $tiket->status;
     }
 
-    public function broadcastOn()
+    public function broadcastOn(): array
     {
-        return new Channel('antrean-channel');
+        return [
+            new Channel('antrean-channel'),
+        ];
     }
 
-    public function broadcastAs()
+    public function broadcastAs(): string
     {
         return 'tiket.updated';
     }
