@@ -147,7 +147,7 @@ function speakQueueCall(nomorAntrian, nomorMeja) {
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel(); // Hentikan suara sebelumnya jika ada
             var utterance = new SpeechSynthesisUtterance(teksNarasi);
-            utterance.lang = 'id-ID'; // Set Bahasa Indonesia
+            utterance.lang = 'id-ID-Gadis'; // Set Bahasa Indonesia
             utterance.rate = 0.9;     // Kecepatan bicara
             utterance.pitch = 1;
             
