@@ -203,7 +203,7 @@
 
             // Fallback jika format tidak menggunakan tanda strip (-)
             return nomor
-                .replace(/0/g, ' nol ')
+                .replace(/0/g, ' kosong ')
                 .replace(/1/g, ' satu ')
                 .replace(/2/g, ' dua ')
                 .replace(/3/g, ' tiga ')
