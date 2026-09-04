@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\TiketAntrian;
+use App\Models\MasterMeja;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Http;
@@ -32,15 +34,39 @@ class DisplayController extends Controller
             ->take(5)
             ->get();
 
+        // Ambil seluruh master meja yang tersedia untuk render dinamis
+        $masterMeja = MasterMeja::where('is_available', true)->orderBy('nomor_meja', 'asc')->get();
+
+        // Ambil CS yang sedang aktif/online menduduki meja
+        $activeUsers = User::where('is_active', true)
+            ->whereNotNull('nomor_meja')
+            ->get()
+            ->keyBy('nomor_meja');
+
+        $mejaList = $masterMeja->map(function ($meja) use ($activeUsers, $sedangDipanggil) {
+            $userCS = $activeUsers->get($meja->nomor_meja);
+            $tiketAktif = $sedangDipanggil->first(function ($tiket) use ($meja) {
+                return $tiket->cs && $tiket->cs->nomor_meja == $meja->nomor_meja;
+            });
+
+            return [
+                'nomor_meja'   => $meja->nomor_meja,
+                'nama_meja'    => $meja->nama_meja,
+                'is_occupied'  => !is_null($userCS),
+                'nama_cs'      => $userCS ? $userCS->nama_lengkap : null,
+                'tiket_aktif'  => $tiketAktif ? $tiketAktif->nomor_antrian : null,
+                'nama_layanan' => $tiketAktif && $tiketAktif->layanan ? $tiketAktif->layanan->nama_layanan : null,
+                'is_calling'   => !is_null($tiketAktif),
+            ];
+        });
+
         return response()->json([
             'sedangDipanggil' => $sedangDipanggil,
             'antreanMenunggu' => $antreanMenunggu,
+            'mejaList'        => $mejaList,
         ]);
     }
 
-    /**
-     * Endpoint Proxy TTS ElevenLabs AI
-     */
     public function ttsElevenLabs(Request $request)
     {
         $request->validate([

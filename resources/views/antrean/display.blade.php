@@ -60,17 +60,17 @@
         <!-- KOLOM KIRI (SPAN 8/9): DISPLAY PANGGILAN + STATUS MEJA -->
         <div class="col-span-8 lg:col-span-9 flex flex-col gap-2.5 min-h-0">
             
-            <!-- BOX HERO: SEDANG DIPANGGIL (LAYOUT COMPACT HORIZONTAL) -->
-            <div class="flex-1 bg-gradient-to-b from-[#11182B] to-[#0A0F1D] border border-red-500/30 rounded-2xl p-3.5 flex flex-col justify-between shadow-2xl relative overflow-hidden">
+            <!-- BOX HERO: SEDANG DIPANGGIL -->
+            <div id="box-hero-panggilan" class="flex-1 bg-gradient-to-b from-[#11182B] to-[#0A0F1D] border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between shadow-2xl relative overflow-hidden transition-all duration-500">
                 
                 <!-- HEADER SEDANG DIPANGGIL -->
                 <div class="flex items-center justify-between border-b border-white/5 pb-2 shrink-0">
                     <div class="flex items-center gap-2">
-                        <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
-                        <span class="text-xs font-black tracking-widest text-red-500 uppercase">SEDANG DIPANGGIL</span>
-                        <span class="text-xs font-bold text-slate-400 ml-2">PANGGILAN SUARA AKTIF</span>
+                        <span id="hero-status-dot" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
+                        <span id="hero-status-title" class="text-xs font-black tracking-widest text-slate-400 uppercase">STANDBY</span>
+                        <span id="hero-status-sub" class="text-xs font-bold text-slate-500 ml-2">Menunggu Panggilan</span>
                     </div>
-                    <div class="flex items-center gap-1 text-[11px] text-red-400 font-mono">
+                    <div class="flex items-center gap-1 text-[11px] text-slate-500 font-mono">
                         <span class="material-symbols-outlined text-sm">graphic_eq</span>
                     </div>
                 </div>
@@ -81,13 +81,13 @@
                     <!-- KIRI: NOMOR TIKET + BADGE (SPAN 7) -->
                     <div class="col-span-7 text-center border-r border-white/5 pr-3">
                         <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 block mb-0.5">NOMOR TIKET ANTREAN</span>
-                        <h1 id="hero-nomor-antrian" class="text-6xl lg:text-7xl font-black text-white tracking-tight drop-shadow-[0_0_30px_rgba(238,46,36,0.35)] leading-none my-1">
+                        <h1 id="hero-nomor-antrian" class="text-6xl lg:text-7xl font-black text-slate-500 tracking-tight leading-none my-1">
                             ---
                         </h1>
                         
-                        <div class="inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-3 py-1 rounded-lg font-bold text-[11px] mt-1">
-                            <span class="material-symbols-outlined text-xs">check_circle</span>
-                            <span>SILAKAN MENUJU MEJA PELAYANAN SEKARANG</span>
+                        <div id="hero-badge-direksi" class="inline-flex items-center gap-1.5 bg-slate-800/50 border border-slate-700/50 text-slate-400 px-3 py-1 rounded-lg font-bold text-[11px] mt-1">
+                            <span class="material-symbols-outlined text-xs">info</span>
+                            <span id="hero-badge-text">LOKET SIAP MELAYANI</span>
                         </div>
                     </div>
 
@@ -99,25 +99,25 @@
                         </div>
                         <div class="bg-[#080D1A]/90 p-2.5 rounded-xl border border-slate-800/80">
                             <span class="text-[9px] uppercase font-bold text-slate-400 block">KATEGORI LAYANAN</span>
-                            <p id="hero-nama-layanan" class="text-xs font-bold text-red-400 truncate mt-0.5 leading-tight">Belum Ada Panggilan</p>
+                            <p id="hero-nama-layanan" class="text-xs font-bold text-slate-400 truncate mt-0.5 leading-tight">Belum Ada Panggilan</p>
                         </div>
                     </div>
 
                 </div>
             </div>
 
-            <!-- STATUS MEJA PELAYANAN (BARIS BWAH) -->
+            <!-- STATUS MEJA PELAYANAN (BARIS BWAH - DINAMISsesuai Jumlah Meja) -->
             <div class="bg-[#0D1322] border border-slate-800/80 rounded-2xl p-2.5 flex flex-col gap-1.5 shrink-0">
                 <div class="flex items-center justify-between text-[10px] font-bold border-b border-slate-800 pb-1">
                     <span class="text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                         STATUS MEJA PELAYANAN CUSTOMER SERVICE
                     </span>
-                    <span class="text-slate-500 text-[9px]">Total 4 Meja Aktif &bull; Update Realtime</span>
+                    <span id="label-total-meja" class="text-slate-500 text-[9px]">Update Realtime</span>
                 </div>
 
-                <div id="grid-meja-pelayanan" class="grid grid-cols-4 gap-2">
-                    <!-- Cards CS di-render via JS -->
+                <div id="grid-meja-pelayanan" class="grid gap-2">
+                    <!-- Cards CS di-render secara dinamis via JS -->
                 </div>
             </div>
 
@@ -156,7 +156,7 @@
             <span class="material-symbols-outlined text-xs">info</span> INFORMASI
         </span>
         <marquee behavior="scroll" direction="left" class="font-semibold text-slate-300 text-xs">
-            Selamat Datang di Telkom Indibiz Service Desk &bull; Ciptakan Peluang, Wujudkan Harapan Bersama Ekosistem Solusi Digital Dunia Usaha &bull; Pastikan Anda Sudah Memiliki Tiket Antrean untuk Menuju Loket Pelayanan.
+            Selamat Datang di Telkom Indibiz Service Desk &bull; Ciptakan Peluang, Wujudkan Harapan Bersama Ekosistem Solusi Digital Dunia Usaha &bull; Harap Ambil Tiket untuk Menuju Loket Pelayanan.
         </marquee>
         <span class="text-[9px] font-mono text-emerald-400 shrink-0 px-2 border-l border-slate-800 flex items-center gap-1">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Server Antrean: Online
@@ -168,6 +168,7 @@
         var lastCallUniqueKey = '';
         var audioCtx = null;
         var availableVoices = [];
+        var heroHideTimer = null;
 
         setInterval(function() {
             var now = new Date();
@@ -281,10 +282,69 @@
             });
         }
 
+        function triggerHeroCall(activeCall, noMeja, namaLayanan) {
+            var box = document.getElementById('box-hero-panggilan');
+            var statusDot = document.getElementById('hero-status-dot');
+            var statusTitle = document.getElementById('hero-status-title');
+            var statusSub = document.getElementById('hero-status-sub');
+            var numElem = document.getElementById('hero-nomor-antrian');
+            var badgeText = document.getElementById('hero-badge-text');
+            var badgeBox = document.getElementById('hero-badge-direksi');
+
+            // Set UI Aktif Panggilan
+            box.className = "flex-1 bg-gradient-to-b from-[#11182B] to-[#0A0F1D] border-2 border-red-500/80 rounded-2xl p-3.5 flex flex-col justify-between shadow-[0_0_30px_rgba(238,46,36,0.25)] relative overflow-hidden transition-all duration-500";
+            statusDot.className = "w-2.5 h-2.5 rounded-full bg-red-500 animate-ping";
+            statusTitle.className = "text-xs font-black tracking-widest text-red-500 uppercase";
+            statusTitle.innerText = "SEDANG DIPANGGIL";
+            statusSub.className = "text-xs font-bold text-slate-300 ml-2";
+            statusSub.innerText = "PANGGILAN SUARA AKTIF";
+
+            numElem.className = "text-6xl lg:text-7xl font-black text-white tracking-tight drop-shadow-[0_0_35px_rgba(238,46,36,0.4)] leading-none my-1";
+            numElem.innerText = activeCall.nomor_antrian;
+
+            badgeBox.className = "inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-3 py-1 rounded-lg font-bold text-[11px] mt-1";
+            badgeText.innerText = "SILAKAN MENUJU MEJA PELAYANAN SEKARANG";
+
+            document.getElementById('hero-nama-meja').innerText = 'MEJA CS ' + String(noMeja).padStart(2, '0');
+            document.getElementById('hero-nama-layanan').innerText = namaLayanan;
+
+            // Bersihkan timer lama jika ada
+            if (heroHideTimer) clearTimeout(heroHideTimer);
+
+            // TEPAT 3 DETIK: Hilangkan efek panggilan besar dan kembalikan ke mode Standby
+            heroHideTimer = setTimeout(function() {
+                resetHeroToStandby();
+            }, 3000);
+        }
+
+        function resetHeroToStandby() {
+            var box = document.getElementById('box-hero-panggilan');
+            var statusDot = document.getElementById('hero-status-dot');
+            var statusTitle = document.getElementById('hero-status-title');
+            var statusSub = document.getElementById('hero-status-sub');
+            var numElem = document.getElementById('hero-nomor-antrian');
+            var badgeText = document.getElementById('hero-badge-text');
+            var badgeBox = document.getElementById('hero-badge-direksi');
+
+            box.className = "flex-1 bg-gradient-to-b from-[#11182B] to-[#0A0F1D] border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between shadow-2xl relative overflow-hidden transition-all duration-500";
+            statusDot.className = "w-2.5 h-2.5 rounded-full bg-slate-600";
+            statusTitle.className = "text-xs font-black tracking-widest text-slate-400 uppercase";
+            statusTitle.innerText = "STANDBY";
+            statusSub.className = "text-xs font-bold text-slate-500 ml-2";
+            statusSub.innerText = "Menunggu Panggilan";
+
+            numElem.className = "text-6xl lg:text-7xl font-black text-slate-600 tracking-tight leading-none my-1";
+            numElem.innerText = "---";
+
+            badgeBox.className = "inline-flex items-center gap-1.5 bg-slate-800/50 border border-slate-700/50 text-slate-400 px-3 py-1 rounded-lg font-bold text-[11px] mt-1";
+            badgeText.innerText = "LOKET SIAP MELAYANI";
+
+            document.getElementById('hero-nama-meja').innerText = "MEJA CS --";
+            document.getElementById('hero-nama-layanan').innerText = "Belum Ada Panggilan";
+        }
+
         function playTestCall() {
-            var num = document.getElementById('hero-nomor-antrian').innerText;
-            var meja = document.getElementById('hero-nama-meja').innerText.replace('MEJA CS ', '');
-            speakQueueCall(num !== '---' ? num : 'A-024', meja !== '--' ? meja : '2');
+            speakQueueCall('A-004', '1');
         }
 
         function fetchDisplayData() {
@@ -292,6 +352,7 @@
                 .then(response => response.json())
                 .then(data => {
                     renderSedangDipanggil(data.sedangDipanggil);
+                    renderMejaGridDinamis(data.mejaList);
                     renderAntreanMenunggu(data.antreanMenunggu);
                 })
                 .catch(error => console.error('Gagal mengambil data display:', error));
@@ -299,22 +360,13 @@
 
         function renderSedangDipanggil(listDipanggil) {
             if (!listDipanggil || listDipanggil.length === 0) {
-                document.getElementById('hero-nomor-antrian').innerText = '---';
-                document.getElementById('hero-nama-meja').innerText = 'MEJA CS --';
-                document.getElementById('hero-nama-layanan').innerText = 'Belum Ada Panggilan';
-                renderEmptyMejaGrid();
                 return;
             }
 
             var activeCall = listDipanggil[0];
-
             if (activeCall) {
                 var noMeja = activeCall.cs ? (activeCall.cs.nomor_meja || '1') : '1';
                 var namaLayanan = activeCall.layanan ? activeCall.layanan.nama_layanan : 'Layanan CS';
-
-                document.getElementById('hero-nomor-antrian').innerText = activeCall.nomor_antrian;
-                document.getElementById('hero-nama-meja').innerText = 'MEJA CS ' + String(noMeja).padStart(2, '0');
-                document.getElementById('hero-nama-layanan').innerText = namaLayanan;
 
                 var countDipanggil = activeCall.jumlah_dipanggil || 0;
                 var csId = activeCall.user_id || (activeCall.cs ? activeCall.cs.id : '0');
@@ -322,73 +374,90 @@
 
                 if (currentKey !== lastCallUniqueKey) {
                     lastCallUniqueKey = currentKey;
+                    triggerHeroCall(activeCall, noMeja, namaLayanan);
                     speakQueueCall(activeCall.nomor_antrian, noMeja);
                 }
             }
+        }
 
-            var gridHtml = '';
-            for (var i = 1; i <= 4; i++) {
-                var item = listDipanggil.find(x => x.cs && parseInt(x.cs.nomor_meja) === i);
-                if (item) {
-                    var namaCs = item.cs ? item.cs.nama_lengkap : 'Staff CS';
-                    gridHtml += `
-                        <div class="bg-slate-900/90 border border-red-500/50 rounded-xl p-2 flex flex-col justify-between shadow-md">
+        function renderMejaGridDinamis(mejaList) {
+            var gridElem = document.getElementById('grid-meja-pelayanan');
+            if (!mejaList || mejaList.length === 0) {
+                gridElem.innerHTML = '<div class="col-span-full text-center text-xs text-slate-500 py-2">Belum ada meja dikonfigurasi.</div>';
+                return;
+            }
+
+            // Atur jumlah kolom CSS Grid dinamis berdasarkan jumlah meja yang ada (maksimal 4 kolom)
+            var count = mejaList.length;
+            var colsClass = "grid-cols-" + Math.min(count, 4);
+            gridElem.className = "grid " + colsClass + " gap-2";
+
+            document.getElementById('label-total-meja').innerText = "Total " + count + " Meja Terdaftar • Update Realtime";
+
+            var html = '';
+            mejaList.forEach(function(meja) {
+                var noMejaPad = String(meja.nomor_meja).padStart(2, '0');
+
+                // SKENARIO 1: MEJA AKTIF DITEMPATI CS BERSANGKUTAN
+                if (meja.is_occupied) {
+                    if (meja.is_calling) {
+                        // Sedang Melayani/Memanggil
+                        html += `
+                            <div class="bg-slate-900/90 border border-red-500/60 rounded-xl p-2 flex flex-col justify-between shadow-[0_0_15px_rgba(238,46,36,0.15)] transition-all">
+                                <div class="flex items-center justify-between text-[9px]">
+                                    <span class="font-black text-white uppercase">${meja.nama_meja}</span>
+                                    <span class="bg-red-500/20 text-red-400 border border-red-500/30 font-black px-1.5 py-0.5 rounded text-[8px] uppercase animate-pulse">DIPANGGIL</span>
+                                </div>
+                                <div class="my-0.5">
+                                    <span class="text-xl font-black text-white font-mono tracking-tight">${meja.tiket_aktif}</span>
+                                    <p class="text-[8px] text-slate-300 font-medium truncate">${meja.nama_layanan || ''}</p>
+                                </div>
+                                <div class="text-[8px] text-slate-400 truncate border-t border-slate-800 pt-0.5 flex justify-between">
+                                    <span>Petugas: <strong class="text-white">${meja.nama_cs}</strong></span>
+                                    <span class="text-red-400 font-bold">LIVE</span>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        // CS Online Standby Siap Melayani
+                        html += `
+                            <div class="bg-slate-900/80 border border-emerald-500/40 rounded-xl p-2 flex flex-col justify-between shadow-sm transition-all">
+                                <div class="flex items-center justify-between text-[9px]">
+                                    <span class="font-black text-white uppercase">${meja.nama_meja}</span>
+                                    <span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold px-1.5 py-0.5 rounded text-[8px] uppercase">SIAP MELAYANI</span>
+                                </div>
+                                <div class="my-0.5">
+                                    <span class="text-xl font-black text-slate-500 font-mono tracking-tight">---</span>
+                                </div>
+                                <div class="text-[8px] text-slate-400 truncate border-t border-slate-800 pt-0.5 flex justify-between">
+                                    <span>Petugas: <strong class="text-emerald-300">${meja.nama_cs}</strong></span>
+                                    <span class="text-emerald-400 font-bold">ONLINE</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                } 
+                // SKENARIO 2: MEJA TIDAK AKTIF / DITINGGAL CS (Dibuat Samar Temu Pandang)
+                else {
+                    html += `
+                        <div class="bg-slate-900/20 border border-slate-800/40 rounded-xl p-2 flex flex-col justify-between opacity-40 grayscale transition-all">
                             <div class="flex items-center justify-between text-[9px]">
-                                <span class="font-black text-white uppercase">MEJA CS ${String(i).padStart(2, '0')}</span>
-                                <span class="bg-red-500/20 text-red-400 border border-red-500/30 font-black px-1.5 py-0.5 rounded text-[8px] uppercase">DIPANGGIL</span>
+                                <span class="font-bold text-slate-500 uppercase">${meja.nama_meja}</span>
+                                <span class="bg-slate-800/50 text-slate-500 font-bold px-1.5 py-0.5 rounded text-[8px] uppercase">OFFLINE</span>
                             </div>
                             <div class="my-0.5">
-                                <span class="text-xl font-black text-white font-mono tracking-tight">${item.nomor_antrian}</span>
-                                <p class="text-[8px] text-slate-400 truncate">${item.layanan ? item.layanan.nama_layanan : ''}</p>
+                                <span class="text-xl font-black text-slate-700 font-mono tracking-tight">---</span>
                             </div>
-                            <div class="text-[8px] text-slate-400 truncate border-t border-slate-800 pt-0.5 flex justify-between">
-                                <span>Petugas: <strong class="text-slate-200">${namaCs}</strong></span>
-                                <span class="text-red-400 font-bold">BARU SAJA</span>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    gridHtml += `
-                        <div class="bg-slate-900/40 border border-slate-800/80 rounded-xl p-2 flex flex-col justify-between opacity-70">
-                            <div class="flex items-center justify-between text-[9px]">
-                                <span class="font-bold text-slate-400 uppercase">MEJA CS ${String(i).padStart(2, '0')}</span>
-                                <span class="bg-slate-800 text-emerald-400 font-bold px-1.5 py-0.5 rounded text-[8px] uppercase">SIAP MELAYANI</span>
-                            </div>
-                            <div class="my-0.5">
-                                <span class="text-xl font-black text-slate-600 font-mono tracking-tight">---</span>
-                            </div>
-                            <div class="text-[8px] text-slate-500 truncate border-t border-slate-800/60 pt-0.5 flex justify-between">
-                                <span>Menunggu Panggilan</span>
+                            <div class="text-[8px] text-slate-600 truncate border-t border-slate-800/40 pt-0.5 flex justify-between">
+                                <span>Petugas: Unassigned</span>
                                 <span>STANDBY</span>
                             </div>
                         </div>
                     `;
                 }
-            }
+            });
 
-            document.getElementById('grid-meja-pelayanan').innerHTML = gridHtml;
-        }
-
-        function renderEmptyMejaGrid() {
-            var gridHtml = '';
-            for (var i = 1; i <= 4; i++) {
-                gridHtml += `
-                    <div class="bg-slate-900/40 border border-slate-800/80 rounded-xl p-2 flex flex-col justify-between opacity-70">
-                        <div class="flex items-center justify-between text-[9px]">
-                            <span class="font-bold text-slate-400 uppercase">MEJA CS ${String(i).padStart(2, '0')}</span>
-                            <span class="bg-slate-800 text-emerald-400 font-bold px-1.5 py-0.5 rounded text-[8px] uppercase">SIAP MELAYANI</span>
-                        </div>
-                        <div class="my-0.5">
-                            <span class="text-xl font-black text-slate-600 font-mono tracking-tight">---</span>
-                        </div>
-                        <div class="text-[8px] text-slate-500 truncate border-t border-slate-800/60 pt-0.5 flex justify-between">
-                            <span>Menunggu Panggilan</span>
-                            <span>STANDBY</span>
-                        </div>
-                    </div>
-                `;
-            }
-            document.getElementById('grid-meja-pelayanan').innerHTML = gridHtml;
+            gridElem.innerHTML = html;
         }
 
         function renderAntreanMenunggu(listMenunggu) {
