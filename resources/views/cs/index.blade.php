@@ -92,8 +92,8 @@
         </div>
     </div>
 
-    <!-- MAIN CONTENT AREA CS -->
-    <main class="flex-1 flex flex-col min-w-0 h-full overflow-y-auto md:overflow-hidden p-3 lg:p-4 gap-3">
+    <!-- MAIN CONTENT AREA CS (DIBUNGKUS ID KECUALI SIDEBAR) -->
+    <main id="main-cs-console" class="flex-1 flex flex-col min-w-0 h-full overflow-y-auto md:overflow-hidden p-3 lg:p-4 gap-3">
         
         <!-- BANNER MODE SPECTATE -->
         @if($isSpectator)
@@ -392,8 +392,13 @@
             });
         }
 
-        // FUNGSI PEMBARUAN ANTREAN REALTIME BERBASIS EVENT
-        function refreshAntreanData() {
+        // FUNGSI REALTIME SWAP KESELURUHAN PANEL CONSOLE KETIKA ADA ANTREAN BARU
+        function fetchConsoleRealtime() {
+            // Jangan swap jika CS sedang mengisi modal transaksi atau mengetik catatan
+            var modalActive = Alpine.$data(document.body).showModalTransaksi;
+            var isFocusTextarea = document.activeElement && (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT');
+            if (modalActive || isFocusTextarea) return;
+
             fetch(window.location.href)
                 .then(function(response) {
                     if (response.redirected) {
@@ -407,15 +412,21 @@
                     var parser = new DOMParser();
                     var doc = parser.parseFromString(html, 'text/html');
                     
-                    var elemenBaru = doc.getElementById('area-antrean-realtime');
-                    var elemenLama = document.getElementById('area-antrean-realtime');
+                    var elemenBaru = doc.getElementById('main-cs-console');
+                    var elemenLama = document.getElementById('main-cs-console');
                     
                     if (elemenBaru && elemenLama) {
-                        elemenLama.innerHTML = elemenBaru.innerHTML;
+                        // Cek apakah ada perubahan isi HTML untuk menghindari flicker berlebih
+                        if (elemenLama.innerHTML !== elemenBaru.innerHTML) {
+                            elemenLama.innerHTML = elemenBaru.innerHTML;
+                        }
                     }
                 })
                 .catch(function(error) { console.error('Gagal memperbarui antrean:', error); });
         }
+
+        // AUTO-FETCH REALTIME SETIAP 2,5 DETIK
+        setInterval(fetchConsoleRealtime, 2500);
 
         // HEARTBEAT PING SYSTEM (AUTO-OFFLINE JIKA TAB DITUTUP)
         function sendHeartbeat() {
@@ -430,32 +441,6 @@
 
         sendHeartbeat();
         setInterval(sendHeartbeat, 30000);
-    </script>
-
-    <!-- LISTENER WEBSOCKET REALTIME (REVERB / PUSHER) -->
-    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
-    <script>
-        var pusherKey = "{{ env('PUSHER_APP_KEY') }}";
-        var pusherCluster = "{{ env('PUSHER_APP_CLUSTER', 'mt1') }}";
-        var pusherHost = "{{ env('PUSHER_HOST', '127.0.0.1') }}";
-        var pusherPort = parseInt("{{ env('PUSHER_PORT', 8080) }}") || 8080;
-        var isSecure = "{{ env('PUSHER_SCHEME') }}" === "https";
-
-        if (pusherKey) {
-            var pusher = new Pusher(pusherKey, {
-                cluster: pusherCluster,
-                wsHost: pusherHost,
-                wsPort: pusherPort,
-                wssPort: pusherPort,
-                forceTLS: isSecure,
-                enabledTransports: ['ws', 'wss']
-            });
-
-            var channel = pusher.subscribe('antrean-channel');
-            channel.bind('tiket.updated', function(data) {
-                refreshAntreanData();
-            });
-        }
     </script>
 </body>
 </html>
