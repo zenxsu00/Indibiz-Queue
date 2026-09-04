@@ -21,10 +21,11 @@ class DisplayController extends Controller
     {
         $today = Carbon::today('Asia/Jakarta');
 
+        // Diurutkan berdasarkan waktu_diproses paling akhir agar tidak terdistraksi perubahan status/updated_at tiket lain
         $sedangDipanggil = TiketAntrian::with(['cs', 'layanan'])
             ->where('status', 'Diproses')
             ->whereDate('waktu_dibuat', $today)
-            ->latest('updated_at')
+            ->orderBy('waktu_diproses', 'desc')
             ->get();
 
         $antreanMenunggu = TiketAntrian::with(['layanan', 'pelanggan'])
@@ -34,7 +35,7 @@ class DisplayController extends Controller
             ->take(5)
             ->get();
 
-        // Ambil seluruh master meja yang tersedia untuk render dinamis
+        // Ambil seluruh master meja yang tersedia
         $masterMeja = MasterMeja::where('is_available', true)->orderBy('nomor_meja', 'asc')->get();
 
         // Ambil CS yang sedang aktif/online menduduki meja
@@ -50,13 +51,14 @@ class DisplayController extends Controller
             });
 
             return [
-                'nomor_meja'   => $meja->nomor_meja,
-                'nama_meja'    => $meja->nama_meja,
-                'is_occupied'  => !is_null($userCS),
-                'nama_cs'      => $userCS ? $userCS->nama_lengkap : null,
-                'tiket_aktif'  => $tiketAktif ? $tiketAktif->nomor_antrian : null,
-                'nama_layanan' => $tiketAktif && $tiketAktif->layanan ? $tiketAktif->layanan->nama_layanan : null,
-                'is_calling'   => !is_null($tiketAktif),
+                'nomor_meja'     => $meja->nomor_meja,
+                'nama_meja'      => $meja->nama_meja,
+                'is_occupied'    => !is_null($userCS),
+                'nama_cs'        => $userCS ? $userCS->nama_lengkap : null,
+                'tiket_aktif'    => $tiketAktif ? $tiketAktif->nomor_antrian : null,
+                'nama_layanan'   => $tiketAktif && $tiketAktif->layanan ? $tiketAktif->layanan->nama_layanan : null,
+                'is_calling'     => !is_null($tiketAktif),
+                'waktu_diproses' => $tiketAktif ? $tiketAktif->waktu_diproses : null,
             ];
         });
 

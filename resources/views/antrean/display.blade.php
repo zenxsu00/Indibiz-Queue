@@ -106,7 +106,7 @@
                 </div>
             </div>
 
-            <!-- STATUS MEJA PELAYANAN (BARIS BWAH - DINAMISsesuai Jumlah Meja) -->
+            <!-- STATUS MEJA PELAYANAN (BARIS BWAH - DINAMIS sesuai Jumlah Meja) -->
             <div class="bg-[#0D1322] border border-slate-800/80 rounded-2xl p-2.5 flex flex-col gap-1.5 shrink-0">
                 <div class="flex items-center justify-between text-[10px] font-bold border-b border-slate-800 pb-1">
                     <span class="text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
@@ -156,7 +156,7 @@
             <span class="material-symbols-outlined text-xs">info</span> INFORMASI
         </span>
         <marquee behavior="scroll" direction="left" class="font-semibold text-slate-300 text-xs">
-            Selamat Datang di Telkom Indibiz Service Desk &bull; Ciptakan Peluang, Wujudkan Harapan Bersama Ekosistem Solusi Digital Dunia Usaha &bull; Harap Ambil Tiket untuk Menuju Loket Pelayanan.
+            Selamat Datang di Telkom Indibiz Service Desk &bull; Ciptakan Peluang, Wujudkan Harapan Bersama Ekosistem Solusi Digital Dunia Usaha &bull; Harap Siapkan Kartu Identitas dan Nomor Tiket Antrean Anda saat Menuju Loket Pelayanan.
         </marquee>
         <span class="text-[9px] font-mono text-emerald-400 shrink-0 px-2 border-l border-slate-800 flex items-center gap-1">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Server Antrean: Online
@@ -370,7 +370,10 @@
 
                 var countDipanggil = activeCall.jumlah_dipanggil || 0;
                 var csId = activeCall.user_id || (activeCall.cs ? activeCall.cs.id : '0');
-                var currentKey = activeCall.id + '_cs' + csId + '_' + countDipanggil;
+                var waktuDiproses = activeCall.waktu_diproses || '';
+
+                // Menggunakan waktu_diproses agar key unik dan tidak ter pemicu ulang saat tiket lain berubah status
+                var currentKey = activeCall.id + '_cs' + csId + '_' + countDipanggil + '_' + waktuDiproses;
 
                 if (currentKey !== lastCallUniqueKey) {
                     lastCallUniqueKey = currentKey;
@@ -387,7 +390,6 @@
                 return;
             }
 
-            // Atur jumlah kolom CSS Grid dinamis berdasarkan jumlah meja yang ada (maksimal 4 kolom)
             var count = mejaList.length;
             var colsClass = "grid-cols-" + Math.min(count, 4);
             gridElem.className = "grid " + colsClass + " gap-2";
@@ -398,10 +400,8 @@
             mejaList.forEach(function(meja) {
                 var noMejaPad = String(meja.nomor_meja).padStart(2, '0');
 
-                // SKENARIO 1: MEJA AKTIF DITEMPATI CS BERSANGKUTAN
                 if (meja.is_occupied) {
                     if (meja.is_calling) {
-                        // Sedang Melayani/Memanggil
                         html += `
                             <div class="bg-slate-900/90 border border-red-500/60 rounded-xl p-2 flex flex-col justify-between shadow-[0_0_15px_rgba(238,46,36,0.15)] transition-all">
                                 <div class="flex items-center justify-between text-[9px]">
@@ -419,7 +419,6 @@
                             </div>
                         `;
                     } else {
-                        // CS Online Standby Siap Melayani
                         html += `
                             <div class="bg-slate-900/80 border border-emerald-500/40 rounded-xl p-2 flex flex-col justify-between shadow-sm transition-all">
                                 <div class="flex items-center justify-between text-[9px]">
@@ -436,9 +435,7 @@
                             </div>
                         `;
                     }
-                } 
-                // SKENARIO 2: MEJA TIDAK AKTIF / DITINGGAL CS (Dibuat Samar Temu Pandang)
-                else {
+                } else {
                     html += `
                         <div class="bg-slate-900/20 border border-slate-800/40 rounded-xl p-2 flex flex-col justify-between opacity-40 grayscale transition-all">
                             <div class="flex items-center justify-between text-[9px]">
