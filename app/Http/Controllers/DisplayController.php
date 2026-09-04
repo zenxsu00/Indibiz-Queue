@@ -21,7 +21,7 @@ class DisplayController extends Controller
     {
         $today = Carbon::today('Asia/Jakarta');
 
-        // Diurutkan berdasarkan waktu_diproses paling akhir agar tidak terdistraksi perubahan status/updated_at tiket lain
+        // PERBAIKAN BUG: Urutkan berdasarkan waktu_diproses paling akhir agar tidak terdistraksi perubahan status/updated_at tiket lain
         $sedangDipanggil = TiketAntrian::with(['cs', 'layanan'])
             ->where('status', 'Diproses')
             ->whereDate('waktu_dibuat', $today)
@@ -35,12 +35,13 @@ class DisplayController extends Controller
             ->take(5)
             ->get();
 
-        // Ambil seluruh master meja yang tersedia
+        // Ambil seluruh master meja yang tersedia untuk render dinamis
         $masterMeja = MasterMeja::where('is_available', true)->orderBy('nomor_meja', 'asc')->get();
 
         // Ambil CS yang sedang aktif/online menduduki meja
         $activeUsers = User::where('is_active', true)
             ->whereNotNull('nomor_meja')
+            ->where('nomor_meja', '!=', 0)
             ->get()
             ->keyBy('nomor_meja');
 

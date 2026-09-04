@@ -15,11 +15,22 @@ use Illuminate\Support\Facades\RateLimiter;
 class TiketController extends Controller
 {
     /**
+     * Memeriksa apakah ada CS yang sedang aktif dan bertugas di slot meja
+     */
+    private function checkIsOperational(): bool
+    {
+        return User::where('is_active', true)
+            ->whereNotNull('nomor_meja')
+            ->where('nomor_meja', '!=', 0)
+            ->exists();
+    }
+
+    /**
      * Menampilkan Halaman Utama Pengambilan Tiket
      */
     public function index(): View
     {
-        $isOperational = User::where('is_active', true)->exists();
+        $isOperational = $this->checkIsOperational();
         $layanans = Layanan::where('is_active', true)->get();
 
         return view('antrean.index', compact('isOperational', 'layanans'));
@@ -44,9 +55,8 @@ class TiketController extends Controller
             return back()->with('error', 'Harap tunggu 5 detik sebelum mengambil tiket antrean kembali.');
         }
 
-        // 2. Proteksi Operasional
-        $isOperational = User::where('is_active', true)->exists();
-        if (!$isOperational) {
+        // 2. Proteksi Operasional: Wajib ada CS aktif di meja
+        if (!$this->checkIsOperational()) {
             return back()->with('error', 'Maaf, loket layanan saat ini sedang tutup / tidak beroperasi.');
         }
 

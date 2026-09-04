@@ -81,7 +81,7 @@
                     <!-- KIRI: NOMOR TIKET + BADGE (SPAN 7) -->
                     <div class="col-span-7 text-center border-r border-white/5 pr-3">
                         <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 block mb-0.5">NOMOR TIKET ANTREAN</span>
-                        <h1 id="hero-nomor-antrian" class="text-6xl lg:text-7xl font-black text-slate-500 tracking-tight leading-none my-1">
+                        <h1 id="hero-nomor-antrian" class="text-6xl lg:text-7xl font-black text-slate-600 tracking-tight leading-none my-1">
                             ---
                         </h1>
                         
@@ -308,10 +308,9 @@
             document.getElementById('hero-nama-meja').innerText = 'MEJA CS ' + String(noMeja).padStart(2, '0');
             document.getElementById('hero-nama-layanan').innerText = namaLayanan;
 
-            // Bersihkan timer lama jika ada
             if (heroHideTimer) clearTimeout(heroHideTimer);
 
-            // TEPAT 3 DETIK: Hilangkan efek panggilan besar dan kembalikan ke mode Standby
+            // TEPAT 3 DETIK: Reset ke Mode Standby
             heroHideTimer = setTimeout(function() {
                 resetHeroToStandby();
             }, 3000);
@@ -372,7 +371,7 @@
                 var csId = activeCall.user_id || (activeCall.cs ? activeCall.cs.id : '0');
                 var waktuDiproses = activeCall.waktu_diproses || '';
 
-                // Menggunakan waktu_diproses agar key unik dan tidak ter pemicu ulang saat tiket lain berubah status
+                // Kunci unik gabungan waktu_diproses agar tidak ter-trigger ulang saat ada tiket lain berubah status
                 var currentKey = activeCall.id + '_cs' + csId + '_' + countDipanggil + '_' + waktuDiproses;
 
                 if (currentKey !== lastCallUniqueKey) {
