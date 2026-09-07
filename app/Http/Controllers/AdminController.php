@@ -14,6 +14,9 @@ use stdClass;
 class AdminController extends Controller
 {
     /**
+     * Display admin dashboard.
+     *
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Contracts\View\View
      */
     public function index(Request $request)

@@ -606,7 +606,7 @@
             <div class="flex justify-between items-center border-b pb-3 border-gray-100">
                 <h3 class="text-base font-black text-[#181C20] flex items-center gap-2">
                     <span class="material-symbols-outlined text-[#00509E]">receipt_long</span>
-                    Detail Tiket <span x-text="selectedTiket?.nomor_antrian" class="text-[#00509E]"></span>
+                    Detail Tiket <span x-text="selectedTiket ? selectedTiket.nomor_antrian : ''" class="text-[#00509E]"></span>
                 </h3>
                 <button @click="showModalDetail = false" class="text-gray-400 hover:text-gray-600">
                     <span class="material-symbols-outlined">close</span>
@@ -617,19 +617,19 @@
                 <!-- PROFILING PELANGGAN -->
                 <div class="bg-gray-50 p-3 rounded-xl border border-gray-200 space-y-1">
                     <span class="text-gray-400 font-bold block text-[10px] uppercase">Profiling Data Pelanggan</span>
-                    <p class="font-extrabold text-[#181C20] text-sm" x-text="selectedTiket?.pelanggan?.nama"></p>
+                    <p class="font-extrabold text-[#181C20] text-sm" x-text="selectedTiket && selectedTiket.pelanggan ? selectedTiket.pelanggan.nama : '-'"></p>
                     <div class="grid grid-cols-2 gap-2 text-[11px] text-gray-600 pt-1">
                         <div>
                             <span class="font-bold text-gray-400 block text-[9px]">NO TELP/HP</span>
-                            <span x-text="selectedTiket?.pelanggan?.no_hp || '-'"></span>
+                            <span x-text="selectedTiket && selectedTiket.pelanggan ? (selectedTiket.pelanggan.no_hp || '-') : '-'"></span>
                         </div>
                         <div>
                             <span class="font-bold text-gray-400 block text-[9px]">EMAIL PELANGGAN</span>
-                            <span x-text="selectedTiket?.pelanggan?.email || '-'"></span>
+                            <span x-text="selectedTiket && selectedTiket.pelanggan ? (selectedTiket.pelanggan.email || '-') : '-'"></span>
                         </div>
                         <div class="col-span-2">
                             <span class="font-bold text-gray-400 block text-[9px]">NO INDIBIZ / SERVICE ID</span>
-                            <span class="font-bold text-[#00509E]" x-text="selectedTiket?.pelanggan?.no_indibiz || '-'"></span>
+                            <span class="font-bold text-[#00509E]" x-text="selectedTiket && selectedTiket.pelanggan ? (selectedTiket.pelanggan.no_indibiz || '-') : '-'"></span>
                         </div>
                     </div>
                 </div>
@@ -638,27 +638,27 @@
                 <div class="grid grid-cols-2 gap-2 bg-blue-50/50 p-3 rounded-xl border border-blue-100">
                     <div>
                         <span class="text-gray-400 font-bold block text-[10px] uppercase">Kategori Layanan</span>
-                        <span class="font-extrabold text-[#00509E]" x-text="selectedTiket?.layanan?.nama_layanan"></span>
+                        <span class="font-extrabold text-[#00509E]" x-text="selectedTiket && selectedTiket.layanan ? selectedTiket.layanan.nama_layanan : '-'"></span>
                     </div>
                     <div>
                         <span class="text-gray-400 font-bold block text-[10px] uppercase">Sub-Layanan</span>
-                        <span class="font-extrabold text-gray-800" x-text="selectedTiket?.sub_layanan?.nama_sub_layanan || '-'"></span>
+                        <span class="font-extrabold text-gray-800" x-text="selectedTiket && selectedTiket.sub_layanan ? selectedTiket.sub_layanan.nama_sub_layanan : '-'"></span>
                     </div>
                 </div>
 
                 <div>
                     <span class="text-gray-400 font-bold block text-[10px] uppercase mb-1">Keluhan Awal Pelanggan</span>
-                    <p class="p-2.5 bg-amber-50/50 border border-amber-100 rounded-xl text-gray-700 italic" x-text="selectedTiket?.keluhan_awal ?? '-'"></p>
+                    <p class="p-2.5 bg-amber-50/50 border border-amber-100 rounded-xl text-gray-700 italic" x-text="selectedTiket ? (selectedTiket.keluhan_awal || '-') : '-'"></p>
                 </div>
 
                 <div>
                     <span class="text-gray-400 font-bold block text-[10px] uppercase mb-1">Hasil Tindakan / Keluhan Final</span>
-                    <p class="p-2.5 bg-blue-50/50 border border-blue-100 rounded-xl text-gray-800 font-medium" x-text="selectedTiket?.keluhan_final || 'Belum diisi.'"></p>
+                    <p class="p-2.5 bg-blue-50/50 border border-blue-100 rounded-xl text-gray-800 font-medium" x-text="selectedTiket ? (selectedTiket.keluhan_final || 'Belum diisi.') : 'Belum diisi.'"></p>
                 </div>
 
                 <div>
                     <span class="text-gray-400 font-bold block text-[10px] uppercase mb-1">Catatan Konsultasi CS</span>
-                    <p class="p-2.5 bg-emerald-50/50 border border-emerald-100 rounded-xl text-gray-800 font-medium" x-text="selectedTiket?.catatan_cs || 'Belum ada catatan dari CS.'"></p>
+                    <p class="p-2.5 bg-emerald-50/50 border border-emerald-100 rounded-xl text-gray-800 font-medium" x-text="selectedTiket ? (selectedTiket.catatan_cs || 'Belum ada catatan dari CS.') : 'Belum ada catatan dari CS.'"></p>
                 </div>
             </div>
 

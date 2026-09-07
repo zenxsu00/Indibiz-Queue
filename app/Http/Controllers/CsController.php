@@ -45,6 +45,9 @@ class CsController extends Controller
         return true;
     }
 
+    /**
+     * @param \App\Models\User $user
+     */
     private function resetUserState($user)
     {
         $user->is_active = false;
@@ -53,6 +56,9 @@ class CsController extends Controller
         session()->forget('meja_terpilih');
     }
 
+    /**
+     * @param \App\Models\TiketAntrian|null $tiket
+     */
     private function safeBroadcast($tiket)
     {
         try {
@@ -162,8 +168,8 @@ class CsController extends Controller
             $q->where('is_active', true);
         }])->where('is_active', true)->get();
 
-        // Fitur Tracking / Pencarian Profiling Pelanggan
-        $searchQuery = $request->get('search');
+        // Fitur Tracking / Pencarian Profiling Pelanggan (Gunakan input menggantikan get)
+        $searchQuery = $request->input('search');
         $riwayatPelanggan = collect();
         if ($searchQuery) {
             $riwayatPelanggan = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan', 'cs'])
