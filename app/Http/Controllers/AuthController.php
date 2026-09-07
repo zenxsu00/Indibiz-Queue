@@ -13,7 +13,7 @@ class AuthController extends Controller
     public function showLogin()
     {
         if (Auth::check()) {
-            /** @var User $user */
+            /** @var \App\Models\User $user */
             $user = Auth::user();
             $role = strtolower($user->role ?? '');
 
@@ -68,7 +68,7 @@ class AuthController extends Controller
             $request->session()->regenerate();
             session()->forget('url.intended');
 
-            /** @var User $user */
+            /** @var \App\Models\User $user */
             $user     = Auth::user();
             $userRole = strtolower($user->role ?? '');
 
@@ -117,7 +117,7 @@ class AuthController extends Controller
 
     public function showSelectMeja()
     {
-        /** @var User $user */
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         if (!$user) {
@@ -142,7 +142,7 @@ class AuthController extends Controller
 
     public function processSelectMeja(Request $request)
     {
-        /** @var User $user */
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         if ($request->has('mode_spectator') && strtolower($user->role) === 'admin') {
@@ -180,7 +180,7 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        /** @var User $user */
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         if ($user) {

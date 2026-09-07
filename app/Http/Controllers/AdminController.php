@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\TiketAntrian;
 use App\Models\Layanan;
-use App\Models\SubLayanan;
 use App\Models\User;
 use App\Models\MasterMeja;
 use Carbon\Carbon;
@@ -14,9 +13,6 @@ use stdClass;
 class AdminController extends Controller
 {
     /**
-     * Display admin dashboard.
-     *
-     * @param Request $request
      * @return \Illuminate\Contracts\View\View
      */
     public function index(Request $request)
@@ -32,15 +28,14 @@ class AdminController extends Controller
             
         $layananId = $request->layanan_id;
 
-        // Query Filtered untuk Tab Operations (Dengan Relasi Tambahan SubLayanan)
-        $query = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan', 'cs'])
+        // Query Filtered untuk Tab Operations
+        $query = TiketAntrian::with(['pelanggan', 'layanan', 'cs'])
             ->whereBetween('waktu_dibuat', [$startDate, $endDate]);
 
         if ($layananId) {
             $query->where('layanan_id', $layananId);
         }
 
-        /** @var \Illuminate\Database\Eloquent\Collection $allFilteredTickets */
         $allFilteredTickets = (clone $query)->orderBy('waktu_dibuat', 'desc')->get();
         $totalHariIni  = $allFilteredTickets->count();
         $menunggu      = $allFilteredTickets->where('status', 'Menunggu')->count();
@@ -51,9 +46,7 @@ class AdminController extends Controller
         $satuBulanLalu = Carbon::now('Asia/Jakarta')->subDays(30)->startOfDay();
         $sekarang      = Carbon::now('Asia/Jakarta')->endOfDay();
 
-        $tiketSatuBulan = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan', 'cs'])
-            ->whereBetween('waktu_dibuat', [$satuBulanLalu, $sekarang])
-            ->get();
+        $tiketSatuBulan = TiketAntrian::whereBetween('waktu_dibuat', [$satuBulanLalu, $sekarang])->get();
         
         // 1. Total Omset Loket (1 Bulan)
         $totalOmsetBulanIni = $tiketSatuBulan->where('status', 'Selesai')->sum('nominal_pembayaran');
@@ -111,7 +104,7 @@ class AdminController extends Controller
 
             $historyBulanan[] = $row;
         }
-        $historyBulanan = array_reverse($historyBulanan);
+        $historyBulanan = array_reverse($historyBulanan); // Urutkan dari tanggal terbaru
 
         // Data Grafik Analitik Tren
         $chartDates   = [];
@@ -140,7 +133,7 @@ class AdminController extends Controller
         $mejaCs  = [];
 
         foreach ($usersCS as $cs) {
-            $tiketAktif = TiketAntrian::with(['layanan', 'subLayanan'])
+            $tiketAktif = TiketAntrian::with('layanan')
                 ->where('user_id', $cs->id)
                 ->where('status', 'Diproses')
                 ->whereDate('waktu_dibuat', Carbon::today('Asia/Jakarta'))
@@ -174,7 +167,7 @@ class AdminController extends Controller
         // Ambil Data Master Meja Fisik untuk Tampilan Katalog
         $masterMejas = MasterMeja::orderBy('nomor_meja', 'asc')->get();
 
-        $layanans   = Layanan::with('subLayanans')->get();
+        $layanans   = Layanan::all();
         $totalOmset = $totalOmsetBulanIni;
 
         return view('admin.index', compact(
@@ -196,7 +189,7 @@ class AdminController extends Controller
             
         $layananId = $request->layanan_id;
 
-        $query = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan', 'cs'])
+        $query = TiketAntrian::with(['pelanggan', 'layanan', 'cs'])
             ->whereBetween('waktu_dibuat', [$startDate, $endDate]);
 
         if ($layananId) {
@@ -212,7 +205,7 @@ class AdminController extends Controller
     public function exportCsv()
     {
         $fileName = 'rekap_antrean_indibiz_' . date('Y-m-d_H-i-s') . '.csv';
-        $tickets  = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan', 'cs'])->get();
+        $tickets  = TiketAntrian::with(['pelanggan', 'layanan', 'cs'])->get();
 
         $headers = [
             "Content-type"        => "text/csv; charset=UTF-8",
@@ -222,7 +215,7 @@ class AdminController extends Controller
             "Expires"             => "0"
         ];
 
-        $columns = ['ID', 'Kode Tiket', 'Nomor Display', 'Nama Pelanggan', 'No HP', 'Email', 'No Indibiz', 'Layanan Utama', 'Sub Layanan', 'CS Melayani', 'Status', 'Metode Bayar', 'Nominal (Rp)', 'Waktu Dibuat'];
+        $columns = ['ID', 'Kode Tiket', 'Nomor Display', 'Nama Pelanggan', 'No HP', 'Layanan', 'CS Melayani', 'Status', 'Metode Bayar', 'Nominal (Rp)', 'Waktu Dibuat'];
 
         $callback = function() use($tickets, $columns) {
             $file = fopen('php://output', 'w');
@@ -235,10 +228,7 @@ class AdminController extends Controller
                     $ticket->nomor_antrian,
                     $ticket->pelanggan->nama ?? '-',
                     $ticket->pelanggan->no_hp ?? '-',
-                    $ticket->pelanggan->email ?? '-',
-                    $ticket->pelanggan->no_indibiz ?? '-',
                     $ticket->layanan->nama_layanan ?? '-',
-                    $ticket->subLayanan->nama_sub_layanan ?? '-',
                     $ticket->cs->nama_lengkap ?? '-',
                     $ticket->status,
                     $ticket->metode_pembayaran ?? 'Tanpa Transaksi',

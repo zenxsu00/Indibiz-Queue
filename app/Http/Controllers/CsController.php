@@ -5,8 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\TiketAntrian;
 use App\Models\User;
 use App\Models\MasterMeja;
-use App\Models\Layanan;
-use App\Models\SubLayanan;
 use App\Events\TiketDipanggil;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -45,11 +43,7 @@ class CsController extends Controller
         return true;
     }
 
-    /**
-     * @param User $user
-     * @return void
-     */
-    private function resetUserState(User $user)
+    private function resetUserState($user)
     {
         $user->is_active = false;
         $user->nomor_meja = null;
@@ -57,11 +51,7 @@ class CsController extends Controller
         session()->forget('meja_terpilih');
     }
 
-    /**
-     * @param TiketAntrian|null $tiket
-     * @return void
-     */
-    private function safeBroadcast(?TiketAntrian $tiket)
+    private function safeBroadcast($tiket)
     {
         try {
             if ($tiket) {
@@ -133,7 +123,7 @@ class CsController extends Controller
         return redirect()->route('cs.index')->with('success', "Berhasil masuk ke Loket M{$request->nomor_meja}");
     }
 
-    public function index(Request $request)
+    public function index()
     {
         if (!$this->checkValidMeja()) {
             return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus atau dinonaktifkan oleh Admin. Silakan pilih meja lain.');
@@ -151,50 +141,19 @@ class CsController extends Controller
             $user->save();
         }
 
-        // Tiket Menunggu
-        $antreanMenunggu = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan'])
+        $antreanMenunggu = TiketAntrian::with(['pelanggan', 'layanan'])
                             ->whereDate('waktu_dibuat', $hariIni)
                             ->where('status', 'Menunggu')
                             ->orderBy('waktu_dibuat', 'asc')
                             ->get();
 
-        // Tiket Aktif
-        $antreanAktif = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan'])
+        $antreanAktif = TiketAntrian::with(['pelanggan', 'layanan'])
                             ->whereDate('waktu_dibuat', $hariIni)
                             ->where('status', 'Diproses')
                             ->where('user_id', $user->id)
                             ->first();
 
-        // Master Layanan & Sub-Layanan untuk fitur Koreksi Layanan
-        $layanans = Layanan::with(['subLayanans' => function($q) {
-            $q->where('is_active', true);
-        }])->where('is_active', true)->get();
-
-        // Fitur Tracking / Pencarian Profiling Pelanggan
-        $searchQuery = $request->input('search');
-        $riwayatPelanggan = collect();
-        if ($searchQuery) {
-            $riwayatPelanggan = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan', 'cs'])
-                ->whereHas('pelanggan', function ($q) use ($searchQuery) {
-                    $q->where('no_hp', 'like', "%{$searchQuery}%")
-                      ->orWhere('email', 'like', "%{$searchQuery}%")
-                      ->orWhere('no_indibiz', 'like', "%{$searchQuery}%")
-                      ->orWhere('nama', 'like', "%{$searchQuery}%");
-                })
-                ->orderBy('created_at', 'desc')
-                ->take(10)
-                ->get();
-        }
-
-        return view('cs.index', compact(
-            'antreanMenunggu', 
-            'antreanAktif', 
-            'isSpectator', 
-            'nomorMejaTerpilih',
-            'layanans',
-            'riwayatPelanggan',
-            'searchQuery'
-        ));
+        return view('cs.index', compact('antreanMenunggu', 'antreanAktif', 'isSpectator', 'nomorMejaTerpilih'));
     }
 
     public function panggilSelanjutnya()
@@ -203,7 +162,6 @@ class CsController extends Controller
             return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus oleh Admin.');
         }
 
-        /** @var User $user */
         $user = Auth::user();
 
         // Cek jika CS masih punya tiket aktif
@@ -247,7 +205,6 @@ class CsController extends Controller
             return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus oleh Admin.');
         }
 
-        /** @var User $user */
         $user = Auth::user();
 
         $cekAktif = TiketAntrian::where('status', 'Diproses')->where('user_id', $user->id)->first();
@@ -286,7 +243,6 @@ class CsController extends Controller
             return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus oleh Admin.');
         }
 
-        /** @var User $user */
         $user = Auth::user();
         $tiket = TiketAntrian::findOrFail($id);
 
@@ -316,16 +272,10 @@ class CsController extends Controller
             return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus oleh Admin.');
         }
 
-        /** @var User $user */
         $user = Auth::user();
         $tiket = TiketAntrian::where('id', $id)->where('user_id', $user->id)->firstOrFail();
         
         $request->validate([
-            'nama_pelanggan'     => 'nullable|string|max:255',
-            'email_pelanggan'    => 'nullable|email|max:255',
-            'no_indibiz'         => 'nullable|string|max:255',
-            'layanan_id'         => 'nullable|exists:layanans,id',
-            'sub_layanan_id'     => 'nullable|exists:sub_layanans,id',
             'keluhan_final'      => 'nullable|string',
             'catatan_cs'         => 'nullable|string',
             'metode_pembayaran'  => 'nullable|string',
@@ -333,19 +283,7 @@ class CsController extends Controller
             'bukti_pembayaran'   => 'nullable|string|max:100',
         ]);
 
-        // 1. Profiling Pelanggan
-        if ($tiket->pelanggan) {
-            $tiket->pelanggan->update([
-                'nama'       => $request->nama_pelanggan ?? $tiket->pelanggan->nama,
-                'email'      => $request->email_pelanggan,
-                'no_indibiz' => $request->no_indibiz,
-            ]);
-        }
-
-        // 2. Update Tiket & Koreksi Layanan
         $tiket->update([
-            'layanan_id'         => $request->layanan_id ?? $tiket->layanan_id,
-            'sub_layanan_id'     => $request->sub_layanan_id ?? $tiket->sub_layanan_id,
             'status'             => 'Selesai',
             'keluhan_final'      => $request->keluhan_final,
             'catatan_cs'         => $request->catatan_cs,

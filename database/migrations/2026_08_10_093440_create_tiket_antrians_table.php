@@ -6,59 +6,46 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
-        // Tabel Sub-Layanan Indibiz
-        Schema::create('sub_layanans', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('layanan_id')->constrained('layanans')->cascadeOnDelete();
-            $table->string('nama_sub_layanan');
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-        });
-
-        // Tabel Pelanggan Tambahan (Profiling)
-        Schema::table('pelanggans', function (Blueprint $table) {
-            $table->string('email')->nullable()->after('no_hp');
-            $table->string('no_indibiz')->nullable()->after('email');
-        });
-
-        // Tabel Tiket Antrian (Lengkap)
         Schema::create('tiket_antrians', function (Blueprint $table) {
             $table->id();
+            
+            // Kolom kode_tiket untuk pendataan Admin/CSV (format: DDMMYYYY-KODE-NOMORURUT)
             $table->string('kode_tiket')->nullable();
-            $table->string('nomor_antrian');
+            
+            $table->string('nomor_antrian'); // Untuk display Pelanggan & CS (format: KODE-NOMORURUT)
             $table->foreignId('pelanggan_id')->constrained('pelanggans')->cascadeOnDelete();
             $table->foreignId('layanan_id')->constrained('layanans')->cascadeOnDelete();
-            $table->foreignId('sub_layanan_id')->nullable()->constrained('sub_layanans')->nullOnDelete();
-            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete(); // CS yang melayani
             
             $table->text('keluhan_awal');
-            $table->text('keluhan_final')->nullable();
-            $table->text('catatan_cs')->nullable();
+            $table->text('keluhan_final')->nullable(); // Dibuat opsional
+            $table->text('catatan_cs')->nullable(); // Catatan / Note hasil konsultasi dari CS
             
+            // PENDATAAN TRANSAKSI / PEMBAYARAN LOKET
             $table->string('metode_pembayaran')->nullable()->default('Tanpa Transaksi');
             $table->decimal('nominal_pembayaran', 12, 2)->default(0);
-            $table->string('bukti_pembayaran')->nullable();
+            $table->string('bukti_pembayaran')->nullable(); // Kode/Reff QRIS
             
             $table->enum('status', ['Menunggu', 'Diproses', 'Selesai', 'Batal'])->default('Menunggu');
-            $table->integer('jumlah_dipanggil')->default(0);
+            $table->integer('jumlah_dipanggil')->default(0); // Untuk 2-Strike Rule Missed Call
             
             $table->timestamp('waktu_dibuat')->useCurrent();
             $table->timestamp('waktu_diproses')->nullable();
             $table->timestamp('waktu_selesai')->nullable();
-            $table->timestamps();
+            $table->timestamps(); // Standard created_at & updated_at
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('tiket_antrians');
-        
-        Schema::table('pelanggans', function (Blueprint $table) {
-            $table->dropColumn(['email', 'no_indibiz']);
-        });
-
-        Schema::dropIfExists('sub_layanans');
     }
 };

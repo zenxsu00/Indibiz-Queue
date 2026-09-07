@@ -237,7 +237,7 @@
                             <tr>
                                 <th class="p-3">Kode Tiket</th>
                                 <th class="p-3">Pelanggan</th>
-                                <th class="p-3">Kategori & Sub-Layanan</th>
+                                <th class="p-3">Layanan</th>
                                 <th class="p-3">CS / Loket</th>
                                 <th class="p-3">Waktu Ambil</th>
                                 <th class="p-3">Status</th>
@@ -250,14 +250,8 @@
                             @forelse($allFilteredTickets as $tiket)
                                 <tr class="hover:bg-[#F8F9FA] transition-colors">
                                     <td class="p-3 font-mono font-bold text-[#00509E]">{{ $tiket->nomor_antrian }}</td>
-                                    <td class="p-3 font-bold">
-                                        {{ $tiket->pelanggan->nama }} 
-                                        <br><span class="text-[10px] text-gray-400 font-normal">{{ $tiket->pelanggan->no_hp }}</span>
-                                    </td>
-                                    <td class="p-3">
-                                        <span class="bg-blue-50 text-[#00509E] px-2 py-0.5 rounded font-bold block mb-0.5">{{ $tiket->layanan->nama_layanan }}</span>
-                                        <span class="text-[10px] text-gray-500 italic">{{ $tiket->subLayanan->nama_sub_layanan ?? '-' }}</span>
-                                    </td>
+                                    <td class="p-3 font-bold">{{ $tiket->pelanggan->nama }} <br><span class="text-[10px] text-gray-400 font-normal">{{ $tiket->pelanggan->no_hp }}</span></td>
+                                    <td class="p-3"><span class="bg-gray-100 px-2 py-0.5 rounded font-semibold">{{ $tiket->layanan->nama_layanan }}</span></td>
                                     <td class="p-3 font-bold">{{ $tiket->cs ? $tiket->cs->nama_lengkap . ' (M'.$tiket->cs->nomor_meja.')' : '-' }}</td>
                                     <td class="p-3 text-gray-500">{{ \Carbon\Carbon::parse($tiket->waktu_dibuat)->timezone('Asia/Jakarta')->format('d/m/Y H:i') }}</td>
                                     <td class="p-3">
@@ -411,7 +405,7 @@
             </div>
         </div>
 
-        <!-- TAB 4: STAFF MONITORING -->
+        <!-- TAB 4: STAFF MONITORING (REAL-TIME STATUS MEJA CS + KATALOG SLOT MEJA TERSEDIA) -->
         <div x-show="activeTab === 'staff'" class="space-y-6">
             
             <!-- PANEL MANAJEMEN AKUN & SLOT MEJA -->
@@ -430,7 +424,7 @@
                 </div>
             </div>
 
-            <!-- KATALOG SLOT MEJA FISIK -->
+            <!-- KATALOG SLOT MEJA FISIK YANG TERSEDIA / DIRENCANAKAN -->
             <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
                 <div class="flex justify-between items-center border-b border-gray-100 pb-3">
                     <h3 class="text-xs font-black uppercase text-[#181C20] flex items-center gap-1.5">
@@ -600,13 +594,13 @@
         </div>
     </div>
 
-    <!-- MODAL POPUP 3: DETAIL TIKET, PROFILING & CATATAN CS -->
+    <!-- MODAL POPUP 3: DETAIL TIKET & CATATAN CS -->
     <div x-show="showModalDetail" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-gray-100" @click.away="showModalDetail = false">
             <div class="flex justify-between items-center border-b pb-3 border-gray-100">
                 <h3 class="text-base font-black text-[#181C20] flex items-center gap-2">
                     <span class="material-symbols-outlined text-[#00509E]">receipt_long</span>
-                    Detail Tiket <span x-text="selectedTiket ? selectedTiket.nomor_antrian : ''" class="text-[#00509E]"></span>
+                    Detail Tiket <span x-text="selectedTiket?.nomor_antrian" class="text-[#00509E]"></span>
                 </h3>
                 <button @click="showModalDetail = false" class="text-gray-400 hover:text-gray-600">
                     <span class="material-symbols-outlined">close</span>
@@ -614,51 +608,32 @@
             </div>
 
             <div class="space-y-3 text-xs">
-                <!-- PROFILING PELANGGAN -->
-                <div class="bg-gray-50 p-3 rounded-xl border border-gray-200 space-y-1">
-                    <span class="text-gray-400 font-bold block text-[10px] uppercase">Profiling Data Pelanggan</span>
-                    <p class="font-extrabold text-[#181C20] text-sm" x-text="(selectedTiket && selectedTiket.pelanggan) ? selectedTiket.pelanggan.nama : '-'"></p>
-                    <div class="grid grid-cols-2 gap-2 text-[11px] text-gray-600 pt-1">
-                        <div>
-                            <span class="font-bold text-gray-400 block text-[9px]">NO TELP/HP</span>
-                            <span x-text="(selectedTiket && selectedTiket.pelanggan) ? (selectedTiket.pelanggan.no_hp || '-') : '-'"></span>
-                        </div>
-                        <div>
-                            <span class="font-bold text-gray-400 block text-[9px]">EMAIL PELANGGAN</span>
-                            <span x-text="(selectedTiket && selectedTiket.pelanggan) ? (selectedTiket.pelanggan.email || '-') : '-'"></span>
-                        </div>
-                        <div class="col-span-2">
-                            <span class="font-bold text-gray-400 block text-[9px]">NO INDIBIZ / SERVICE ID</span>
-                            <span class="font-bold text-[#00509E]" x-text="(selectedTiket && selectedTiket.pelanggan) ? (selectedTiket.pelanggan.no_indibiz || '-') : '-'"></span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- CATEGORY & SUB-LAYANAN -->
-                <div class="grid grid-cols-2 gap-2 bg-blue-50/50 p-3 rounded-xl border border-blue-100">
+                <div class="grid grid-cols-2 gap-2 bg-gray-50 p-3 rounded-xl border border-gray-100">
                     <div>
-                        <span class="text-gray-400 font-bold block text-[10px] uppercase">Kategori Layanan</span>
-                        <span class="font-extrabold text-[#00509E]" x-text="(selectedTiket && selectedTiket.layanan) ? selectedTiket.layanan.nama_layanan : '-'"></span>
+                        <span class="text-gray-400 font-bold block text-[10px] uppercase">Pelanggan</span>
+                        <span class="font-extrabold text-[#181C20]" x-text="selectedTiket?.pelanggan?.nama"></span>
+                        <span class="block text-gray-500 text-[10px]" x-text="selectedTiket?.pelanggan?.no_hp"></span>
                     </div>
                     <div>
-                        <span class="text-gray-400 font-bold block text-[10px] uppercase">Sub-Layanan</span>
-                        <span class="font-extrabold text-gray-800" x-text="(selectedTiket && selectedTiket.sub_layanan) ? selectedTiket.sub_layanan.nama_sub_layanan : '-'"></span>
+                        <span class="text-gray-400 font-bold block text-[10px] uppercase">Layanan & CS</span>
+                        <span class="font-extrabold text-[#181C20]" x-text="selectedTiket?.layanan?.nama_layanan"></span>
+                        <span class="block text-[#00509E] font-bold text-[10px]" x-text="selectedTiket?.cs ? selectedTiket?.cs?.nama_lengkap : 'Belum Melayani'"></span>
                     </div>
                 </div>
 
                 <div>
                     <span class="text-gray-400 font-bold block text-[10px] uppercase mb-1">Keluhan Awal Pelanggan</span>
-                    <p class="p-2.5 bg-amber-50/50 border border-amber-100 rounded-xl text-gray-700 italic" x-text="selectedTiket ? (selectedTiket.keluhan_awal || '-') : '-'"></p>
+                    <p class="p-2.5 bg-amber-50/50 border border-amber-100 rounded-xl text-gray-700 italic" x-text="selectedTiket?.keluhan_awal ?? '-'"></p>
                 </div>
 
                 <div>
                     <span class="text-gray-400 font-bold block text-[10px] uppercase mb-1">Hasil Tindakan / Keluhan Final</span>
-                    <p class="p-2.5 bg-blue-50/50 border border-blue-100 rounded-xl text-gray-800 font-medium" x-text="selectedTiket ? (selectedTiket.keluhan_final || 'Belum diisi.') : 'Belum diisi.'"></p>
+                    <p class="p-2.5 bg-blue-50/50 border border-blue-100 rounded-xl text-gray-800 font-medium" x-text="selectedTiket?.keluhan_final || 'Belum diisi.'"></p>
                 </div>
 
                 <div>
                     <span class="text-gray-400 font-bold block text-[10px] uppercase mb-1">Catatan Konsultasi CS</span>
-                    <p class="p-2.5 bg-emerald-50/50 border border-emerald-100 rounded-xl text-gray-800 font-medium" x-text="selectedTiket ? (selectedTiket.catatan_cs || 'Belum ada catatan dari CS.') : 'Belum ada catatan dari CS.'"></p>
+                    <p class="p-2.5 bg-emerald-50/50 border border-emerald-100 rounded-xl text-gray-800 font-medium" x-text="selectedTiket?.catatan_cs || 'Belum ada catatan dari CS.'"></p>
                 </div>
             </div>
 

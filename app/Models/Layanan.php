@@ -12,16 +12,11 @@ class Layanan extends Model
     protected $fillable = [
         'kode_layanan',
         'nama_layanan',
+        'deskripsi',
         'is_active',
     ];
 
-    public function subLayanans()
-    {
-        return $this->hasMany(SubLayanan::class, 'layanan_id');
-    }
-
-    public function tiketAntrians()
-    {
-        return $this->hasMany(TiketAntrian::class, 'layanan_id');
-    }
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
 }
