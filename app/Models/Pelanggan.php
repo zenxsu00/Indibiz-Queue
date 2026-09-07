@@ -2,14 +2,23 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Pelanggan extends Model
 {
-    // Mengizinkan kolom ini untuk diisi secara massal
+    use HasFactory;
+
     protected $fillable = [
-        'no_hp', 
-        'nama', 
-        'alamat'
+        'no_hp',
+        'email',
+        'no_indibiz',
+        'nama',
+        'alamat',
     ];
+
+    public function tiketAntrians()
+    {
+        return $this->hasMany(TiketAntrian::class, 'pelanggan_id');
+    }
 }
