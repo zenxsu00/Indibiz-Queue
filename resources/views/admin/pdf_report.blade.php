@@ -11,6 +11,7 @@
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
         th { background-color: #f1f4f9; font-size: 10px; text-transform: uppercase; }
+        .sub-text { font-size: 9px; color: #666; font-style: italic; }
         .total-box { margin-top: 15px; text-align: right; font-size: 12px; font-weight: bold; }
     </style>
 </head>
@@ -27,7 +28,7 @@
                 <th>No</th>
                 <th>Nomor Tiket</th>
                 <th>Nama Pelanggan</th>
-                <th>Layanan</th>
+                <th>Kategori & Sub-Layanan</th>
                 <th>Waktu Masuk</th>
                 <th>Status</th>
                 <th>Metode</th>
@@ -40,7 +41,10 @@
                 <td>{{ $index + 1 }}</td>
                 <td><strong>{{ $t->nomor_antrian }}</strong></td>
                 <td>{{ $t->pelanggan->nama }} ({{ $t->pelanggan->no_hp }})</td>
-                <td>{{ $t->layanan->nama_layanan }}</td>
+                <td>
+                    <div>{{ $t->layanan->nama_layanan }}</div>
+                    <div class="sub-text">{{ $t->subLayanan->nama_sub_layanan ?? '-' }}</div>
+                </td>
                 <td>{{ \Carbon\Carbon::parse($t->waktu_dibuat)->timezone('Asia/Jakarta')->format('d/m/Y H:i') }}</td>
                 <td>{{ $t->status }}</td>
                 <td>{{ $t->metode_pembayaran ?? 'Tanpa Transaksi' }}</td>

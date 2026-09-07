@@ -2,18 +2,20 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class TiketAntrian extends Model
 {
-    public $timestamps = true; 
+    use HasFactory;
 
     protected $fillable = [
         'kode_tiket',
         'nomor_antrian',
         'pelanggan_id',
         'layanan_id',
-        'user_id', 
+        'sub_layanan_id',
+        'user_id',
         'keluhan_awal',
         'keluhan_final',
         'catatan_cs',
@@ -21,28 +23,25 @@ class TiketAntrian extends Model
         'nominal_pembayaran',
         'bukti_pembayaran',
         'status',
-        'jumlah_dipanggil', 
+        'jumlah_dipanggil',
         'waktu_dibuat',
         'waktu_diproses',
-        'waktu_selesai'
+        'waktu_selesai',
     ];
 
-    // HAPUS CASTING 'datetime' AGAR TIDAK TERJADI DOUBLE TIMEZONE CONVERSION
-    protected function casts(): array
-    {
-        return [
-            'nominal_pembayaran' => 'float',
-        ];
-    }
-    
     public function pelanggan()
     {
-        return $this->belongsTo(Pelanggan::class);
+        return $this->belongsTo(Pelanggan::class, 'pelanggan_id');
     }
 
     public function layanan()
     {
-        return $this->belongsTo(Layanan::class);
+        return $this->belongsTo(Layanan::class, 'layanan_id');
+    }
+
+    public function subLayanan()
+    {
+        return $this->belongsTo(SubLayanan::class, 'sub_layanan_id');
     }
 
     public function cs()
