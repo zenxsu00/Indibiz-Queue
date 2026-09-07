@@ -46,9 +46,10 @@ class CsController extends Controller
     }
 
     /**
-     * @param \App\Models\User $user
+     * @param User $user
+     * @return void
      */
-    private function resetUserState($user)
+    private function resetUserState(User $user)
     {
         $user->is_active = false;
         $user->nomor_meja = null;
@@ -57,9 +58,10 @@ class CsController extends Controller
     }
 
     /**
-     * @param \App\Models\TiketAntrian|null $tiket
+     * @param TiketAntrian|null $tiket
+     * @return void
      */
-    private function safeBroadcast($tiket)
+    private function safeBroadcast(?TiketAntrian $tiket)
     {
         try {
             if ($tiket) {
@@ -168,7 +170,7 @@ class CsController extends Controller
             $q->where('is_active', true);
         }])->where('is_active', true)->get();
 
-        // Fitur Tracking / Pencarian Profiling Pelanggan (Gunakan input menggantikan get)
+        // Fitur Tracking / Pencarian Profiling Pelanggan
         $searchQuery = $request->input('search');
         $riwayatPelanggan = collect();
         if ($searchQuery) {
@@ -201,6 +203,7 @@ class CsController extends Controller
             return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus oleh Admin.');
         }
 
+        /** @var User $user */
         $user = Auth::user();
 
         // Cek jika CS masih punya tiket aktif
@@ -244,6 +247,7 @@ class CsController extends Controller
             return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus oleh Admin.');
         }
 
+        /** @var User $user */
         $user = Auth::user();
 
         $cekAktif = TiketAntrian::where('status', 'Diproses')->where('user_id', $user->id)->first();
@@ -282,6 +286,7 @@ class CsController extends Controller
             return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus oleh Admin.');
         }
 
+        /** @var User $user */
         $user = Auth::user();
         $tiket = TiketAntrian::findOrFail($id);
 
@@ -311,6 +316,7 @@ class CsController extends Controller
             return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus oleh Admin.');
         }
 
+        /** @var User $user */
         $user = Auth::user();
         $tiket = TiketAntrian::where('id', $id)->where('user_id', $user->id)->firstOrFail();
         

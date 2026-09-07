@@ -617,19 +617,19 @@
                 <!-- PROFILING PELANGGAN -->
                 <div class="bg-gray-50 p-3 rounded-xl border border-gray-200 space-y-1">
                     <span class="text-gray-400 font-bold block text-[10px] uppercase">Profiling Data Pelanggan</span>
-                    <p class="font-extrabold text-[#181C20] text-sm" x-text="selectedTiket && selectedTiket.pelanggan ? selectedTiket.pelanggan.nama : '-'"></p>
+                    <p class="font-extrabold text-[#181C20] text-sm" x-text="(selectedTiket && selectedTiket.pelanggan) ? selectedTiket.pelanggan.nama : '-'"></p>
                     <div class="grid grid-cols-2 gap-2 text-[11px] text-gray-600 pt-1">
                         <div>
                             <span class="font-bold text-gray-400 block text-[9px]">NO TELP/HP</span>
-                            <span x-text="selectedTiket && selectedTiket.pelanggan ? (selectedTiket.pelanggan.no_hp || '-') : '-'"></span>
+                            <span x-text="(selectedTiket && selectedTiket.pelanggan) ? (selectedTiket.pelanggan.no_hp || '-') : '-'"></span>
                         </div>
                         <div>
                             <span class="font-bold text-gray-400 block text-[9px]">EMAIL PELANGGAN</span>
-                            <span x-text="selectedTiket && selectedTiket.pelanggan ? (selectedTiket.pelanggan.email || '-') : '-'"></span>
+                            <span x-text="(selectedTiket && selectedTiket.pelanggan) ? (selectedTiket.pelanggan.email || '-') : '-'"></span>
                         </div>
                         <div class="col-span-2">
                             <span class="font-bold text-gray-400 block text-[9px]">NO INDIBIZ / SERVICE ID</span>
-                            <span class="font-bold text-[#00509E]" x-text="selectedTiket && selectedTiket.pelanggan ? (selectedTiket.pelanggan.no_indibiz || '-') : '-'"></span>
+                            <span class="font-bold text-[#00509E]" x-text="(selectedTiket && selectedTiket.pelanggan) ? (selectedTiket.pelanggan.no_indibiz || '-') : '-'"></span>
                         </div>
                     </div>
                 </div>
@@ -638,11 +638,11 @@
                 <div class="grid grid-cols-2 gap-2 bg-blue-50/50 p-3 rounded-xl border border-blue-100">
                     <div>
                         <span class="text-gray-400 font-bold block text-[10px] uppercase">Kategori Layanan</span>
-                        <span class="font-extrabold text-[#00509E]" x-text="selectedTiket && selectedTiket.layanan ? selectedTiket.layanan.nama_layanan : '-'"></span>
+                        <span class="font-extrabold text-[#00509E]" x-text="(selectedTiket && selectedTiket.layanan) ? selectedTiket.layanan.nama_layanan : '-'"></span>
                     </div>
                     <div>
                         <span class="text-gray-400 font-bold block text-[10px] uppercase">Sub-Layanan</span>
-                        <span class="font-extrabold text-gray-800" x-text="selectedTiket && selectedTiket.sub_layanan ? selectedTiket.sub_layanan.nama_sub_layanan : '-'"></span>
+                        <span class="font-extrabold text-gray-800" x-text="(selectedTiket && selectedTiket.sub_layanan) ? selectedTiket.sub_layanan.nama_sub_layanan : '-'"></span>
                     </div>
                 </div>
 

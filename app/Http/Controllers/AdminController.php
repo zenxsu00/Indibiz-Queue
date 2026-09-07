@@ -16,7 +16,7 @@ class AdminController extends Controller
     /**
      * Display admin dashboard.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param Request $request
      * @return \Illuminate\Contracts\View\View
      */
     public function index(Request $request)
@@ -40,6 +40,7 @@ class AdminController extends Controller
             $query->where('layanan_id', $layananId);
         }
 
+        /** @var \Illuminate\Database\Eloquent\Collection $allFilteredTickets */
         $allFilteredTickets = (clone $query)->orderBy('waktu_dibuat', 'desc')->get();
         $totalHariIni  = $allFilteredTickets->count();
         $menunggu      = $allFilteredTickets->where('status', 'Menunggu')->count();
