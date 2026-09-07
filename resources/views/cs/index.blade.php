@@ -16,7 +16,7 @@
     </style>
 </head>
 <body class="bg-[#F8F9FA] h-screen w-screen font-sans text-[#181C20] flex flex-col md:flex-row overflow-hidden antialiased selection:bg-[#EE2E24] selection:text-white"
-      x-data="{ showModalTransaksi: false, adaTransaksi: false, metodePembayaran: 'Cash' }">
+      x-data="{ showModalTransaksi: false, adaTransaksi: false, metodePembayaran: 'Cash', selectedLayananId: '{{ $antreanAktif->layanan_id ?? '' }}' }">
 
     <!-- SIDEBAR CS LOKET (DESKTOP) -->
     <aside class="hidden md:flex flex-col w-[200px] lg:w-[220px] bg-[#00509E] text-white shrink-0 shadow-lg h-full justify-between z-20">
@@ -110,11 +110,11 @@
 
         <div class="grid grid-cols-1 md:grid-cols-12 gap-3 lg:gap-4 h-full min-h-0">
             
-            <!-- KOLOM KIRI: DAFTAR ANTREAN MENUNGGU -->
+            <!-- KOLOM KIRI: DAFTAR ANTREAN MENUNGGU & PENCARIAN PROFILING -->
             <div class="md:col-span-5 lg:col-span-4 bg-white rounded-xl shadow-sm border border-[#E0E3E8] p-3 lg:p-3.5 flex flex-col h-full min-h-0 overflow-hidden">
                 
                 @if(!$isSpectator)
-                    <form action="{{ route('cs.panggil_selanjutnya') }}" method="POST" class="w-full shrink-0 mb-3">
+                    <form action="{{ route('cs.panggil_selanjutnya') }}" method="POST" class="w-full shrink-0 mb-2">
                         @csrf
                         <button type="submit" class="w-full bg-[#EE2E24] hover:bg-[#CE1111] text-white py-2.5 px-3 rounded-lg font-black text-xs lg:text-sm tracking-wide flex items-center justify-center gap-1.5 shadow-md hover:shadow-lg transition-all cursor-pointer">
                             <span class="material-symbols-outlined text-lg lg:text-xl">campaign</span>
@@ -122,55 +122,85 @@
                         </button>
                     </form>
                 @else
-                    <button disabled class="w-full bg-gray-200 text-gray-400 py-2.5 px-3 rounded-lg font-black text-xs lg:text-sm tracking-wide flex items-center justify-center gap-1.5 cursor-not-allowed mb-3">
+                    <button disabled class="w-full bg-gray-200 text-gray-400 py-2.5 px-3 rounded-lg font-black text-xs lg:text-sm tracking-wide flex items-center justify-center gap-1.5 cursor-not-allowed mb-2">
                         <span class="material-symbols-outlined text-lg lg:text-xl">lock</span>
                         <span>PEMANGGILAN DIKUNCI (SPECTATOR)</span>
                     </button>
                 @endif
 
-                <div class="flex items-center justify-between border-b border-[#E0E3E8] pb-2 mb-2 shrink-0">
-                    <h3 class="text-[11px] uppercase text-[#5D3F3B] font-black tracking-wider flex items-center gap-1">
-                        <span class="material-symbols-outlined text-sm text-[#00509E]">group</span>
-                        Menunggu ({{ $antreanMenunggu->count() }})
-                    </h3>
-                </div>
+                <!-- SEARCH BAR TRACKING PELANGGAN -->
+                <form action="{{ route('cs.index') }}" method="GET" class="shrink-0 mb-2">
+                    <div class="relative">
+                        <input type="text" name="search" value="{{ $searchQuery }}" placeholder="Cari No HP / Email / Indibiz..." class="w-full text-xs p-2 pl-7 border border-[#E0E3E8] rounded-lg focus:border-[#00509E] focus:ring-0">
+                        <span class="material-symbols-outlined absolute left-2 top-2 text-gray-400 text-sm">search</span>
+                    </div>
+                </form>
 
-                <div id="area-antrean-realtime" class="space-y-2 flex-1 overflow-y-auto pr-1 custom-scrollbar min-h-0">
-                    @forelse($antreanMenunggu as $index => $tiket)
-                        <div class="p-2.5 border rounded-lg flex justify-between items-center transition-all {{ $index === 0 ? 'border-[#00509E] bg-[#00509E]/5 shadow-sm' : 'border-[#E0E3E8] hover:bg-[#F8F9FA]' }}">
-                            <div class="min-w-0 flex-1 pr-2">
-                                <div class="flex items-center gap-1.5 mb-0.5">
-                                    <span class="font-black text-[#181C20] text-sm lg:text-base">{{ $tiket->nomor_antrian }}</span>
-                                    <span class="text-[9px] px-1.5 py-0.5 rounded bg-[#E0E3E8] text-[#5D3F3B] font-bold truncate max-w-[100px]">
-                                        {{ $tiket->layanan->nama_layanan }}
-                                    </span>
+                @if($searchQuery)
+                    <div class="bg-blue-50 p-2 rounded-lg text-xs shrink-0 border border-blue-100 flex justify-between items-center mb-2">
+                        <span class="font-bold text-[#00509E]">Hasil Profiling Pelanggan</span>
+                        <a href="{{ route('cs.index') }}" class="text-rose-600 font-bold text-[10px]">Reset</a>
+                    </div>
+                    <div class="flex-1 overflow-y-auto custom-scrollbar space-y-2">
+                        @forelse($riwayatPelanggan as $rTiket)
+                            <div class="p-2 border rounded-lg bg-gray-50 text-xs space-y-1">
+                                <div class="flex justify-between font-bold text-[#00509E]">
+                                    <span>{{ $rTiket->nomor_antrian }}</span>
+                                    <span class="text-[10px] text-gray-500">{{ \Carbon\Carbon::parse($rTiket->created_at)->format('d/m/Y') }}</span>
                                 </div>
-                                <p class="text-xs font-bold text-[#181C20] truncate">{{ $tiket->pelanggan->nama }}</p>
-                                <p class="text-[10px] text-[#5D3F3B] line-clamp-1 italic mt-0.5">"{{ $tiket->keluhan_awal }}"</p>
+                                <p class="font-bold text-gray-800">{{ $rTiket->pelanggan->nama }}</p>
+                                <p class="text-[10px] text-gray-600">Layanan: {{ $rTiket->layanan->nama_layanan }}</p>
+                                <p class="text-[10px] text-gray-500 italic">"{{ $rTiket->catatan_cs ?? 'Belum ada catatan CS' }}"</p>
                             </div>
+                        @empty
+                            <p class="text-xs text-gray-400 text-center py-4">Data tidak ditemukan.</p>
+                        @endforelse
+                    </div>
+                @else
+                    <div class="flex items-center justify-between border-b border-[#E0E3E8] pb-2 mb-2 shrink-0">
+                        <h3 class="text-[11px] uppercase text-[#5D3F3B] font-black tracking-wider flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm text-[#00509E]">group</span>
+                            Menunggu ({{ $antreanMenunggu->count() }})
+                        </h3>
+                    </div>
 
-                            @if(!$isSpectator)
-                                <form action="{{ route('cs.panggil_spesifik', $tiket->id) }}" method="POST" class="m-0 shrink-0">
-                                    @csrf
-                                    <button type="submit" class="text-[10px] bg-[#00509E] hover:bg-[#003C7E] text-white px-2.5 py-1.5 rounded-md font-bold transition-colors shadow-sm cursor-pointer">
-                                        Panggil
-                                    </button>
-                                </form>
-                            @else
-                                <span class="text-[10px] bg-gray-100 text-gray-400 px-2 py-1 rounded font-bold">Spectate</span>
-                            @endif
-                        </div>
-                    @empty
-                        <div class="text-center py-8 text-[#5D3F3B] bg-[#F8F9FA] rounded-lg border border-dashed border-[#E0E3E8]">
-                            <span class="material-symbols-outlined text-2xl text-gray-400 mb-1">coffee</span>
-                            <p class="text-xs font-bold">Loket Sedang Kosong</p>
-                            <p class="text-[10px] text-gray-400">Belum ada antrean baru.</p>
-                        </div>
-                    @endforelse
-                </div>
+                    <div id="area-antrean-realtime" class="space-y-2 flex-1 overflow-y-auto pr-1 custom-scrollbar min-h-0">
+                        @forelse($antreanMenunggu as $index => $tiket)
+                            <div class="p-2.5 border rounded-lg flex justify-between items-center transition-all {{ $index === 0 ? 'border-[#00509E] bg-[#00509E]/5 shadow-sm' : 'border-[#E0E3E8] hover:bg-[#F8F9FA]' }}">
+                                <div class="min-w-0 flex-1 pr-2">
+                                    <div class="flex items-center gap-1.5 mb-0.5">
+                                        <span class="font-black text-[#181C20] text-sm lg:text-base">{{ $tiket->nomor_antrian }}</span>
+                                        <span class="text-[9px] px-1.5 py-0.5 rounded bg-[#E0E3E8] text-[#5D3F3B] font-bold truncate max-w-[100px]">
+                                            {{ $tiket->layanan->nama_layanan }}
+                                        </span>
+                                    </div>
+                                    <p class="text-xs font-bold text-[#181C20] truncate">{{ $tiket->pelanggan->nama }}</p>
+                                    <p class="text-[10px] text-[#5D3F3B] line-clamp-1 italic mt-0.5">"{{ $tiket->keluhan_awal }}"</p>
+                                </div>
+
+                                @if(!$isSpectator)
+                                    <form action="{{ route('cs.panggil_spesifik', $tiket->id) }}" method="POST" class="m-0 shrink-0">
+                                        @csrf
+                                        <button type="submit" class="text-[10px] bg-[#00509E] hover:bg-[#003C7E] text-white px-2.5 py-1.5 rounded-md font-bold transition-colors shadow-sm cursor-pointer">
+                                            Panggil
+                                        </button>
+                                    </form>
+                                @else
+                                    <span class="text-[10px] bg-gray-100 text-gray-400 px-2 py-1 rounded font-bold">Spectate</span>
+                                @endif
+                            </div>
+                        @empty
+                            <div class="text-center py-8 text-[#5D3F3B] bg-[#F8F9FA] rounded-lg border border-dashed border-[#E0E3E8]">
+                                <span class="material-symbols-outlined text-2xl text-gray-400 mb-1">coffee</span>
+                                <p class="text-xs font-bold">Loket Sedang Kosong</p>
+                                <p class="text-[10px] text-gray-400">Belum ada antrean baru.</p>
+                            </div>
+                        @endforelse
+                    </div>
+                @endif
             </div>
 
-            <!-- KOLOM KANAN: PELAYANAN TIKET AKTIF -->
+            <!-- KOLOM KANAN: PELAYANAN TIKET AKTIF, PROFILING & KOREKSI LAYANAN -->
             <div class="md:col-span-7 lg:col-span-8 bg-white rounded-xl shadow-sm border border-[#E0E3E8] p-3.5 lg:p-4 flex flex-col h-full min-h-0 overflow-hidden">
                 @if($antreanAktif)
                     <div class="flex flex-col h-full min-h-0 justify-between">
@@ -199,36 +229,70 @@
                                 </div>
                             </div>
 
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-[#F1F4F9] p-2.5 rounded-xl border border-[#E0E3E8]">
-                                <div>
-                                    <p class="text-[8px] text-[#5D3F3B] font-black uppercase tracking-wider">Nama Pelanggan</p>
-                                    <p class="text-sm font-black text-[#181C20] truncate mt-0.5">{{ $antreanAktif->pelanggan->nama }}</p>
-                                    <p class="text-[10px] font-semibold text-[#5D3F3B] mt-0.5 flex items-center gap-1">
-                                        <span class="material-symbols-outlined text-xs">call</span> {{ $antreanAktif->pelanggan->no_hp }}
-                                    </p>
-                                </div>
-                                <div>
-                                    <p class="text-[8px] text-[#5D3F3B] font-black uppercase tracking-wider">Kategori Layanan Dituju</p>
-                                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-[#00509E] text-white font-bold rounded text-xs mt-1 shadow-sm">
-                                        <span class="material-symbols-outlined text-xs">support</span>
-                                        {{ $antreanAktif->layanan->nama_layanan }}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div>
-                                <p class="text-[9px] text-[#5D3F3B] font-black uppercase tracking-wider mb-1 flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-xs">chat</span> Catatan Keluhan Awal Pelanggan
-                                </p>
-                                <div class="text-xs text-[#181C20] bg-yellow-50 border border-yellow-200 p-2.5 rounded-lg italic font-medium shadow-inner">
-                                    "{{ $antreanAktif->keluhan_awal }}"
-                                </div>
-                            </div>
-
-                            <!-- FORM SELESAI TIKET -->
-                            <form id="form-selesai-tiket" action="{{ route('cs.selesaikan', $antreanAktif->id) }}" method="POST" class="space-y-2.5">
+                            <!-- FORM SELESAI TIKET TERMASUK PROFILING & KOREKSI LAYANAN -->
+                            <form id="form-selesai-tiket" action="{{ route('cs.selesaikan', $antreanAktif->id) }}" method="POST" class="space-y-3">
                                 @csrf
                                 
+                                <!-- SECTION PROFILING DATA PELANGGAN -->
+                                <div class="bg-gray-50 p-2.5 rounded-xl border border-gray-200 space-y-2">
+                                    <h4 class="text-xs font-black text-[#00509E] flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-sm">person_edit</span> Profiling Data Pelanggan
+                                    </h4>
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                                        <div>
+                                            <label class="text-[10px] font-bold text-gray-500 block mb-0.5">Nama Pelanggan</label>
+                                            <input type="text" name="nama_pelanggan" value="{{ $antreanAktif->pelanggan->nama }}" {{ $isSpectator ? 'disabled' : '' }} required class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:border-[#00509E] focus:ring-0">
+                                        </div>
+                                        <div>
+                                            <label class="text-[10px] font-bold text-gray-500 block mb-0.5">Email Pelanggan</label>
+                                            <input type="email" name="email_pelanggan" value="{{ $antreanAktif->pelanggan->email }}" {{ $isSpectator ? 'disabled' : '' }} placeholder="contoh@gmail.com" class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:border-[#00509E] focus:ring-0">
+                                        </div>
+                                        <div>
+                                            <label class="text-[10px] font-bold text-gray-500 block mb-0.5">No. Indibiz / Service ID</label>
+                                            <input type="text" name="no_indibiz" value="{{ $antreanAktif->pelanggan->no_indibiz }}" {{ $isSpectator ? 'disabled' : '' }} placeholder="Contoh: 12233948" class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:border-[#00509E] focus:ring-0">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- SECTION KOREKSI CATEGORY & SUB-LAYANAN -->
+                                <div class="bg-blue-50/50 p-2.5 rounded-xl border border-blue-100 space-y-2">
+                                    <h4 class="text-xs font-black text-[#00509E] flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-sm">category</span> Koreksi Kategori & Sub-Layanan
+                                    </h4>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                        <div>
+                                            <label class="text-[10px] font-bold text-gray-500 block mb-0.5">Kategori Utama</label>
+                                            <select name="layanan_id" x-model="selectedLayananId" {{ $isSpectator ? 'disabled' : '' }} class="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white focus:border-[#00509E] focus:ring-0">
+                                                @foreach($layanans as $lay)
+                                                    <option value="{{ $lay->id }}">{{ $lay->nama_layanan }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="text-[10px] font-bold text-gray-500 block mb-0.5">Sub-Layanan Sektoral</label>
+                                            <select name="sub_layanan_id" {{ $isSpectator ? 'disabled' : '' }} class="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white focus:border-[#00509E] focus:ring-0">
+                                                <option value="">-- Pilih Sub Layanan --</option>
+                                                @foreach($layanans as $lay)
+                                                    @foreach($lay->subLayanans as $sub)
+                                                        <option value="{{ $sub->id }}" x-show="selectedLayananId == '{{ $lay->id }}'" {{ $antreanAktif->sub_layanan_id == $sub->id ? 'selected' : '' }}>
+                                                            {{ $sub->nama_sub_layanan }}
+                                                        </option>
+                                                    @endforeach
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p class="text-[9px] text-[#5D3F3B] font-black uppercase tracking-wider mb-1 flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-xs">chat</span> Catatan Keluhan Awal Pelanggan
+                                    </p>
+                                    <div class="text-xs text-[#181C20] bg-yellow-50 border border-yellow-200 p-2.5 rounded-lg italic font-medium shadow-inner">
+                                        "{{ $antreanAktif->keluhan_awal }}"
+                                    </div>
+                                </div>
+
                                 <div>
                                     <label class="text-xs font-black text-[#181C20] flex items-center gap-1 mb-1">
                                         <span class="material-symbols-outlined text-sm text-[#00509E]">edit_document</span>
@@ -394,7 +458,6 @@
 
         // FUNGSI REALTIME SWAP KESELURUHAN PANEL CONSOLE KETIKA ADA ANTREAN BARU
         function fetchConsoleRealtime() {
-            // Jangan swap jika CS sedang mengisi modal transaksi atau mengetik catatan
             var modalActive = Alpine.$data(document.body).showModalTransaksi;
             var isFocusTextarea = document.activeElement && (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT');
             if (modalActive || isFocusTextarea) return;
@@ -416,7 +479,6 @@
                     var elemenLama = document.getElementById('main-cs-console');
                     
                     if (elemenBaru && elemenLama) {
-                        // Cek apakah ada perubahan isi HTML untuk menghindari flicker berlebih
                         if (elemenLama.innerHTML !== elemenBaru.innerHTML) {
                             elemenLama.innerHTML = elemenBaru.innerHTML;
                         }
@@ -425,10 +487,8 @@
                 .catch(function(error) { console.error('Gagal memperbarui antrean:', error); });
         }
 
-        // AUTO-FETCH REALTIME SETIAP 2,5 DETIK
         setInterval(fetchConsoleRealtime, 2500);
 
-        // HEARTBEAT PING SYSTEM (AUTO-OFFLINE JIKA TAB DITUTUP)
         function sendHeartbeat() {
             fetch('{{ route("cs.ping") }}', {
                 method: 'POST',
