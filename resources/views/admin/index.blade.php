@@ -8,8 +8,14 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #F1F4F9; border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #C4C7CC; border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #00509E; }
+    </style>
 </head>
-<body class="bg-[#F8F9FA] min-h-screen font-sans text-[#181C20] flex flex-col lg:flex-row antialiased overflow-x-hidden" 
+<body class="bg-[#F8F9FA] min-h-screen font-sans text-[#181C20] flex flex-col lg:flex-row antialiased overflow-x-hidden selection:bg-[#EE2E24] selection:text-white" 
       x-data="{ activeTab: 'operations', mobileMenu: false, showModalCS: false, showModalMeja: false, showModalDetail: false, selectedTiket: null }">
 
     <!-- HEADER MOBILE -->
@@ -239,6 +245,7 @@
                                 <th class="p-3">Pelanggan</th>
                                 <th class="p-3">Kategori & Sub-Layanan</th>
                                 <th class="p-3">CS / Loket</th>
+                                <th class="p-3">Status Kurasi</th>
                                 <th class="p-3">Waktu Ambil</th>
                                 <th class="p-3">Status</th>
                                 <th class="p-3">Metode</th>
@@ -259,6 +266,11 @@
                                         <span class="text-[10px] text-gray-500 italic">{{ $tiket->subLayanan->nama_sub_layanan ?? '-' }}</span>
                                     </td>
                                     <td class="p-3 font-bold">{{ $tiket->cs ? $tiket->cs->nama_lengkap . ' (M'.$tiket->cs->nomor_meja.')' : '-' }}</td>
+                                    <td class="p-3">
+                                        <span class="text-[9px] px-2 py-0.5 rounded-full font-black {{ $tiket->is_curated ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
+                                            {{ $tiket->is_curated ? '✓ Dikurasi' : '⚠ Belum' }}
+                                        </span>
+                                    </td>
                                     <td class="p-3 text-gray-500">{{ \Carbon\Carbon::parse($tiket->waktu_dibuat)->timezone('Asia/Jakarta')->format('d/m/Y H:i') }}</td>
                                     <td class="p-3">
                                         <span class="px-2 py-0.5 rounded-full text-[10px] font-black {{ $tiket->status === 'Selesai' ? 'bg-emerald-100 text-emerald-700' : ($tiket->status === 'Batal' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700') }}">
@@ -274,7 +286,7 @@
                                     </td>
                                 </tr>
                             @empty
-                                <tr><td colspan="9" class="p-6 text-center text-gray-400 font-bold">Tidak ada data antrean pada rentang waktu ini.</td></tr>
+                                <tr><td colspan="10" class="p-6 text-center text-gray-400 font-bold">Tidak ada data antrean pada rentang waktu ini.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -411,7 +423,7 @@
             </div>
         </div>
 
-        <!-- TAB 4: STAFF MONITORING -->
+        <!-- TAB 4: STAFF MONITORING & CS ACTIVE LOGS -->
         <div x-show="activeTab === 'staff'" class="space-y-6">
             
             <!-- PANEL MANAJEMEN AKUN & SLOT MEJA -->
@@ -480,6 +492,54 @@
                     @endforelse
                 </div>
             </div>
+
+            <!-- REKAP LOG CS AKTIF & PENGGUNAAN HARI INI (> 6 JAM) -->
+            @if(isset($csStats) && count($csStats) > 0)
+                <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
+                    <div class="flex justify-between items-center border-b border-gray-100 pb-3">
+                        <h3 class="text-xs font-black uppercase text-[#181C20] flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-[#00509E] text-lg">timer</span>
+                            Log Durasi CS Online (> 6 Jam Indikator)
+                        </h3>
+                        <span class="text-[10px] font-extrabold px-2.5 py-1 bg-blue-50 text-[#00509E] rounded-full">
+                            Rekap Hari Ini
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        @foreach($csStats as $csItem)
+                            <div class="p-3.5 rounded-xl border {{ $csItem['is_over_6h'] ? 'border-amber-300 bg-amber-50/30' : 'border-[#E0E3E8] bg-[#F8F9FA]' }} space-y-2">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h4 class="font-bold text-xs text-gray-800">{{ $csItem['nama'] }}</h4>
+                                        <p class="text-[10px] text-gray-500">Loket: {{ $csItem['nomor_meja'] ? 'M' . $csItem['nomor_meja'] : 'Belum Pilih Loket' }}</p>
+                                    </div>
+                                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black {{ $csItem['is_active'] ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600' }}">
+                                        {{ $csItem['is_active'] ? 'ONLINE' : 'OFFLINE' }}
+                                    </span>
+                                </div>
+
+                                <div class="pt-2 border-t border-gray-200/80 flex justify-between items-center text-xs">
+                                    <div>
+                                        <span class="text-[9px] text-gray-400 block font-bold">Total Jam Aktif</span>
+                                        <span class="font-black text-xs text-[#00509E]">{{ $csItem['jam_aktif'] }} Jam</span>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-[9px] text-gray-400 block font-bold">Tiket Selesai</span>
+                                        <span class="font-black text-xs text-emerald-600">{{ $csItem['total_tiket'] }} Tiket</span>
+                                    </div>
+                                </div>
+
+                                @if($csItem['is_over_6h'])
+                                    <div class="mt-1 p-1.5 bg-amber-100/80 rounded-lg text-[9px] font-bold text-amber-800 flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-xs">warning</span> Aktif > 6 Jam hari ini.
+                                    </div>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
 
             <!-- TABLE LIVEMONITOR PETUGAS CS -->
             <div class="bg-white border border-[#E0E3E8] rounded-2xl shadow-sm overflow-hidden flex flex-col">
