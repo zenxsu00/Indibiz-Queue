@@ -20,6 +20,7 @@
           showModalKurasi: false, 
           kurasiTiket: {},
           selectedLayananId: '',
+          selectedPeriod: '{{ $period ?? 'all' }}',
           
           openKurasiModal(tiket) {
               this.kurasiTiket = JSON.parse(JSON.stringify(tiket));
@@ -175,7 +176,7 @@
             </div>
         @endif
 
-        <!-- HEADER BANNER & COMBINED SEARCH + DATE RANGE FILTER -->
+        <!-- HEADER BANNER & SIMPLE SELECT BAR FILTER -->
         <div class="bg-white p-3.5 lg:p-4 rounded-xl border border-[#E0E3E8] shadow-sm shrink-0 space-y-3">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <div>
@@ -187,39 +188,44 @@
                 </div>
             </div>
 
-            <!-- FORM FILTER MULTI-INPUT (SEARCH & DATE RANGE) -->
-            <form action="{{ route('cs.history') }}" method="GET" class="grid grid-cols-1 sm:grid-cols-12 gap-2 text-xs">
+            <!-- FORM FILTER SIMPEL DENGAN SELECT BAR -->
+            <form action="{{ route('cs.history') }}" method="GET" class="flex flex-wrap items-center gap-2 text-xs">
                 
-                <!-- SEARCH TEXT -->
-                <div class="sm:col-span-5 relative">
+                <!-- SEARCH TEXT INPUT -->
+                <div class="relative flex-1 min-w-[220px]">
                     <input type="text" name="search" value="{{ $searchQuery }}" placeholder="Cari No HP / Email / Indibiz / Nama..." class="w-full text-xs p-2 pl-8 border border-[#E0E3E8] rounded-lg focus:border-[#00509E] focus:ring-0 font-medium">
                     <span class="material-symbols-outlined absolute left-2.5 top-2 text-gray-400 text-base">search</span>
                 </div>
 
-                <!-- TANGGAL MULAI -->
-                <div class="sm:col-span-3 flex items-center gap-1.5 bg-gray-50 px-2 py-1 border border-[#E0E3E8] rounded-lg">
-                    <span class="text-[10px] font-bold text-gray-500 shrink-0">Dari:</span>
-                    <input type="date" name="start_date" value="{{ $startDate ?? '' }}" class="w-full bg-transparent text-xs font-medium focus:outline-none">
+                <!-- SELECT BAR PERIODE -->
+                <div class="w-full sm:w-auto min-w-[180px]">
+                    <select name="period" x-model="selectedPeriod" @change="$el.form.submit()" class="w-full p-2 border border-[#E0E3E8] bg-gray-50 rounded-lg text-xs font-bold text-gray-700 focus:border-[#00509E] focus:ring-0 cursor-pointer">
+                        <option value="all">🗓 Semua Waktu (All Time)</option>
+                        <option value="today">📅 Hari Ini (Today)</option>
+                        <option value="mtd">📊 Bulan Ini (Month to Date)</option>
+                        <option value="last_30">🕒 30 Hari Terakhir</option>
+                        <option value="ytd">📈 Tahun Ini (Year to Date)</option>
+                        <option value="custom">🛠 Kustom Tanggal...</option>
+                    </select>
                 </div>
 
-                <!-- TANGGAL SELESAI -->
-                <div class="sm:col-span-3 flex items-center gap-1.5 bg-gray-50 px-2 py-1 border border-[#E0E3E8] rounded-lg">
-                    <span class="text-[10px] font-bold text-gray-500 shrink-0">Sampai:</span>
-                    <input type="date" name="end_date" value="{{ $endDate ?? '' }}" class="w-full bg-transparent text-xs font-medium focus:outline-none">
-                </div>
+                <!-- INPUT TANGGAL KUSTOM (Hanya tampil jika memilih 'Kustom Tanggal') -->
+                <template x-if="selectedPeriod === 'custom'">
+                    <div class="flex items-center gap-1.5 bg-gray-50 p-1 border border-[#E0E3E8] rounded-lg">
+                        <input type="date" name="start_date" value="{{ $startDate ?? '' }}" class="bg-transparent text-xs font-medium focus:outline-none">
+                        <span class="text-gray-400 font-bold">-</span>
+                        <input type="date" name="end_date" value="{{ $endDate ?? '' }}" class="bg-transparent text-xs font-medium focus:outline-none">
+                        <button type="submit" class="px-2 py-1 bg-[#00509E] text-white rounded font-bold text-[10px]">Terapkan</button>
+                    </div>
+                </template>
 
-                <!-- TOMBOL AKSI FILTER & RESET -->
-                <div class="sm:col-span-1 flex items-center gap-1">
-                    <button type="submit" title="Terapkan Filter" class="flex-1 py-2 bg-[#00509E] hover:bg-[#003C7E] text-white rounded-lg font-bold flex items-center justify-center shadow-sm cursor-pointer transition-all">
-                        <span class="material-symbols-outlined text-sm">filter_alt</span>
-                    </button>
-
-                    @if(!empty($searchQuery) || !empty($startDate) || !empty($endDate))
-                        <a href="{{ route('cs.history') }}" title="Reset Filter" class="py-2 px-2 bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 rounded-lg font-bold flex items-center justify-center transition-all">
-                            <span class="material-symbols-outlined text-sm">restart_alt</span>
-                        </a>
-                    @endif
-                </div>
+                <!-- TOMBOL RESET FILTER -->
+                @if(($period && $period !== 'all') || !empty($searchQuery))
+                    <a href="{{ route('cs.history') }}" title="Reset Filter" class="py-2 px-2.5 bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 rounded-lg font-bold flex items-center justify-center transition-all text-xs gap-1">
+                        <span class="material-symbols-outlined text-sm">restart_alt</span>
+                        <span>Reset</span>
+                    </a>
+                @endif
             </form>
         </div>
 

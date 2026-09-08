@@ -226,18 +226,46 @@ class CsController extends Controller
         $isSpectator = (empty($nomorMejaTerpilih) || $nomorMejaTerpilih == 0) && $user->role === 'admin';
 
         $searchQuery = $request->input('search');
+        $period      = $request->input('period', 'all'); // Default: all
         $startDate   = $request->input('start_date');
         $endDate     = $request->input('end_date');
         
         $query = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan'])
                     ->where('status', 'Selesai');
 
-        // Filter Rentang Tanggal berdasarkan waktu selesai
-        if ($startDate) {
-            $query->whereDate('waktu_selesai', '>=', $startDate);
-        }
-        if ($endDate) {
-            $query->whereDate('waktu_selesai', '<=', $endDate);
+        $now = Carbon::now('Asia/Jakarta');
+
+        // Filter berdasarkan Select Bar Periode
+        switch ($period) {
+            case 'today':
+                $query->whereDate('waktu_selesai', $now->toDateString());
+                break;
+
+            case 'mtd': // Month to Date (Awal Bulan s/d Hari ini)
+                $query->whereBetween('waktu_selesai', [$now->copy()->startOfMonth(), $now->copy()->endOfDay()]);
+                break;
+
+            case 'last_30': // 30 Hari Terakhir
+                $query->whereBetween('waktu_selesai', [$now->copy()->subDays(30)->startOfDay(), $now->copy()->endOfDay()]);
+                break;
+
+            case 'ytd': // Year to Date (Awal Tahun s/d Hari ini)
+                $query->whereBetween('waktu_selesai', [$now->copy()->startOfYear(), $now->copy()->endOfDay()]);
+                break;
+
+            case 'custom': // Rentang Tanggal Manual
+                if ($startDate) {
+                    $query->whereDate('waktu_selesai', '>=', $startDate);
+                }
+                if ($endDate) {
+                    $query->whereDate('waktu_selesai', '<=', $endDate);
+                }
+                break;
+
+            case 'all':
+            default:
+                // Tidak ada batas waktu
+                break;
         }
 
         if ($searchQuery) {
@@ -257,7 +285,7 @@ class CsController extends Controller
             $q->where('is_active', true);
         }])->where('is_active', true)->get();
 
-        return view('cs.history', compact('riwayatTiket', 'searchQuery', 'startDate', 'endDate', 'isSpectator', 'nomorMejaTerpilih', 'layanans'));
+        return view('cs.history', compact('riwayatTiket', 'searchQuery', 'period', 'startDate', 'endDate', 'isSpectator', 'nomorMejaTerpilih', 'layanans'));
     }
 
     public function panggilSelanjutnya()
