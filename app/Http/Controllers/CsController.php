@@ -46,10 +46,6 @@ class CsController extends Controller
         return true;
     }
 
-    /**
-     * @param User $user
-     * @return void
-     */
     private function resetUserState(User $user)
     {
         $this->closeActiveLog($user->id);
@@ -59,9 +55,6 @@ class CsController extends Controller
         session()->forget('meja_terpilih');
     }
 
-    /**
-     * Membuka log durasi CS aktif baru untuk hari ini
-     */
     private function openActiveLog($userId)
     {
         $now = Carbon::now('Asia/Jakarta');
@@ -83,9 +76,6 @@ class CsController extends Controller
         }
     }
 
-    /**
-     * Menutup log durasi CS aktif & menghitung durasi menit
-     */
     private function closeActiveLog($userId)
     {
         $now = Carbon::now('Asia/Jakarta');
@@ -107,10 +97,6 @@ class CsController extends Controller
         }
     }
 
-    /**
-     * @param TiketAntrian|null $tiket
-     * @return void
-     */
     private function safeBroadcast(?TiketAntrian $tiket)
     {
         try {
@@ -179,8 +165,6 @@ class CsController extends Controller
         $user->save();
 
         session(['meja_terpilih' => $request->nomor_meja]);
-
-        // Catat Log CS Aktif
         $this->openActiveLog($user->id);
 
         return redirect()->route('cs.index')->with('success', "Berhasil masuk ke Loket M{$request->nomor_meja}");
@@ -205,50 +189,63 @@ class CsController extends Controller
             $this->openActiveLog($user->id);
         }
 
-        // Tiket Menunggu
         $antreanMenunggu = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan'])
                             ->whereDate('waktu_dibuat', $hariIni)
                             ->where('status', 'Menunggu')
                             ->orderBy('waktu_dibuat', 'asc')
                             ->get();
 
-        // Tiket Aktif
         $antreanAktif = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan'])
                             ->whereDate('waktu_dibuat', $hariIni)
                             ->where('status', 'Diproses')
                             ->where('user_id', $user->id)
                             ->first();
 
-        // Master Layanan & Sub-Layanan untuk fitur Koreksi Layanan
         $layanans = Layanan::with(['subLayanans' => function($q) {
             $q->where('is_active', true);
         }])->where('is_active', true)->get();
-
-        // Fitur Tracking / Pencarian Profiling Pelanggan
-        $searchQuery = $request->input('search');
-        $riwayatPelanggan = collect();
-        if ($searchQuery) {
-            $riwayatPelanggan = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan', 'cs'])
-                ->whereHas('pelanggan', function ($q) use ($searchQuery) {
-                    $q->where('no_hp', 'like', "%{$searchQuery}%")
-                      ->orWhere('email', 'like', "%{$searchQuery}%")
-                      ->orWhere('no_indibiz', 'like', "%{$searchQuery}%")
-                      ->orWhere('nama', 'like', "%{$searchQuery}%");
-                })
-                ->orderBy('created_at', 'desc')
-                ->take(15)
-                ->get();
-        }
 
         return view('cs.index', compact(
             'antreanMenunggu', 
             'antreanAktif', 
             'isSpectator', 
             'nomorMejaTerpilih',
-            'layanans',
-            'riwayatPelanggan',
-            'searchQuery'
+            'layanans'
         ));
+    }
+
+    public function historyPage(Request $request)
+    {
+        if (!$this->checkValidMeja()) {
+            return redirect()->route('cs.select-meja')->with('error', 'Silakan pilih meja loket terlebih dahulu.');
+        }
+
+        /** @var User $user */
+        $user = User::find(Auth::id());
+        $nomorMejaTerpilih = $user->nomor_meja ?? session('meja_terpilih');
+        $isSpectator = (empty($nomorMejaTerpilih) || $nomorMejaTerpilih == 0) && $user->role === 'admin';
+
+        $searchQuery = $request->input('search');
+        
+        // Murni memuat tiket status SELESAI (Tidak Hadir/Batal diabaikan)
+        $query = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan'])
+                    ->where('status', 'Selesai');
+
+        if ($searchQuery) {
+            $query->where(function($q) use ($searchQuery) {
+                $q->where('nomor_antrian', 'like', "%{$searchQuery}%")
+                  ->orWhereHas('pelanggan', function ($qp) use ($searchQuery) {
+                      $qp->where('no_hp', 'like', "%{$searchQuery}%")
+                        ->orWhere('email', 'like', "%{$searchQuery}%")
+                        ->orWhere('no_indibiz', 'like', "%{$searchQuery}%")
+                        ->orWhere('nama', 'like', "%{$searchQuery}%");
+                  });
+            });
+        }
+
+        $riwayatTiket = $query->orderBy('waktu_selesai', 'desc')->paginate(15);
+
+        return view('cs.history', compact('riwayatTiket', 'searchQuery', 'isSpectator', 'nomorMejaTerpilih'));
     }
 
     public function panggilSelanjutnya()
@@ -260,7 +257,6 @@ class CsController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
-        // Cek jika CS masih punya tiket aktif
         $cekAktif = TiketAntrian::where('status', 'Diproses')->where('user_id', $user->id)->first();
         if ($cekAktif) {
             return back()->with('error', 'Selesaikan tiket ' . $cekAktif->nomor_antrian . ' terlebih dahulu!');
@@ -393,7 +389,6 @@ class CsController extends Controller
             'bukti_pembayaran'   => 'nullable|string|max:100',
         ]);
 
-        // 1. Profiling Pelanggan
         if ($tiket->pelanggan) {
             $tiket->pelanggan->update([
                 'nama'       => $request->nama_pelanggan ?? $tiket->pelanggan->nama,
@@ -402,7 +397,6 @@ class CsController extends Controller
             ]);
         }
 
-        // 2. Update Tiket & Koreksi Layanan
         $now = Carbon::now('Asia/Jakarta');
         $tiket->update([
             'layanan_id'           => $request->layanan_id ?? $tiket->layanan_id,
@@ -422,7 +416,6 @@ class CsController extends Controller
         return redirect()->route('cs.index')->with('success', "Tiket {$tiket->nomor_antrian} berhasil diselesaikan.");
     }
 
-    // METHOD KURASI CATATAN KONSULTASI LAMA
     public function updateKurasi(Request $request, int $id)
     {
         $request->validate([

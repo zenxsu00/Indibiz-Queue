@@ -15,12 +15,10 @@ use App\Http\Controllers\DisplayController;
 |--------------------------------------------------------------------------
 */
 
-// Redirect Halaman Utama ke Antrean
 Route::get('/', function () {
     return redirect()->route('antrean.index');
 });
 
-// ROUTE PEMBERSIH CACHE UNTUK HOSTING (AKSES: domain.com/clear-all-cache?key=indibiz123)
 Route::get('/clear-all-cache', function () {
     if (request('key') !== 'indibiz123') {
         return response('Akses ditolak! Kunci rahasia salah.', 403);
@@ -39,10 +37,8 @@ Route::get('/antrean', [TiketController::class, 'index'])->name('antrean.index')
 Route::post('/antrean', [TiketController::class, 'store'])->name('antrean.store');
 Route::get('/antrean/{id}', [TiketController::class, 'showTiket'])->name('antrean.tiket'); 
 
-// Halaman Publik Monitor TV Antrean & Endpoint Datanya
 Route::get('/display-antrean', [DisplayController::class, 'index'])->name('antrean.display');
 Route::get('/api/display-antrean-data', [DisplayController::class, 'getDataJson']);
-// Proxy ElevenLabs TTS untuk Display Monitor TV
 Route::post('/api/elevenlabs-tts', [DisplayController::class, 'ttsElevenLabs']);
 
 // 2. MODUL AUTHENTICATION (LOGIN/LOGOUT)
@@ -55,22 +51,21 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/cs/pilih-meja', [CsController::class, 'selectMeja'])->name('cs.select-meja');
     Route::post('/cs/pilih-meja', [CsController::class, 'setMeja'])->name('cs.process-meja');
     Route::get('/cs/leave', [CsController::class, 'leaveConsole'])->name('cs.leave');
-    
-    // ENDPOINT HEARTBEAT PING CS DESK
     Route::post('/cs/ping-heartbeat', [CsController::class, 'pingHeartbeat'])->name('cs.ping');
 });
 
 // 3. MODUL DENGAN PROTEKSI LOGIN
 Route::middleware(['auth'])->group(function () {
     
-    // Console CS (Dapat diakses CS maupun Admin)
+    // Console CS
     Route::get('/cs-desk', [CsController::class, 'index'])->name('cs.index');
+    Route::get('/cs/history', [CsController::class, 'historyPage'])->name('cs.history');
     Route::post('/cs-desk/panggil-selanjutnya', [CsController::class, 'panggilSelanjutnya'])->name('cs.panggil_selanjutnya');
     Route::post('/cs-desk/panggil-spesifik/{id}', [CsController::class, 'panggilSpesifik'])->name('cs.panggil_spesifik');
     Route::post('/cs-desk/batal-atau-kembalikan/{id}', [CsController::class, 'batalAtauKembalikan'])->name('cs.batal_atau_kembalikan');
     Route::post('/cs-desk/selesaikan/{id}', [CsController::class, 'selesaikanTiket'])->name('cs.selesaikan');
     
-    // ROUTE TAMBAHAN MODUL 2: KURASI CATATAN KONSULTASI
+    // Route Kurasi CS
     Route::post('/cs-desk/kurasi/{id}', [CsController::class, 'updateKurasi'])->name('cs.update_kurasi');
 
     // 4. MODUL SUPER ADMIN (KHUSUS ROLE ADMIN)
@@ -88,6 +83,5 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/admin/meja/store', [StaffManagementController::class, 'storeMeja'])->name('admin.meja.store');
         Route::post('/admin/meja/toggle/{id}', [StaffManagementController::class, 'toggleMeja'])->name('admin.meja.toggle');
         Route::delete('/admin/meja/delete/{id}', [StaffManagementController::class, 'destroyMeja'])->name('admin.meja.delete');
-
     });
 });

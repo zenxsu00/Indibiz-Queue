@@ -18,11 +18,9 @@
 <body class="bg-[#F8F9FA] h-screen w-screen font-sans text-[#181C20] flex flex-col md:flex-row overflow-hidden antialiased selection:bg-[#EE2E24] selection:text-white"
       x-data="{ 
           showModalTransaksi: false, 
-          showModalKurasi: false,
           adaTransaksi: false, 
           metodePembayaran: 'Cash', 
-          selectedLayananId: '{{ $antreanAktif->layanan_id ?? '' }}',
-          kurasiTiket: {}
+          selectedLayananId: '{{ $antreanAktif->layanan_id ?? '' }}'
       }">
 
     <!-- SIDEBAR CS LOKET (DESKTOP) -->
@@ -36,10 +34,15 @@
                 </div>
             </div>
 
-            <nav class="py-3 space-y-1 px-2.5">
-                <a href="#" class="flex items-center px-3 py-2 text-xs font-bold bg-white/20 text-white rounded-lg shadow-sm border border-white/10 transition-all">
+            <!-- MENU NAVIGASI DEDICATED (100% IDENTIK) -->
+            <nav class="py-3 space-y-1.5 px-2.5">
+                <a href="{{ route('cs.index') }}" class="flex items-center px-3 py-2 text-xs font-bold bg-white/20 text-white rounded-lg shadow-sm border border-white/10 transition-all">
                     <span class="material-symbols-outlined mr-2 text-base">grid_view</span> 
                     Dashboard Loket
+                </a>
+                <a href="{{ route('cs.history') }}" class="flex items-center px-3 py-2 text-xs font-bold text-white/70 hover:bg-white/10 hover:text-white rounded-lg transition-all">
+                    <span class="material-symbols-outlined mr-2 text-base">history</span> 
+                    Riwayat Layanan
                 </a>
             </nav>
         </div>
@@ -78,21 +81,26 @@
         </div>
     </aside>
 
-    <!-- MOBILE HEADER -->
+    <!-- MOBILE HEADER (100% IDENTIK & PERSISI) -->
     <div class="md:hidden bg-[#00509E] text-white p-3 flex justify-between items-center shadow-md shrink-0 z-30">
         <div class="font-bold text-xs flex items-center gap-2">
             <img src="{{ asset('img/LogoIcon.png') }}" alt="Indibiz" class="w-6 h-6 object-contain drop-shadow-md">
             <span>CS Console {{ $isSpectator ? '(Admin Mode)' : 'M' . ($nomorMejaTerpilih ?? auth()->user()->nomor_meja ?? '1') }}</span>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5">
+            <a href="{{ route('cs.index') }}" title="Dashboard Loket" class="p-1 bg-white/20 text-white rounded-lg flex items-center justify-center">
+                <span class="material-symbols-outlined text-base">grid_view</span>
+            </a>
+            <a href="{{ route('cs.history') }}" title="Riwayat Layanan" class="p-1 text-white/70 hover:bg-white/10 hover:text-white rounded-lg flex items-center justify-center">
+                <span class="material-symbols-outlined text-base">history</span>
+            </a>
             @if(Auth::check() && (strtolower(Auth::user()->role) === 'admin' || strtolower(Auth::user()->username) === 'admin'))
-                <a href="{{ route('cs.leave') }}" class="text-xs bg-amber-500 hover:bg-amber-600 text-white font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-sm">
-                    <span class="material-symbols-outlined text-sm">swap_horiz</span> Admin
+                <a href="{{ route('cs.leave') }}" class="text-xs bg-amber-500 hover:bg-amber-600 text-white font-bold px-2 py-1 rounded-lg flex items-center gap-1 shadow-sm ml-1">
+                    <span class="material-symbols-outlined text-sm">swap_horiz</span>
                 </a>
             @endif
-
-            <form action="{{ route('logout') }}" method="POST" class="m-0">
+            <form action="{{ route('logout') }}" method="POST" class="m-0 ml-1">
                 @csrf
                 <button type="submit" class="material-symbols-outlined text-white text-lg flex items-center p-1">logout</button>
             </form>
@@ -124,11 +132,11 @@
 
         <div class="grid grid-cols-1 md:grid-cols-12 gap-3 lg:gap-4 h-full min-h-0">
             
-            <!-- KOLOM KIRI: DAFTAR ANTREAN MENUNGGU & PENCARIAN PROFILING -->
+            <!-- KOLOM KIRI: DAFTAR ANTREAN MENUNGGU -->
             <div class="md:col-span-5 lg:col-span-4 bg-white rounded-xl shadow-sm border border-[#E0E3E8] p-3 lg:p-3.5 flex flex-col h-full min-h-0 overflow-hidden">
                 
                 @if(!$isSpectator)
-                    <form action="{{ route('cs.panggil_selanjutnya') }}" method="POST" class="w-full shrink-0 mb-2">
+                    <form action="{{ route('cs.panggil_selanjutnya') }}" method="POST" class="w-full shrink-0 mb-3">
                         @csrf
                         <button type="submit" class="w-full bg-[#EE2E24] hover:bg-[#CE1111] text-white py-2.5 px-3 rounded-lg font-black text-xs lg:text-sm tracking-wide flex items-center justify-center gap-1.5 shadow-md hover:shadow-lg transition-all cursor-pointer">
                             <span class="material-symbols-outlined text-lg lg:text-xl">campaign</span>
@@ -136,106 +144,55 @@
                         </button>
                     </form>
                 @else
-                    <button disabled class="w-full bg-gray-200 text-gray-400 py-2.5 px-3 rounded-lg font-black text-xs lg:text-sm tracking-wide flex items-center justify-center gap-1.5 cursor-not-allowed mb-2">
+                    <button disabled class="w-full bg-gray-200 text-gray-400 py-2.5 px-3 rounded-lg font-black text-xs lg:text-sm tracking-wide flex items-center justify-center gap-1.5 cursor-not-allowed mb-3">
                         <span class="material-symbols-outlined text-lg lg:text-xl">lock</span>
                         <span>PEMANGGILAN DIKUNCI (SPECTATOR)</span>
                     </button>
                 @endif
 
-                <!-- SEARCH BAR TRACKING PELANGGAN -->
-                <form action="{{ route('cs.index') }}" method="GET" class="shrink-0 mb-2">
-                    <div class="relative">
-                        <input type="text" name="search" value="{{ $searchQuery }}" placeholder="Cari No HP / Email / Indibiz / Nama..." class="w-full text-xs p-2 pl-7 border border-[#E0E3E8] rounded-lg focus:border-[#00509E] focus:ring-0">
-                        <span class="material-symbols-outlined absolute left-2 top-2 text-gray-400 text-sm">search</span>
-                    </div>
-                </form>
+                <div class="flex items-center justify-between border-b border-[#E0E3E8] pb-2 mb-2 shrink-0">
+                    <h3 class="text-[11px] uppercase text-[#5D3F3B] font-black tracking-wider flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm text-[#00509E]">group</span>
+                        Menunggu ({{ $antreanMenunggu->count() }})
+                    </h3>
+                </div>
 
-                @if($searchQuery)
-                    <div class="bg-blue-50 p-2 rounded-lg text-xs shrink-0 border border-blue-100 flex justify-between items-center mb-2">
-                        <span class="font-bold text-[#00509E]">Hasil Profiling Pelanggan</span>
-                        <a href="{{ route('cs.index') }}" class="text-rose-600 font-bold text-[10px]">Reset</a>
-                    </div>
-                    <div class="flex-1 overflow-y-auto custom-scrollbar space-y-2">
-                        @forelse($riwayatPelanggan as $rTiket)
-                            @php
-                                $isDone = $rTiket->is_curated || !empty($rTiket->catatan_cs) || !empty($rTiket->keluhan_final);
-                            @endphp
-                            <div class="p-2.5 border rounded-lg bg-gray-50 text-xs space-y-1.5 shadow-sm">
-                                <div class="flex justify-between items-center font-bold text-[#00509E]">
-                                    <span class="text-sm font-black">{{ $rTiket->nomor_antrian }}</span>
-                                    
-                                    <!-- BADGE INDIKATOR STATUS PENDATAAN (MODUL 2) -->
-                                    <span class="text-[9px] px-2 py-0.5 rounded-full font-black {{ $isDone ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
-                                        {{ $isDone ? '✓ Sudah Dikerjakan' : '⚠ Belum Dikerjakan' }}
+                <div id="area-antrean-realtime" class="space-y-2 flex-1 overflow-y-auto pr-1 custom-scrollbar min-h-0">
+                    @forelse($antreanMenunggu as $index => $tiket)
+                        <div class="p-2.5 border rounded-lg flex justify-between items-center transition-all {{ $index === 0 ? 'border-[#00509E] bg-[#00509E]/5 shadow-sm' : 'border-[#E0E3E8] hover:bg-[#F8F9FA]' }}">
+                            <div class="min-w-0 flex-1 pr-2">
+                                <div class="flex items-center gap-1.5 mb-0.5">
+                                    <span class="font-black text-[#181C20] text-sm lg:text-base">{{ $tiket->nomor_antrian }}</span>
+                                    <span class="text-[9px] px-1.5 py-0.5 rounded bg-[#E0E3E8] text-[#5D3F3B] font-bold truncate max-w-[100px]">
+                                        {{ $tiket->layanan->nama_layanan }}
                                     </span>
                                 </div>
+                                <p class="text-xs font-bold text-[#181C20] truncate">{{ $tiket->pelanggan->nama }}</p>
+                                <p class="text-[10px] text-[#5D3F3B] line-clamp-1 italic mt-0.5">"{{ $tiket->keluhan_awal }}"</p>
+                            </div>
 
-                                <p class="font-bold text-gray-800">{{ $rTiket->pelanggan->nama ?? '-' }}</p>
-                                <p class="text-[10px] text-gray-600">Layanan: {{ $rTiket->layanan->nama_layanan ?? '-' }}</p>
-                                <p class="text-[10px] text-gray-500 italic bg-white p-1.5 rounded border border-gray-200">
-                                    "{{ $rTiket->catatan_cs ?? 'Belum ada catatan CS' }}"
-                                </p>
-
-                                <div class="pt-1 flex justify-between items-center">
-                                    <span class="text-[9px] text-gray-400">{{ \Carbon\Carbon::parse($rTiket->created_at)->format('d/m/Y H:i') }}</span>
-                                    
-                                    <!-- TOMBOL KURASI CATATAN TERDAHULU -->
-                                    <button type="button" 
-                                            @click="kurasiTiket = {{ json_encode($rTiket) }}; showModalKurasi = true" 
-                                            class="text-[10px] bg-[#00509E] text-white px-2.5 py-1 rounded-md font-bold hover:bg-[#003C7E] transition-all flex items-center gap-0.5 shadow-sm">
-                                        <span class="material-symbols-outlined text-xs">edit_note</span> Edit / Kurasi
+                            @if(!$isSpectator)
+                                <form action="{{ route('cs.panggil_spesifik', $tiket->id) }}" method="POST" class="m-0 shrink-0">
+                                    @csrf
+                                    <button type="submit" class="text-[10px] bg-[#00509E] hover:bg-[#003C7E] text-white px-2.5 py-1.5 rounded-md font-bold transition-colors shadow-sm cursor-pointer">
+                                        Panggil
                                     </button>
-                                </div>
-                            </div>
-                        @empty
-                            <p class="text-xs text-gray-400 text-center py-4">Data profiling pelanggan tidak ditemukan.</p>
-                        @endforelse
-                    </div>
-                @else
-                    <div class="flex items-center justify-between border-b border-[#E0E3E8] pb-2 mb-2 shrink-0">
-                        <h3 class="text-[11px] uppercase text-[#5D3F3B] font-black tracking-wider flex items-center gap-1">
-                            <span class="material-symbols-outlined text-sm text-[#00509E]">group</span>
-                            Menunggu ({{ $antreanMenunggu->count() }})
-                        </h3>
-                    </div>
-
-                    <div id="area-antrean-realtime" class="space-y-2 flex-1 overflow-y-auto pr-1 custom-scrollbar min-h-0">
-                        @forelse($antreanMenunggu as $index => $tiket)
-                            <div class="p-2.5 border rounded-lg flex justify-between items-center transition-all {{ $index === 0 ? 'border-[#00509E] bg-[#00509E]/5 shadow-sm' : 'border-[#E0E3E8] hover:bg-[#F8F9FA]' }}">
-                                <div class="min-w-0 flex-1 pr-2">
-                                    <div class="flex items-center gap-1.5 mb-0.5">
-                                        <span class="font-black text-[#181C20] text-sm lg:text-base">{{ $tiket->nomor_antrian }}</span>
-                                        <span class="text-[9px] px-1.5 py-0.5 rounded bg-[#E0E3E8] text-[#5D3F3B] font-bold truncate max-w-[100px]">
-                                            {{ $tiket->layanan->nama_layanan }}
-                                        </span>
-                                    </div>
-                                    <p class="text-xs font-bold text-[#181C20] truncate">{{ $tiket->pelanggan->nama }}</p>
-                                    <p class="text-[10px] text-[#5D3F3B] line-clamp-1 italic mt-0.5">"{{ $tiket->keluhan_awal }}"</p>
-                                </div>
-
-                                @if(!$isSpectator)
-                                    <form action="{{ route('cs.panggil_spesifik', $tiket->id) }}" method="POST" class="m-0 shrink-0">
-                                        @csrf
-                                        <button type="submit" class="text-[10px] bg-[#00509E] hover:bg-[#003C7E] text-white px-2.5 py-1.5 rounded-md font-bold transition-colors shadow-sm cursor-pointer">
-                                            Panggil
-                                        </button>
-                                    </form>
-                                @else
-                                    <span class="text-[10px] bg-gray-100 text-gray-400 px-2 py-1 rounded font-bold">Spectate</span>
-                                @endif
-                            </div>
-                        @empty
-                            <div class="text-center py-8 text-[#5D3F3B] bg-[#F8F9FA] rounded-lg border border-dashed border-[#E0E3E8]">
-                                <span class="material-symbols-outlined text-2xl text-gray-400 mb-1">coffee</span>
-                                <p class="text-xs font-bold">Loket Sedang Kosong</p>
-                                <p class="text-[10px] text-gray-400">Belum ada antrean baru.</p>
-                            </div>
-                        @endforelse
-                    </div>
-                @endif
+                                </form>
+                            @else
+                                <span class="text-[10px] bg-gray-100 text-gray-400 px-2 py-1 rounded font-bold">Spectate</span>
+                            @endif
+                        </div>
+                    @empty
+                        <div class="text-center py-8 text-[#5D3F3B] bg-[#F8F9FA] rounded-lg border border-dashed border-[#E0E3E8]">
+                            <span class="material-symbols-outlined text-2xl text-gray-400 mb-1">coffee</span>
+                            <p class="text-xs font-bold">Loket Sedang Kosong</p>
+                            <p class="text-[10px] text-gray-400">Belum ada antrean baru.</p>
+                        </div>
+                    @endforelse
+                </div>
             </div>
 
-            <!-- KOLOM KANAN: PELAYANAN TIKET AKTIF, PROFILING & KOREKSI LAYANAN -->
+            <!-- KOLOM KANAN: PELAYANAN TIKET AKTIF & PROFILING -->
             <div class="md:col-span-7 lg:col-span-8 bg-white rounded-xl shadow-sm border border-[#E0E3E8] p-3.5 lg:p-4 flex flex-col h-full min-h-0 overflow-hidden">
                 @if($antreanAktif)
                     <div class="flex flex-col h-full min-h-0 justify-between">
@@ -264,11 +221,9 @@
                                 </div>
                             </div>
 
-                            <!-- FORM SELESAI TIKET TERMASUK PROFILING & KOREKSI LAYANAN -->
                             <form id="form-selesai-tiket" action="{{ route('cs.selesaikan', $antreanAktif->id) }}" method="POST" class="space-y-3">
                                 @csrf
                                 
-                                <!-- SECTION PROFILING DATA PELANGGAN -->
                                 <div class="bg-gray-50 p-2.5 rounded-xl border border-gray-200 space-y-2">
                                     <h4 class="text-xs font-black text-[#00509E] flex items-center gap-1">
                                         <span class="material-symbols-outlined text-sm">person_edit</span> Profiling Data Pelanggan
@@ -289,7 +244,6 @@
                                     </div>
                                 </div>
 
-                                <!-- SECTION KOREKSI CATEGORY & SUB-LAYANAN -->
                                 <div class="bg-blue-50/50 p-2.5 rounded-xl border border-blue-100 space-y-2">
                                     <h4 class="text-xs font-black text-[#00509E] flex items-center gap-1">
                                         <span class="material-symbols-outlined text-sm">category</span> Koreksi Kategori & Sub-Layanan
@@ -344,7 +298,6 @@
                                     <textarea id="catatan_cs" name="catatan_cs" rows="2" {{ $isSpectator ? 'disabled' : '' }} placeholder="Ketik catatan internal atau ringkasan saran untuk pelanggan di sini..." class="w-full rounded-lg border border-[#E0E3E8] bg-white text-xs text-[#181C20] p-2.5 focus:border-[#00509E] focus:ring-0 transition-all font-medium resize-y shadow-sm"></textarea>
                                 </div>
 
-                                <!-- INPUT HIDDEN PEMBAYARAN -->
                                 <input type="hidden" name="metode_pembayaran" id="input_metode_pembayaran" value="">
                                 <input type="hidden" name="nominal_pembayaran" id="input_nominal_pembayaran" value="0">
                                 <input type="hidden" name="bukti_pembayaran" id="input_bukti_pembayaran" value="">
@@ -392,7 +345,7 @@
         </div>
     </main>
 
-    <!-- MODAL POPUP KONFIRMASI PEMBAYARAN / TRANSAKSI -->
+    <!-- MODAL TRANSAKSI -->
     <div x-show="showModalTransaksi" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl max-w-md w-full p-5 lg:p-6 shadow-2xl border border-gray-100 space-y-4" @click.away="showModalTransaksi = false">
             <div class="flex justify-between items-center border-b pb-3 border-gray-100">
@@ -453,41 +406,6 @@
         </div>
     </div>
 
-    <!-- MODAL POPUP EDIT & KURASI CATATAN KONSULTASI LAMA -->
-    <div x-show="showModalKurasi" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-lg w-full p-5 lg:p-6 shadow-2xl border border-gray-100 space-y-4" @click.away="showModalKurasi = false">
-            <div class="flex justify-between items-center border-b pb-3 border-gray-100">
-                <h3 class="text-base font-black text-[#181C20] flex items-center gap-2">
-                    <span class="material-symbols-outlined text-[#00509E]">edit_note</span>
-                    Kurasi Catatan Konsultasi <span x-text="kurasiTiket.nomor_antrian" class="text-[#00509E]"></span>
-                </h3>
-                <button @click="showModalKurasi = false" class="text-gray-400 hover:text-gray-600">
-                    <span class="material-symbols-outlined">close</span>
-                </button>
-            </div>
-
-            <form :action="'{{ url('/cs-desk/kurasi') }}/' + kurasiTiket.id" method="POST" class="space-y-3 text-xs">
-                @csrf
-                <div>
-                    <label class="font-bold text-gray-600 block mb-1">Hasil Tindakan / Keluhan Final</label>
-                    <textarea name="keluhan_final" x-model="kurasiTiket.keluhan_final" rows="3" placeholder="Ubah/Lengkapi hasil akhir keluhan..." class="w-full p-2.5 border border-gray-300 rounded-lg focus:border-[#00509E] focus:ring-0"></textarea>
-                </div>
-
-                <div>
-                    <label class="font-bold text-gray-600 block mb-1">Catatan Konsultasi CS</label>
-                    <textarea name="catatan_cs" x-model="kurasiTiket.catatan_cs" rows="3" placeholder="Ubah/Lengkapi catatan konsultasi internal..." class="w-full p-2.5 border border-gray-300 rounded-lg focus:border-[#00509E] focus:ring-0"></textarea>
-                </div>
-
-                <div class="pt-3 border-t border-gray-100 flex justify-end gap-2">
-                    <button type="button" @click="showModalKurasi = false" class="px-4 py-2 bg-gray-100 text-gray-700 font-bold text-xs rounded-lg">Batal</button>
-                    <button type="submit" class="px-5 py-2 bg-[#00509E] text-white font-bold text-xs rounded-lg shadow-md flex items-center gap-1">
-                        <span class="material-symbols-outlined text-sm">save</span> Simpan Hasil Kurasi
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <script>
         function submitSelesaiTiket() {
             let isAda = Alpine.$data(document.body).adaTransaksi;
@@ -527,7 +445,7 @@
         }
 
         function fetchConsoleRealtime() {
-            var modalActive = Alpine.$data(document.body).showModalTransaksi || Alpine.$data(document.body).showModalKurasi;
+            var modalActive = Alpine.$data(document.body).showModalTransaksi;
             var isFocusTextarea = document.activeElement && (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT');
             if (modalActive || isFocusTextarea) return;
 
