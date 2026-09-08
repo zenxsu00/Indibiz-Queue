@@ -227,7 +227,6 @@ class CsController extends Controller
 
         $searchQuery = $request->input('search');
         
-        // Murni memuat tiket status SELESAI (Tidak Hadir/Batal diabaikan)
         $query = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan'])
                     ->where('status', 'Selesai');
 
@@ -244,8 +243,11 @@ class CsController extends Controller
         }
 
         $riwayatTiket = $query->orderBy('waktu_selesai', 'desc')->paginate(15);
+        $layanans = Layanan::with(['subLayanans' => function($q) {
+            $q->where('is_active', true);
+        }])->where('is_active', true)->get();
 
-        return view('cs.history', compact('riwayatTiket', 'searchQuery', 'isSpectator', 'nomorMejaTerpilih'));
+        return view('cs.history', compact('riwayatTiket', 'searchQuery', 'isSpectator', 'nomorMejaTerpilih', 'layanans'));
     }
 
     public function panggilSelanjutnya()
@@ -419,19 +421,39 @@ class CsController extends Controller
     public function updateKurasi(Request $request, int $id)
     {
         $request->validate([
-            'keluhan_final' => 'nullable|string',
-            'catatan_cs'    => 'nullable|string',
+            'nama_pelanggan'  => 'nullable|string|max:255',
+            'email_pelanggan' => 'nullable|email|max:255',
+            'no_indibiz'      => 'nullable|string|max:255',
+            'layanan_id'      => 'nullable|exists:layanans,id',
+            'sub_layanan_id'  => 'nullable|exists:sub_layanans,id',
+            'keluhan_final'   => 'nullable|string',
+            'catatan_cs'      => 'nullable|string',
+            'is_curated'      => 'required|boolean',
         ]);
 
         $tiket = TiketAntrian::findOrFail($id);
         
+        if ($tiket->pelanggan) {
+            $tiket->pelanggan->update([
+                'nama'       => $request->nama_pelanggan ?? $tiket->pelanggan->nama,
+                'email'      => $request->email_pelanggan,
+                'no_indibiz' => $request->no_indibiz,
+            ]);
+        }
+
         $tiket->update([
-            'keluhan_final' => $request->keluhan_final,
-            'catatan_cs'    => $request->catatan_cs,
-            'is_curated'    => true,
+            'layanan_id'     => $request->layanan_id ?? $tiket->layanan_id,
+            'sub_layanan_id' => $request->sub_layanan_id,
+            'keluhan_final'  => $request->keluhan_final,
+            'catatan_cs'     => $request->catatan_cs,
+            'is_curated'     => $request->is_curated,
         ]);
 
-        return back()->with('success', "Catatan konsultasi untuk tiket {$tiket->nomor_antrian} berhasil diperbarui.");
+        if ($request->wantsJson()) {
+            return response()->json(['status' => 'success', 'message' => "Data tiket {$tiket->nomor_antrian} berhasil diperbarui."]);
+        }
+
+        return back()->with('success', "Data tiket {$tiket->nomor_antrian} berhasil diperbarui.");
     }
 
     public function leaveConsole()
