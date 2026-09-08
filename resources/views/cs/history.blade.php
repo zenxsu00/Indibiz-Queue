@@ -175,23 +175,55 @@
             </div>
         @endif
 
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-3.5 lg:p-4 rounded-xl border border-[#E0E3E8] shadow-sm shrink-0">
-            <div>
-                <h2 class="text-sm lg:text-base font-black text-[#181C20] flex items-center gap-2">
-                    <span class="material-symbols-outlined text-[#00509E]">history_edu</span>
-                    Riwayat Layanan Selesai & Kurasi CS
-                </h2>
-                <p class="text-[11px] text-gray-500 font-medium">Hanya menampilkan tiket berstatus 'Selesai' untuk kebutuhan pencarian profil dan penyesuaian data.</p>
+        <!-- HEADER BANNER & COMBINED SEARCH + DATE RANGE FILTER -->
+        <div class="bg-white p-3.5 lg:p-4 rounded-xl border border-[#E0E3E8] shadow-sm shrink-0 space-y-3">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div>
+                    <h2 class="text-sm lg:text-base font-black text-[#181C20] flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[#00509E]">history_edu</span>
+                        Riwayat Layanan Selesai & Kurasi CS
+                    </h2>
+                    <p class="text-[11px] text-gray-500 font-medium">Hanya menampilkan tiket berstatus 'Selesai' untuk pencarian profil dan kurasi data.</p>
+                </div>
             </div>
 
-            <form action="{{ route('cs.history') }}" method="GET" class="w-full sm:w-auto">
-                <div class="relative min-w-[280px]">
+            <!-- FORM FILTER MULTI-INPUT (SEARCH & DATE RANGE) -->
+            <form action="{{ route('cs.history') }}" method="GET" class="grid grid-cols-1 sm:grid-cols-12 gap-2 text-xs">
+                
+                <!-- SEARCH TEXT -->
+                <div class="sm:col-span-5 relative">
                     <input type="text" name="search" value="{{ $searchQuery }}" placeholder="Cari No HP / Email / Indibiz / Nama..." class="w-full text-xs p-2 pl-8 border border-[#E0E3E8] rounded-lg focus:border-[#00509E] focus:ring-0 font-medium">
                     <span class="material-symbols-outlined absolute left-2.5 top-2 text-gray-400 text-base">search</span>
+                </div>
+
+                <!-- TANGGAL MULAI -->
+                <div class="sm:col-span-3 flex items-center gap-1.5 bg-gray-50 px-2 py-1 border border-[#E0E3E8] rounded-lg">
+                    <span class="text-[10px] font-bold text-gray-500 shrink-0">Dari:</span>
+                    <input type="date" name="start_date" value="{{ $startDate ?? '' }}" class="w-full bg-transparent text-xs font-medium focus:outline-none">
+                </div>
+
+                <!-- TANGGAL SELESAI -->
+                <div class="sm:col-span-3 flex items-center gap-1.5 bg-gray-50 px-2 py-1 border border-[#E0E3E8] rounded-lg">
+                    <span class="text-[10px] font-bold text-gray-500 shrink-0">Sampai:</span>
+                    <input type="date" name="end_date" value="{{ $endDate ?? '' }}" class="w-full bg-transparent text-xs font-medium focus:outline-none">
+                </div>
+
+                <!-- TOMBOL AKSI FILTER & RESET -->
+                <div class="sm:col-span-1 flex items-center gap-1">
+                    <button type="submit" title="Terapkan Filter" class="flex-1 py-2 bg-[#00509E] hover:bg-[#003C7E] text-white rounded-lg font-bold flex items-center justify-center shadow-sm cursor-pointer transition-all">
+                        <span class="material-symbols-outlined text-sm">filter_alt</span>
+                    </button>
+
+                    @if(!empty($searchQuery) || !empty($startDate) || !empty($endDate))
+                        <a href="{{ route('cs.history') }}" title="Reset Filter" class="py-2 px-2 bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 rounded-lg font-bold flex items-center justify-center transition-all">
+                            <span class="material-symbols-outlined text-sm">restart_alt</span>
+                        </a>
+                    @endif
                 </div>
             </form>
         </div>
 
+        <!-- TABEL DATA RIWAYAT SELESAI -->
         <div class="bg-white rounded-xl border border-[#E0E3E8] shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
             <div class="overflow-x-auto overflow-y-auto flex-1 custom-scrollbar">
                 <table class="w-full text-left text-xs">
@@ -251,7 +283,7 @@
                             <tr>
                                 <td colspan="7" class="p-6 text-center text-gray-400 font-bold">
                                     <span class="material-symbols-outlined text-2xl block mb-1">history</span>
-                                    Belum ada data riwayat layanan selesai.
+                                    Tidak ada data riwayat layanan yang sesuai dengan kriteria filter.
                                 </td>
                             </tr>
                         @endforelse

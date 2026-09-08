@@ -226,9 +226,19 @@ class CsController extends Controller
         $isSpectator = (empty($nomorMejaTerpilih) || $nomorMejaTerpilih == 0) && $user->role === 'admin';
 
         $searchQuery = $request->input('search');
+        $startDate   = $request->input('start_date');
+        $endDate     = $request->input('end_date');
         
         $query = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan'])
                     ->where('status', 'Selesai');
+
+        // Filter Rentang Tanggal berdasarkan waktu selesai
+        if ($startDate) {
+            $query->whereDate('waktu_selesai', '>=', $startDate);
+        }
+        if ($endDate) {
+            $query->whereDate('waktu_selesai', '<=', $endDate);
+        }
 
         if ($searchQuery) {
             $query->where(function($q) use ($searchQuery) {
@@ -247,7 +257,7 @@ class CsController extends Controller
             $q->where('is_active', true);
         }])->where('is_active', true)->get();
 
-        return view('cs.history', compact('riwayatTiket', 'searchQuery', 'isSpectator', 'nomorMejaTerpilih', 'layanans'));
+        return view('cs.history', compact('riwayatTiket', 'searchQuery', 'startDate', 'endDate', 'isSpectator', 'nomorMejaTerpilih', 'layanans'));
     }
 
     public function panggilSelanjutnya()
