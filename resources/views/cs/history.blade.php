@@ -29,7 +29,7 @@
                   this.kurasiTiket.pelanggan = { nama: '', email: '', no_indibiz: '', no_hp: '' };
               }
               this.selectedLayananId = this.kurasiTiket.layanan_id || '';
-              this.kurasiTiket.is_curated = (this.kurasiTiket.is_curated == 1 || this.kurasiTiket.is_curated === true) ? 1 : 0;
+              this.kurasiTiket.is_curated = (this.kurasiTiket.is_curated == 1 || this.kurasiTiket.is_curated === true) ? '1' : '0';
               this.showModalKurasi = true;
           },
 
@@ -69,15 +69,13 @@
                       title: 'Berhasil!',
                       text: 'Data kurasi berhasil diperbarui.',
                       icon: 'success',
-                      timer: 1500,
+                      timer: 1200,
                       showConfirmButton: false
                   }).then(() => {
                       if (closeAfterSave) {
                           this.showModalKurasi = false;
-                          window.location.reload();
-                      } else {
-                          window.location.reload();
                       }
+                      window.location.reload();
                   });
               })
               .catch(() => {
@@ -258,7 +256,7 @@
                     <tbody class="divide-y divide-[#E0E3E8]">
                         @forelse($riwayatTiket as $tiket)
                             @php
-                                $isDone = $tiket->is_curated;
+                                $isDone = (bool) $tiket->is_curated;
                             @endphp
                             <tr class="hover:bg-[#F8F9FA] transition-colors">
                                 <td class="p-3 font-mono font-black text-[#00509E] text-sm">{{ $tiket->nomor_antrian }}</td>
@@ -389,20 +387,13 @@
                     <textarea name="catatan_cs" x-model="kurasiTiket.catatan_cs" rows="2" placeholder="Catatan internal..." class="w-full p-2.5 border border-gray-300 rounded-lg focus:border-[#00509E] focus:ring-0 font-medium"></textarea>
                 </div>
 
+                <!-- DENGAN TAG SELECT ELEGAN & BINDING 100% BEKERJA -->
                 <div>
                     <label class="font-bold text-gray-700 block mb-1">Status Penanganan / Kurasi</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <label class="p-2 border rounded-lg flex items-center gap-2 cursor-pointer" :class="kurasiTiket.is_curated == 1 ? 'border-emerald-500 bg-emerald-50 text-emerald-800 font-bold' : 'border-gray-200 text-gray-600'">
-                            <input type="radio" name="is_curated" value="1" x-model="kurasiTiket.is_curated" class="sr-only">
-                            <span class="material-symbols-outlined text-sm">check_circle</span>
-                            <span>✓ Selesai / Dikurasi</span>
-                        </label>
-                        <label class="p-2 border rounded-lg flex items-center gap-2 cursor-pointer" :class="kurasiTiket.is_curated == 0 ? 'border-amber-500 bg-amber-50 text-amber-800 font-bold' : 'border-gray-200 text-gray-600'">
-                            <input type="radio" name="is_curated" value="0" x-model="kurasiTiket.is_curated" class="sr-only">
-                            <span class="material-symbols-outlined text-sm">warning</span>
-                            <span>⚠ Perlu Lapangan / Belum</span>
-                        </label>
-                    </div>
+                    <select name="is_curated" x-model="kurasiTiket.is_curated" class="w-full p-2.5 border border-gray-300 rounded-xl text-xs font-bold focus:border-[#00509E] focus:ring-0 bg-white cursor-pointer">
+                        <option value="1">✓ Selesai / Dikurasi</option>
+                        <option value="0">⚠ Perlu Lapangan / Belum</option>
+                    </select>
                 </div>
 
                 <div class="pt-3 border-t border-gray-100 flex flex-wrap justify-between items-center gap-2">

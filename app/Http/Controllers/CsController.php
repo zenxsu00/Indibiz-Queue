@@ -236,7 +236,7 @@ class CsController extends Controller
 
         $now = Carbon::now('Asia/Jakarta');
 
-        // Filter berdasarkan Waktu
+        // Filter berdasarkan Periode Waktu
         switch ($period) {
             case 'today':
                 $query->whereDate('waktu_selesai', $now->toDateString());
@@ -268,12 +268,12 @@ class CsController extends Controller
                 break;
         }
 
-        // Filter berdasarkan Status Kurasi (Sudah vs Belum)
+        // Filter berdasarkan Status Kurasi (1 = Sudah, 0 = Belum)
         if ($isCurated === '1') {
-            $query->where('is_curated', true);
+            $query->where('is_curated', 1);
         } elseif ($isCurated === '0') {
             $query->where(function($q) {
-                $q->where('is_curated', false)->orWhereNull('is_curated');
+                $q->where('is_curated', 0)->orWhereNull('is_curated');
             });
         }
 
@@ -458,7 +458,7 @@ class CsController extends Controller
             'bukti_pembayaran'     => $request->bukti_pembayaran,
             'waktu_selesai'        => $now,
             'waktu_selesai_konsul' => $now,
-            'is_curated'           => true,
+            'is_curated'           => 1,
         ]);
 
         $this->safeBroadcast($tiket);
@@ -488,12 +488,15 @@ class CsController extends Controller
             ]);
         }
 
+        // Pastikan konversi nilai boolean/integer dilakukan secara eksplisit
+        $curatedVal = ((string)$request->is_curated === '1' || $request->is_curated === 1 || $request->is_curated === true) ? 1 : 0;
+
         $tiket->update([
             'layanan_id'     => $request->layanan_id ?? $tiket->layanan_id,
             'sub_layanan_id' => $request->sub_layanan_id ?: null,
             'keluhan_final'  => $request->keluhan_final,
             'catatan_cs'     => $request->catatan_cs,
-            'is_curated'     => (bool) $request->is_curated,
+            'is_curated'     => $curatedVal,
         ]);
 
         if ($request->wantsJson()) {
