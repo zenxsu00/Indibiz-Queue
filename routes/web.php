@@ -69,6 +69,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/cs-desk/panggil-spesifik/{id}', [CsController::class, 'panggilSpesifik'])->name('cs.panggil_spesifik');
     Route::post('/cs-desk/batal-atau-kembalikan/{id}', [CsController::class, 'batalAtauKembalikan'])->name('cs.batal_atau_kembalikan');
     Route::post('/cs-desk/selesaikan/{id}', [CsController::class, 'selesaikanTiket'])->name('cs.selesaikan');
+    
+    // ROUTE TAMBAHAN MODUL 2: KURASI CATATAN KONSULTASI
+    Route::post('/cs-desk/kurasi/{id}', [CsController::class, 'updateKurasi'])->name('cs.update_kurasi');
 
     // 4. MODUL SUPER ADMIN (KHUSUS ROLE ADMIN)
     Route::middleware(['role:admin'])->group(function () {

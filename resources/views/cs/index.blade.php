@@ -16,7 +16,14 @@
     </style>
 </head>
 <body class="bg-[#F8F9FA] h-screen w-screen font-sans text-[#181C20] flex flex-col md:flex-row overflow-hidden antialiased selection:bg-[#EE2E24] selection:text-white"
-      x-data="{ showModalTransaksi: false, adaTransaksi: false, metodePembayaran: 'Cash', selectedLayananId: '{{ $antreanAktif->layanan_id ?? '' }}' }">
+      x-data="{ 
+          showModalTransaksi: false, 
+          showModalKurasi: false,
+          adaTransaksi: false, 
+          metodePembayaran: 'Cash', 
+          selectedLayananId: '{{ $antreanAktif->layanan_id ?? '' }}',
+          kurasiTiket: {}
+      }">
 
     <!-- SIDEBAR CS LOKET (DESKTOP) -->
     <aside class="hidden md:flex flex-col w-[200px] lg:w-[220px] bg-[#00509E] text-white shrink-0 shadow-lg h-full justify-between z-20">
@@ -92,9 +99,16 @@
         </div>
     </div>
 
-    <!-- MAIN CONTENT AREA CS (DIBUNGKUS ID KECUALI SIDEBAR) -->
+    <!-- MAIN CONTENT AREA CS -->
     <main id="main-cs-console" class="flex-1 flex flex-col min-w-0 h-full overflow-y-auto md:overflow-hidden p-3 lg:p-4 gap-3">
         
+        @if(session('success'))
+            <div class="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-xs font-bold flex items-center gap-2 shrink-0">
+                <span class="material-symbols-outlined text-base">check_circle</span>
+                <span>{{ session('success') }}</span>
+            </div>
+        @endif
+
         <!-- BANNER MODE SPECTATE -->
         @if($isSpectator)
             <div class="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl flex items-center justify-between text-xs font-bold shrink-0">
@@ -131,7 +145,7 @@
                 <!-- SEARCH BAR TRACKING PELANGGAN -->
                 <form action="{{ route('cs.index') }}" method="GET" class="shrink-0 mb-2">
                     <div class="relative">
-                        <input type="text" name="search" value="{{ $searchQuery }}" placeholder="Cari No HP / Email / Indibiz..." class="w-full text-xs p-2 pl-7 border border-[#E0E3E8] rounded-lg focus:border-[#00509E] focus:ring-0">
+                        <input type="text" name="search" value="{{ $searchQuery }}" placeholder="Cari No HP / Email / Indibiz / Nama..." class="w-full text-xs p-2 pl-7 border border-[#E0E3E8] rounded-lg focus:border-[#00509E] focus:ring-0">
                         <span class="material-symbols-outlined absolute left-2 top-2 text-gray-400 text-sm">search</span>
                     </div>
                 </form>
@@ -143,14 +157,35 @@
                     </div>
                     <div class="flex-1 overflow-y-auto custom-scrollbar space-y-2">
                         @forelse($riwayatPelanggan as $rTiket)
-                            <div class="p-2 border rounded-lg bg-gray-50 text-xs space-y-1">
-                                <div class="flex justify-between font-bold text-[#00509E]">
-                                    <span>{{ $rTiket->nomor_antrian }}</span>
-                                    <span class="text-[10px] text-gray-500">{{ \Carbon\Carbon::parse($rTiket->created_at)->format('d/m/Y') }}</span>
+                            @php
+                                $isDone = !empty($rTiket->catatan_cs) || !empty($rTiket->keluhan_final);
+                            @endphp
+                            <div class="p-2.5 border rounded-lg bg-gray-50 text-xs space-y-1.5 shadow-sm">
+                                <div class="flex justify-between items-center font-bold text-[#00509E]">
+                                    <span class="text-sm">{{ $rTiket->nomor_antrian }}</span>
+                                    
+                                    <!-- BADGE INDIKATOR STATUS PENDATAAN -->
+                                    <span class="text-[9px] px-2 py-0.5 rounded-full font-black {{ $isDone ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
+                                        {{ $isDone ? '✓ Sudah Dikerjakan' : '⚠ Belum Dikerjakan' }}
+                                    </span>
                                 </div>
+
                                 <p class="font-bold text-gray-800">{{ $rTiket->pelanggan->nama }}</p>
                                 <p class="text-[10px] text-gray-600">Layanan: {{ $rTiket->layanan->nama_layanan }}</p>
-                                <p class="text-[10px] text-gray-500 italic">"{{ $rTiket->catatan_cs ?? 'Belum ada catatan CS' }}"</p>
+                                <p class="text-[10px] text-gray-500 italic bg-white p-1.5 rounded border border-gray-200">
+                                    "{{ $rTiket->catatan_cs ?? 'Belum ada catatan CS' }}"
+                                </p>
+
+                                <div class="pt-1 flex justify-between items-center">
+                                    <span class="text-[9px] text-gray-400">{{ \Carbon\Carbon::parse($rTiket->created_at)->format('d/m/Y H:i') }}</span>
+                                    
+                                    <!-- TOMBOL KURASI CATATAN TERDAHULU -->
+                                    <button type="button" 
+                                            @click="kurasiTiket = {{ json_encode($rTiket) }}; showModalKurasi = true" 
+                                            class="text-[10px] bg-[#00509E] text-white px-2 py-1 rounded font-bold hover:bg-[#003C7E] transition-all flex items-center gap-0.5">
+                                        <span class="material-symbols-outlined text-xs">edit_note</span> Edit / Kurasi
+                                    </button>
+                                </div>
                             </div>
                         @empty
                             <p class="text-xs text-gray-400 text-center py-4">Data tidak ditemukan.</p>
@@ -418,6 +453,41 @@
         </div>
     </div>
 
+    <!-- MODAL POPUP EDIT & KURASI CATATAN KONSULTASI LAMA -->
+    <div x-show="showModalKurasi" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-5 lg:p-6 shadow-2xl border border-gray-100 space-y-4" @click.away="showModalKurasi = false">
+            <div class="flex justify-between items-center border-b pb-3 border-gray-100">
+                <h3 class="text-base font-black text-[#181C20] flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[#00509E]">edit_note</span>
+                    Kurasi Catatan Konsultasi <span x-text="kurasiTiket.nomor_antrian" class="text-[#00509E]"></span>
+                </h3>
+                <button @click="showModalKurasi = false" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <form :action="'{{ url('/cs-desk/kurasi') }}/' + kurasiTiket.id" method="POST" class="space-y-3 text-xs">
+                @csrf
+                <div>
+                    <label class="font-bold text-gray-600 block mb-1">Hasil Tindakan / Keluhan Final</label>
+                    <textarea name="keluhan_final" x-model="kurasiTiket.keluhan_final" rows="3" placeholder="Ubah/Lengkapi hasil akhir keluhan..." class="w-full p-2.5 border border-gray-300 rounded-lg focus:border-[#00509E] focus:ring-0"></textarea>
+                </div>
+
+                <div>
+                    <label class="font-bold text-gray-600 block mb-1">Catatan Konsultasi CS</label>
+                    <textarea name="catatan_cs" x-model="kurasiTiket.catatan_cs" rows="3" placeholder="Ubah/Lengkapi catatan konsultasi internal..." class="w-full p-2.5 border border-gray-300 rounded-lg focus:border-[#00509E] focus:ring-0"></textarea>
+                </div>
+
+                <div class="pt-3 border-t border-gray-100 flex justify-end gap-2">
+                    <button type="button" @click="showModalKurasi = false" class="px-4 py-2 bg-gray-100 text-gray-700 font-bold text-xs rounded-lg">Batal</button>
+                    <button type="submit" class="px-5 py-2 bg-[#00509E] text-white font-bold text-xs rounded-lg shadow-md flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm">save</span> Simpan Hasil Kurasi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         function submitSelesaiTiket() {
             let isAda = Alpine.$data(document.body).adaTransaksi;
@@ -456,9 +526,8 @@
             });
         }
 
-        // FUNGSI REALTIME SWAP KESELURUHAN PANEL CONSOLE KETIKA ADA ANTREAN BARU
         function fetchConsoleRealtime() {
-            var modalActive = Alpine.$data(document.body).showModalTransaksi;
+            var modalActive = Alpine.$data(document.body).showModalTransaksi || Alpine.$data(document.body).showModalKurasi;
             var isFocusTextarea = document.activeElement && (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT');
             if (modalActive || isFocusTextarea) return;
 

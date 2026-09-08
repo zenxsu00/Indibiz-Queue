@@ -182,7 +182,7 @@ class CsController extends Controller
                       ->orWhere('nama', 'like', "%{$searchQuery}%");
                 })
                 ->orderBy('created_at', 'desc')
-                ->take(10)
+                ->take(15)
                 ->get();
         }
 
@@ -221,9 +221,12 @@ class CsController extends Controller
                         ->first();
 
             if ($tiket) {
+                $now = Carbon::now('Asia/Jakarta');
                 $tiket->status = 'Diproses';
                 $tiket->user_id = $user->id;
-                $tiket->waktu_diproses = Carbon::now('Asia/Jakarta');
+                $tiket->waktu_diproses = $now;
+                $tiket->waktu_dipanggil = $now;
+                $tiket->waktu_mulai_konsul = $now;
                 $tiket->jumlah_dipanggil = ($tiket->jumlah_dipanggil ?? 0) + 1;
                 $tiket->save();
 
@@ -260,9 +263,12 @@ class CsController extends Controller
             $tiket = TiketAntrian::where('id', $id)->lockForUpdate()->firstOrFail();
             
             if ($tiket->status == 'Menunggu') {
+                $now = Carbon::now('Asia/Jakarta');
                 $tiket->status = 'Diproses';
                 $tiket->user_id = $user->id;
-                $tiket->waktu_diproses = Carbon::now('Asia/Jakarta');
+                $tiket->waktu_diproses = $now;
+                $tiket->waktu_dipanggil = $now;
+                $tiket->waktu_mulai_konsul = $now;
                 $tiket->jumlah_dipanggil = ($tiket->jumlah_dipanggil ?? 0) + 1;
                 $tiket->save();
 
@@ -343,20 +349,42 @@ class CsController extends Controller
         }
 
         // 2. Update Tiket & Koreksi Layanan
+        $now = Carbon::now('Asia/Jakarta');
         $tiket->update([
-            'layanan_id'         => $request->layanan_id ?? $tiket->layanan_id,
-            'sub_layanan_id'     => $request->sub_layanan_id ?? $tiket->sub_layanan_id,
-            'status'             => 'Selesai',
-            'keluhan_final'      => $request->keluhan_final,
-            'catatan_cs'         => $request->catatan_cs,
-            'metode_pembayaran'  => $request->metode_pembayaran ?? 'Tanpa Transaksi',
-            'nominal_pembayaran' => $request->nominal_pembayaran ?? 0,
-            'bukti_pembayaran'   => $request->bukti_pembayaran,
-            'waktu_selesai'      => Carbon::now('Asia/Jakarta'),
+            'layanan_id'           => $request->layanan_id ?? $tiket->layanan_id,
+            'sub_layanan_id'       => $request->sub_layanan_id ?? $tiket->sub_layanan_id,
+            'status'               => 'Selesai',
+            'keluhan_final'        => $request->keluhan_final,
+            'catatan_cs'           => $request->catatan_cs,
+            'metode_pembayaran'    => $request->metode_pembayaran ?? 'Tanpa Transaksi',
+            'nominal_pembayaran'   => $request->nominal_pembayaran ?? 0,
+            'bukti_pembayaran'     => $request->bukti_pembayaran,
+            'waktu_selesai'        => $now,
+            'waktu_selesai_konsul' => $now,
+            'is_curated'           => true,
         ]);
 
         $this->safeBroadcast($tiket);
         return redirect()->route('cs.index')->with('success', "Tiket {$tiket->nomor_antrian} berhasil diselesaikan.");
+    }
+
+    // METHOD BARU: KURASI CATATAN KONSULTASI LAMA
+    public function updateKurasi(Request $request, int $id)
+    {
+        $request->validate([
+            'keluhan_final' => 'nullable|string',
+            'catatan_cs'    => 'nullable|string',
+        ]);
+
+        $tiket = TiketAntrian::findOrFail($id);
+        
+        $tiket->update([
+            'keluhan_final' => $request->keluhan_final,
+            'catatan_cs'    => $request->catatan_cs,
+            'is_curated'    => true,
+        ]);
+
+        return back()->with('success', "Catatan konsultasi untuk tiket {$tiket->nomor_antrian} berhasil diperbarui.");
     }
 
     public function leaveConsole()
