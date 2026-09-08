@@ -77,7 +77,7 @@
                       }
                   });
               })
-              .catch(err => {
+              .catch(() => {
                   form.submit();
               });
           }
@@ -87,7 +87,7 @@
     <aside class="hidden md:flex flex-col w-[200px] lg:w-[220px] bg-[#00509E] text-white shrink-0 shadow-lg h-full justify-between z-20">
         <div>
             <div class="p-3.5 lg:p-4 border-b border-white/10 flex items-center gap-2.5">
-                <img src="/img/LogoIcon.png" alt="Indibiz Icon" class="w-8 h-8 object-contain drop-shadow-md" onerror="this.src='{{ asset('img/LogoIcon.png') }}'">
+                <img src="{{ asset('img/LogoIcon.png') }}" alt="Indibiz Icon" class="w-8 h-8 object-contain drop-shadow-md">
                 <div class="flex flex-col">
                     <h2 class="text-sm lg:text-base font-black text-white leading-tight">CS Console</h2>
                     <span class="text-[9px] font-bold text-emerald-300 tracking-widest uppercase mt-0.5">Indibiz Queue</span>
@@ -142,7 +142,7 @@
     <!-- MOBILE HEADER -->
     <div class="md:hidden bg-[#00509E] text-white p-3 flex justify-between items-center shadow-md shrink-0 z-30">
         <div class="font-bold text-xs flex items-center gap-2">
-            <img src="/img/LogoIcon.png" alt="Indibiz" class="w-6 h-6 object-contain drop-shadow-md" onerror="this.src='{{ asset('img/LogoIcon.png') }}'">
+            <img src="{{ asset('img/LogoIcon.png') }}" alt="Indibiz" class="w-6 h-6 object-contain drop-shadow-md">
             <span>CS Console {{ $isSpectator ? '(Admin Mode)' : 'M' . ($nomorMejaTerpilih ?? auth()->user()->nomor_meja ?? '1') }}</span>
         </div>
 
@@ -241,7 +241,7 @@
                                 </td>
                                 <td class="p-3 text-center">
                                     <button type="button" 
-                                            @click="openKurasiModal({{ json_encode($tiket) }})" 
+                                            @click='openKurasiModal(@json($tiket))' 
                                             class="px-2.5 py-1.5 bg-[#00509E] text-white rounded-lg font-bold text-[10px] hover:bg-[#003C7E] transition-all inline-flex items-center gap-1 shadow-sm cursor-pointer">
                                         <span class="material-symbols-outlined text-xs">edit_note</span> Edit Kurasi
                                     </button>
@@ -356,7 +356,6 @@
                     </div>
                 </div>
 
-                <!-- 3 TOMBOL AKSI: SAVE & EXIT, SAVE, EXIT -->
                 <div class="pt-3 border-t border-gray-100 flex flex-wrap justify-between items-center gap-2">
                     <button type="button" @click="showModalKurasi = false" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl transition-all">
                         Exit (Batal)
