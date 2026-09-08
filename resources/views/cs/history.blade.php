@@ -29,11 +29,12 @@
                   this.kurasiTiket.pelanggan = { nama: '', email: '', no_indibiz: '', no_hp: '' };
               }
               this.selectedLayananId = this.kurasiTiket.layanan_id || '';
-              this.kurasiTiket.is_curated = (this.kurasiTiket.is_curated == 1 || this.kurasiTiket.is_curated === true || this.kurasiTiket.is_curated === '1') ? 1 : 0;
+              // Paksa nilai string '1' atau '0' agar binding select option Alpine.js 100% presisi
+              this.kurasiTiket.is_curated = (this.kurasiTiket.is_curated == 1 || this.kurasiTiket.is_curated === true || this.kurasiTiket.is_curated === '1') ? '1' : '0';
               this.showModalKurasi = true;
           },
 
-          confirmSubmit(closeAfterSave) {
+          confirmSubmit() {
               let self = this;
               Swal.fire({
                   title: 'Konfirmasi Perubahan Data',
@@ -47,42 +48,8 @@
                   customClass: { popup: 'rounded-2xl' }
               }).then((result) => {
                   if (result.isConfirmed) {
-                      self.submitKurasi(closeAfterSave);
+                      document.getElementById('form-edit-kurasi').submit();
                   }
-              });
-          },
-
-          submitKurasi(closeAfterSave) {
-              let form = document.getElementById('form-edit-kurasi');
-              let formData = new FormData(form);
-              
-              // Paksa set nilai is_curated dari state Alpine agar tidak pernah miss/null
-              formData.set('is_curated', this.kurasiTiket.is_curated);
-
-              fetch(form.action, {
-                  method: 'POST',
-                  body: formData,
-                  headers: {
-                      'X-Requested-With': 'XMLHttpRequest'
-                  }
-              })
-              .then(res => res.json())
-              .then(data => {
-                  Swal.fire({
-                      title: 'Berhasil!',
-                      text: 'Data kurasi berhasil diperbarui.',
-                      icon: 'success',
-                      timer: 1200,
-                      showConfirmButton: false
-                  }).then(() => {
-                      if (closeAfterSave) {
-                          this.showModalKurasi = false;
-                      }
-                      window.location.reload();
-                  });
-              })
-              .catch(() => {
-                  form.submit();
               });
           }
       }">
@@ -328,11 +295,8 @@
                 </button>
             </div>
 
-            <form id="form-edit-kurasi" :action="'{{ url('/cs-desk/kurasi') }}/' + kurasiTiket.id" method="POST" class="space-y-3 text-xs" @submit.prevent>
+            <form id="form-edit-kurasi" :action="'{{ url('/cs-desk/kurasi') }}/' + kurasiTiket.id" method="POST" class="space-y-3 text-xs">
                 @csrf
-
-                <!-- Input tersembunyi khusus untuk menjamin is_curated ter-submit secara tepat -->
-                <input type="hidden" name="is_curated" x-model="kurasiTiket.is_curated">
 
                 <div class="bg-gray-50 p-3 rounded-xl border border-gray-200 space-y-2">
                     <h4 class="font-black text-[#00509E] flex items-center gap-1 uppercase text-[10px]">
@@ -393,9 +357,10 @@
                     <textarea name="catatan_cs" x-model="kurasiTiket.catatan_cs" rows="2" placeholder="Catatan internal..." class="w-full p-2.5 border border-gray-300 rounded-lg focus:border-[#00509E] focus:ring-0 font-medium"></textarea>
                 </div>
 
+                <!-- SELECT DENGAN ATRIBUT NAME & BINDING AMAN -->
                 <div>
                     <label class="font-bold text-gray-700 block mb-1">Status Penanganan / Kurasi</label>
-                    <select x-model="kurasiTiket.is_curated" class="w-full p-2.5 border border-gray-300 rounded-xl text-xs font-bold focus:border-[#00509E] focus:ring-0 bg-white cursor-pointer">
+                    <select name="is_curated" x-model="kurasiTiket.is_curated" class="w-full p-2.5 border border-gray-300 rounded-xl text-xs font-bold focus:border-[#00509E] focus:ring-0 bg-white cursor-pointer">
                         <option value="1">✓ Selesai / Dikurasi</option>
                         <option value="0">⚠ Perlu Lapangan / Belum</option>
                     </select>
@@ -406,15 +371,9 @@
                         Exit (Batal)
                     </button>
 
-                    <div class="flex items-center gap-2">
-                        <button type="button" @click="confirmSubmit(false)" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1 cursor-pointer">
-                            <span class="material-symbols-outlined text-sm">save</span> Save
-                        </button>
-
-                        <button type="button" @click="confirmSubmit(true)" class="px-5 py-2 bg-[#00509E] hover:bg-[#003C7E] text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-1 cursor-pointer">
-                            <span class="material-symbols-outlined text-sm">done_all</span> Save & Exit
-                        </button>
-                    </div>
+                    <button type="button" @click="confirmSubmit()" class="px-5 py-2 bg-[#00509E] hover:bg-[#003C7E] text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-1 cursor-pointer">
+                        <span class="material-symbols-outlined text-sm">save</span> Simpan Perubahan
+                    </button>
                 </div>
             </form>
         </div>
