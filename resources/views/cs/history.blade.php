@@ -29,7 +29,7 @@
                   this.kurasiTiket.pelanggan = { nama: '', email: '', no_indibiz: '', no_hp: '' };
               }
               this.selectedLayananId = this.kurasiTiket.layanan_id || '';
-              this.kurasiTiket.is_curated = (this.kurasiTiket.is_curated == 1 || this.kurasiTiket.is_curated === true) ? '1' : '0';
+              this.kurasiTiket.is_curated = (this.kurasiTiket.is_curated == 1 || this.kurasiTiket.is_curated === true || this.kurasiTiket.is_curated === '1') ? 1 : 0;
               this.showModalKurasi = true;
           },
 
@@ -55,6 +55,9 @@
           submitKurasi(closeAfterSave) {
               let form = document.getElementById('form-edit-kurasi');
               let formData = new FormData(form);
+              
+              // Paksa set nilai is_curated dari state Alpine agar tidak pernah miss/null
+              formData.set('is_curated', this.kurasiTiket.is_curated);
 
               fetch(form.action, {
                   method: 'POST',
@@ -256,7 +259,7 @@
                     <tbody class="divide-y divide-[#E0E3E8]">
                         @forelse($riwayatTiket as $tiket)
                             @php
-                                $isDone = (bool) $tiket->is_curated;
+                                $isDone = ((int)$tiket->is_curated === 1 || $tiket->is_curated === true);
                             @endphp
                             <tr class="hover:bg-[#F8F9FA] transition-colors">
                                 <td class="p-3 font-mono font-black text-[#00509E] text-sm">{{ $tiket->nomor_antrian }}</td>
@@ -328,6 +331,9 @@
             <form id="form-edit-kurasi" :action="'{{ url('/cs-desk/kurasi') }}/' + kurasiTiket.id" method="POST" class="space-y-3 text-xs" @submit.prevent>
                 @csrf
 
+                <!-- Input tersembunyi khusus untuk menjamin is_curated ter-submit secara tepat -->
+                <input type="hidden" name="is_curated" x-model="kurasiTiket.is_curated">
+
                 <div class="bg-gray-50 p-3 rounded-xl border border-gray-200 space-y-2">
                     <h4 class="font-black text-[#00509E] flex items-center gap-1 uppercase text-[10px]">
                         <span class="material-symbols-outlined text-sm">person_edit</span> Edit Profiling Pelanggan
@@ -387,10 +393,9 @@
                     <textarea name="catatan_cs" x-model="kurasiTiket.catatan_cs" rows="2" placeholder="Catatan internal..." class="w-full p-2.5 border border-gray-300 rounded-lg focus:border-[#00509E] focus:ring-0 font-medium"></textarea>
                 </div>
 
-                <!-- DENGAN TAG SELECT ELEGAN & BINDING 100% BEKERJA -->
                 <div>
                     <label class="font-bold text-gray-700 block mb-1">Status Penanganan / Kurasi</label>
-                    <select name="is_curated" x-model="kurasiTiket.is_curated" class="w-full p-2.5 border border-gray-300 rounded-xl text-xs font-bold focus:border-[#00509E] focus:ring-0 bg-white cursor-pointer">
+                    <select x-model="kurasiTiket.is_curated" class="w-full p-2.5 border border-gray-300 rounded-xl text-xs font-bold focus:border-[#00509E] focus:ring-0 bg-white cursor-pointer">
                         <option value="1">✓ Selesai / Dikurasi</option>
                         <option value="0">⚠ Perlu Lapangan / Belum</option>
                     </select>

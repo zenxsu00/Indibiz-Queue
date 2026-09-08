@@ -236,7 +236,7 @@ class CsController extends Controller
 
         $now = Carbon::now('Asia/Jakarta');
 
-        // Filter berdasarkan Periode Waktu
+        // Filter berdasarkan Waktu
         switch ($period) {
             case 'today':
                 $query->whereDate('waktu_selesai', $now->toDateString());
@@ -475,7 +475,7 @@ class CsController extends Controller
             'sub_layanan_id'  => 'nullable|exists:sub_layanans,id',
             'keluhan_final'   => 'nullable|string',
             'catatan_cs'      => 'nullable|string',
-            'is_curated'      => 'required',
+            'is_curated'      => 'nullable',
         ]);
 
         $tiket = TiketAntrian::findOrFail($id);
@@ -488,8 +488,8 @@ class CsController extends Controller
             ]);
         }
 
-        // Pastikan konversi nilai boolean/integer dilakukan secara eksplisit
-        $curatedVal = ((string)$request->is_curated === '1' || $request->is_curated === 1 || $request->is_curated === true) ? 1 : 0;
+        $rawCurated = $request->input('is_curated');
+        $curatedVal = ($rawCurated === '1' || $rawCurated === 1 || $rawCurated === true || $rawCurated === 'true') ? 1 : 0;
 
         $tiket->update([
             'layanan_id'     => $request->layanan_id ?? $tiket->layanan_id,
