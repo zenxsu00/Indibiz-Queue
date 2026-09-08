@@ -74,6 +74,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/admin-dashboard/export', [AdminController::class, 'exportCsv'])->name('admin.export');
         Route::get('/admin-dashboard/pdf', [AdminController::class, 'cetakPdf'])->name('admin.pdf');
 
+        // CRUD Layanan & Sub-Layanan
+        Route::post('/admin/layanan/store', [AdminController::class, 'storeLayanan'])->name('admin.layanan.store');
+        Route::delete('/admin/layanan/delete/{id}', [AdminController::class, 'destroyLayanan'])->name('admin.layanan.destroy');
+        Route::post('/admin/sub-layanan/store', [AdminController::class, 'storeSubLayanan'])->name('admin.sub_layanan.store');
+        Route::delete('/admin/sub-layanan/delete/{id}', [AdminController::class, 'destroySubLayanan'])->name('admin.sub_layanan.destroy');
+
         // CRUD Staff CS
         Route::post('/admin/staff/store', [StaffManagementController::class, 'storeUser'])->name('admin.staff.store');
         Route::post('/admin/staff/update-status/{id}', [StaffManagementController::class, 'updateStatusUser'])->name('admin.staff.update_status');

@@ -13,15 +13,8 @@ use stdClass;
 
 class AdminController extends Controller
 {
-    /**
-     * Display admin dashboard.
-     *
-     * @param Request $request
-     * @return \Illuminate\Contracts\View\View
-     */
     public function index(Request $request)
     {
-        // Filter Tanggal untuk Tab Operations (Default hari ini dalam Asia/Jakarta)
         $startDate = $request->start_date 
             ? Carbon::parse($request->start_date, 'Asia/Jakarta')->startOfDay() 
             : Carbon::today('Asia/Jakarta')->startOfDay();
@@ -32,7 +25,6 @@ class AdminController extends Controller
             
         $layananId = $request->layanan_id;
 
-        // Query Filtered untuk Tab Operations (Dengan Relasi Tambahan SubLayanan)
         $query = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan', 'cs'])
             ->whereBetween('waktu_dibuat', [$startDate, $endDate]);
 
@@ -45,9 +37,6 @@ class AdminController extends Controller
         $totalHariIni  = $allFilteredTickets->count();
         $menunggu      = $allFilteredTickets->where('status', 'Menunggu')->count();
 
-        // -------------------------------------------------------------
-        // PERHITUNGAN KHUSUS JANGKA WAKTU 1 BULAN (30 HARI TERAKHIR)
-        // -------------------------------------------------------------
         $satuBulanLalu = Carbon::now('Asia/Jakarta')->subDays(30)->startOfDay();
         $sekarang      = Carbon::now('Asia/Jakarta')->endOfDay();
 
@@ -55,10 +44,8 @@ class AdminController extends Controller
             ->whereBetween('waktu_dibuat', [$satuBulanLalu, $sekarang])
             ->get();
         
-        // 1. Total Omset Loket (1 Bulan)
         $totalOmsetBulanIni = $tiketSatuBulan->where('status', 'Selesai')->sum('nominal_pembayaran');
 
-        // 2. Rata-Rata SLA (1 Bulan)
         $tiketSelesaiBulan = $tiketSatuBulan->where('status', 'Selesai')
             ->filter(fn($t) => $t->waktu_diproses && $t->waktu_selesai);
 
@@ -75,7 +62,6 @@ class AdminController extends Controller
             $avgSla = "0m 0s";
         }
 
-        // 3. Tab Riwayat Bulanan (Tabel Per Hari selama 30 Hari Terakhir)
         $historyBulanan = [];
         $period = Carbon::parse($satuBulanLalu, 'Asia/Jakarta')->daysUntil($sekarang);
         
@@ -84,7 +70,6 @@ class AdminController extends Controller
             $tiketHari = $tiketSatuBulan->filter(fn($t) => Carbon::parse($t->waktu_dibuat, 'Asia/Jakarta')->format('Y-m-d') === $tgl);
             $tiketHariSelesai = $tiketHari->where('status', 'Selesai');
 
-            // Hitung SLA per hari
             $totalDetikHari = 0;
             $countSlaHari = 0;
             foreach ($tiketHariSelesai as $th) {
@@ -113,7 +98,6 @@ class AdminController extends Controller
         }
         $historyBulanan = array_reverse($historyBulanan);
 
-        // Data Grafik Analitik Tren
         $chartDates   = [];
         $chartTotal   = [];
         $chartSelesai = [];
@@ -125,7 +109,6 @@ class AdminController extends Controller
             $chartSelesai[] = $tiketSatuBulan->filter(fn($t) => $t->status === 'Selesai' && Carbon::parse($t->waktu_dibuat, 'Asia/Jakarta')->format('Y-m-d') === $formattedDate)->count();
         }
 
-        // Distribusi Layanan
         $distribusiLayanan = Layanan::all()->map(function($layanan) use ($allFilteredTickets) {
             $item = new stdClass();
             $item->nama  = $layanan->nama_layanan;
@@ -133,9 +116,6 @@ class AdminController extends Controller
             return $item;
         })->sortByDesc('total');
 
-        // -------------------------------------------------------------
-        // STAFF MONITOR DINAMIS REAL-TIME MEJA CS (EKSPLISIT stdClass)
-        // -------------------------------------------------------------
         $usersCS = User::where('role', 'cs')->get();
         $mejaCs  = [];
 
@@ -151,7 +131,6 @@ class AdminController extends Controller
                 ->whereBetween('waktu_dibuat', [$startDate, $endDate])
                 ->count();
 
-            // Penentuan Status Teks
             $statusText = 'Offline';
             if ($cs->is_active) {
                 $statusText = $tiketAktif ? 'Melayani Pelanggan' : 'Aktif';
@@ -171,9 +150,7 @@ class AdminController extends Controller
             $mejaCs[] = $stafObj;
         }
 
-        // Ambil Data Master Meja Fisik untuk Tampilan Katalog
         $masterMejas = MasterMeja::orderBy('nomor_meja', 'asc')->get();
-
         $layanans   = Layanan::with('subLayanans')->get();
         $totalOmset = $totalOmsetBulanIni;
 
@@ -182,6 +159,54 @@ class AdminController extends Controller
             'allFilteredTickets', 'chartDates', 'chartTotal', 'chartSelesai',
             'startDate', 'endDate', 'layananId', 'layanans', 'historyBulanan'
         ));
+    }
+
+    // --- KELOLA LAYANAN UTAMA ---
+    public function storeLayanan(Request $request)
+    {
+        $request->validate([
+            'nama_layanan' => 'required|string|max:255'
+        ]);
+
+        Layanan::create([
+            'nama_layanan' => $request->nama_layanan,
+            'is_active'    => true
+        ]);
+
+        return back()->with('success', 'Kategori Layanan Utama berhasil ditambahkan.');
+    }
+
+    public function destroyLayanan($id)
+    {
+        $layanan = Layanan::findOrFail($id);
+        $layanan->delete();
+
+        return back()->with('success', 'Kategori Layanan beserta seluruh sub-layanannya berhasil dihapus.');
+    }
+
+    // --- KELOLA SUB-LAYANAN SEKTORAL ---
+    public function storeSubLayanan(Request $request)
+    {
+        $request->validate([
+            'layanan_id'       => 'required|exists:layanans,id',
+            'nama_sub_layanan' => 'required|string|max:255'
+        ]);
+
+        SubLayanan::create([
+            'layanan_id'       => $request->layanan_id,
+            'nama_sub_layanan' => $request->nama_sub_layanan,
+            'is_active'        => true
+        ]);
+
+        return back()->with('success', 'Sub-Layanan Sektoral berhasil ditambahkan.');
+    }
+
+    public function destroySubLayanan($id)
+    {
+        $sub = SubLayanan::findOrFail($id);
+        $sub->delete();
+
+        return back()->with('success', 'Sub-Layanan Sektoral berhasil dihapus.');
     }
 
     public function cetakPdf(Request $request)

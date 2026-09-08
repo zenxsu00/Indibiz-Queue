@@ -200,12 +200,12 @@
                 <!-- SELECT BAR PERIODE -->
                 <div class="w-full sm:w-auto min-w-[180px]">
                     <select name="period" x-model="selectedPeriod" @change="$el.form.submit()" class="w-full p-2 border border-[#E0E3E8] bg-gray-50 rounded-lg text-xs font-bold text-gray-700 focus:border-[#00509E] focus:ring-0 cursor-pointer">
-                        <option value="all">🗓 Semua Waktu (All Time)</option>
-                        <option value="today">📅 Hari Ini (Today)</option>
-                        <option value="mtd">📊 Bulan Ini (Month to Date)</option>
-                        <option value="last_30">🕒 30 Hari Terakhir</option>
-                        <option value="ytd">📈 Tahun Ini (Year to Date)</option>
-                        <option value="custom">🛠 Kustom Tanggal...</option>
+                        <option value="all">Semua Waktu (All Time)</option>
+                        <option value="today">Hari Ini (Today)</option>
+                        <option value="mtd">Bulan Ini (Month to Date)</option>
+                        <option value="last_30">30 Hari Terakhir</option>
+                        <option value="ytd">Tahun Ini (Year to Date)</option>
+                        <option value="custom">Kustom Tanggal...</option>
                     </select>
                 </div>
 

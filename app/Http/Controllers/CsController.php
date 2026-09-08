@@ -235,7 +235,7 @@ class CsController extends Controller
 
         $now = Carbon::now('Asia/Jakarta');
 
-        // Filter berdasarkan Select Bar Periode
+        // Filter berdasarkan Select Bar Periode (Diselaraskan dengan Admin Dashboard)
         switch ($period) {
             case 'today':
                 $query->whereDate('waktu_selesai', $now->toDateString());
@@ -440,7 +440,7 @@ class CsController extends Controller
         $now = Carbon::now('Asia/Jakarta');
         $tiket->update([
             'layanan_id'           => $request->layanan_id ?? $tiket->layanan_id,
-            'sub_layanan_id'       => $request->sub_layanan_id ?? $tiket->sub_layanan_id,
+            'sub_layanan_id'       => $request->sub_layanan_id ?: null,
             'status'               => 'Selesai',
             'keluhan_final'        => $request->keluhan_final,
             'catatan_cs'           => $request->catatan_cs,
@@ -481,7 +481,7 @@ class CsController extends Controller
 
         $tiket->update([
             'layanan_id'     => $request->layanan_id ?? $tiket->layanan_id,
-            'sub_layanan_id' => $request->sub_layanan_id,
+            'sub_layanan_id' => $request->sub_layanan_id ?: null,
             'keluhan_final'  => $request->keluhan_final,
             'catatan_cs'     => $request->catatan_cs,
             'is_curated'     => $request->is_curated,

@@ -16,7 +16,17 @@
     </style>
 </head>
 <body class="bg-[#F8F9FA] min-h-screen font-sans text-[#181C20] flex flex-col lg:flex-row antialiased overflow-x-hidden selection:bg-[#EE2E24] selection:text-white" 
-      x-data="{ activeTab: 'operations', mobileMenu: false, showModalCS: false, showModalMeja: false, showModalDetail: false, selectedTiket: null }">
+      x-data="{ 
+          activeTab: 'operations', 
+          mobileMenu: false, 
+          showModalCS: false, 
+          showModalMeja: false, 
+          showModalLayanan: false,
+          showModalSubLayanan: false,
+          showModalDetail: false, 
+          selectedTiket: null,
+          selectedPeriod: '{{ request('period', 'all') }}'
+      }">
 
     <!-- HEADER MOBILE -->
     <header class="lg:hidden bg-[#00509E] text-white p-4 flex justify-between items-center shadow-md sticky top-0 z-40">
@@ -58,6 +68,11 @@
                     :class="activeTab === 'staff' ? 'bg-white/20 text-white' : 'text-white/70'"
                     class="w-full flex items-center p-3 font-bold rounded-xl text-xs gap-3">
                     <span class="material-symbols-outlined">badge</span> Staff & Meja Monitor
+                </button>
+                <button @click="activeTab = 'master_layanan'; mobileMenu = false" 
+                    :class="activeTab === 'master_layanan' ? 'bg-white/20 text-white' : 'text-white/70'"
+                    class="w-full flex items-center p-3 font-bold rounded-xl text-xs gap-3">
+                    <span class="material-symbols-outlined">category</span> Kelola Layanan
                 </button>
 
                 <a href="{{ route('cs.select-meja') }}" class="w-full flex items-center p-3 font-bold rounded-xl text-xs gap-3 bg-amber-500 text-white shadow-sm mt-4">
@@ -113,6 +128,13 @@
                     <span>Staff & Meja Monitor</span>
                 </button>
 
+                <button @click="activeTab = 'master_layanan'" 
+                    :class="activeTab === 'master_layanan' ? 'bg-white/20 text-white shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'"
+                    class="w-full flex items-center px-3.5 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer">
+                    <span class="material-symbols-outlined mr-3 text-lg">category</span> 
+                    <span>Kelola Layanan</span>
+                </button>
+
                 <div class="pt-4 border-t border-white/10 mt-3">
                     <a href="{{ route('cs.select-meja') }}" class="w-full flex items-center px-3.5 py-2.5 text-xs font-bold rounded-xl bg-amber-500 hover:bg-amber-600 text-white transition-all shadow-sm">
                         <span class="material-symbols-outlined mr-2.5 text-lg">swap_horiz</span>
@@ -156,10 +178,11 @@
                 <h2 class="text-xl lg:text-2xl font-black text-[#181C20] tracking-tight" x-text="
                     activeTab === 'operations' ? 'Operations Dashboard' : 
                     (activeTab === 'analytics' ? 'Analitik Tren & Kepadatan Layanan' : 
-                    (activeTab === 'history' ? 'Riwayat & Rekap SLA / Omset Bulanan' : 'Monitoring Staf CS & Slot Meja'))
+                    (activeTab === 'history' ? 'Riwayat & Rekap SLA / Omset Bulanan' : 
+                    (activeTab === 'staff' ? 'Monitoring Staf CS & Slot Meja' : 'Kelola Master Layanan & Sub-Layanan')))
                 "></h2>
                 <p class="text-xs text-[#5D3F3B] mt-0.5">
-                    Pemantauan metrik antrean, grafik transaksi, dan ketersediaan meja CS secara real-time.
+                    Pemantauan metrik antrean, rekapitulasi data, serta konfigurasi layanan secara real-time.
                 </p>
             </div>
             
@@ -173,28 +196,54 @@
             </div>
         </div>
 
-        <!-- FORM FILTER OPERATIONS -->
-        <form x-show="activeTab === 'operations'" action="{{ route('admin.dashboard') }}" method="GET" class="bg-white p-4 rounded-2xl border border-[#E0E3E8] shadow-sm flex flex-wrap items-end gap-3.5">
-            <div class="flex-1 min-w-[160px]">
-                <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Dari Tanggal</label>
-                <input type="date" name="start_date" value="{{ request('start_date', $startDate->format('Y-m-d')) }}" class="w-full border border-gray-300 rounded-xl p-2 text-xs font-semibold focus:border-[#00509E] focus:ring-0">
+        <!-- FORM FILTER SIMPEL BERDASARKAN SELECT PERIODE -->
+        <form x-show="activeTab === 'operations'" action="{{ route('admin.dashboard') }}" method="GET" class="bg-white p-4 rounded-2xl border border-[#E0E3E8] shadow-sm flex flex-wrap items-center gap-3 text-xs">
+            
+            <!-- SELECT BAR PERIODE -->
+            <div class="flex-1 min-w-[200px]">
+                <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Periode Waktu</label>
+                <select name="period" x-model="selectedPeriod" @change="$el.form.submit()" class="w-full border border-gray-300 bg-gray-50 rounded-xl p-2 font-bold text-gray-700 focus:border-[#00509E] focus:ring-0 cursor-pointer">
+                    <option value="all">Semua Waktu (All Time)</option>
+                    <option value="today">Hari Ini (Today)</option>
+                    <option value="mtd">Bulan Ini (Month to Date)</option>
+                    <option value="last_30">30 Hari Terakhir</option>
+                    <option value="ytd">Tahun Ini (Year to Date)</option>
+                    <option value="custom">Kustom Tanggal...</option>
+                </select>
             </div>
-            <div class="flex-1 min-w-[160px]">
-                <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Sampai Tanggal</label>
-                <input type="date" name="end_date" value="{{ request('end_date', $endDate->format('Y-m-d')) }}" class="w-full border border-gray-300 rounded-xl p-2 text-xs font-semibold focus:border-[#00509E] focus:ring-0">
-            </div>
+
+            <!-- KUSTOM TANGGAL (JIKA PILIH 'custom') -->
+            <template x-if="selectedPeriod === 'custom'">
+                <div class="flex flex-wrap items-center gap-2">
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Dari Tanggal</label>
+                        <input type="date" name="start_date" value="{{ request('start_date', $startDate->format('Y-m-d')) }}" class="border border-gray-300 rounded-xl p-2 font-semibold">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Sampai Tanggal</label>
+                        <input type="date" name="end_date" value="{{ request('end_date', $endDate->format('Y-m-d')) }}" class="border border-gray-300 rounded-xl p-2 font-semibold">
+                    </div>
+                </div>
+            </template>
+
+            <!-- FILTER KATEGORI LAYANAN -->
             <div class="flex-1 min-w-[180px]">
-                <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Filter Layanan</label>
-                <select name="layanan_id" class="w-full border border-gray-300 rounded-xl p-2 text-xs font-semibold focus:border-[#00509E] focus:ring-0">
+                <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Filter Kategori</label>
+                <select name="layanan_id" @change="$el.form.submit()" class="w-full border border-gray-300 rounded-xl p-2 font-semibold focus:border-[#00509E] focus:ring-0">
                     <option value="">Semua Kategori</option>
                     @foreach($layanans as $lay)
                         <option value="{{ $lay->id }}" {{ $layananId == $lay->id ? 'selected' : '' }}>{{ $lay->nama_layanan }}</option>
                     @endforeach
                 </select>
             </div>
-            <button type="submit" class="bg-[#00509E] hover:bg-[#003C7E] text-white px-5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all">
-                <span class="material-symbols-outlined text-sm">filter_alt</span> Terapkan Filter
-            </button>
+
+            @if(request('period') || request('layanan_id') || request('start_date'))
+                <div class="self-end pb-0.5">
+                    <a href="{{ route('admin.dashboard') }}" class="px-3 py-2 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl font-bold flex items-center gap-1 hover:bg-rose-100 transition-all">
+                        <span class="material-symbols-outlined text-sm">restart_alt</span> Reset
+                    </a>
+                </div>
+            @endif
         </form>
 
         <!-- TAB 1: OPERATIONS -->
@@ -216,7 +265,7 @@
                     <div class="absolute top-0 left-0 w-full h-1.5 bg-emerald-500"></div>
                     <div class="flex justify-between items-center mb-2">
                         <span class="text-[10px] text-[#5D3F3B] font-extrabold uppercase tracking-wider">Rata-Rata SLA</span>
-                        <span class="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">1 Bulan</span>
+                        <span class="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">Periode Filter</span>
                     </div>
                     <span class="text-3xl font-black text-[#181C20]">{{ $avgSla }}</span>
                 </div>
@@ -225,12 +274,13 @@
                     <div class="absolute top-0 left-0 w-full h-1.5 bg-purple-600"></div>
                     <div class="flex justify-between items-center mb-2">
                         <span class="text-[10px] text-[#5D3F3B] font-extrabold uppercase tracking-wider">Total Omset Loket</span>
-                        <span class="text-[9px] bg-purple-100 text-purple-800 font-bold px-1.5 py-0.5 rounded">1 Bulan</span>
+                        <span class="text-[9px] bg-purple-100 text-purple-800 font-bold px-1.5 py-0.5 rounded">Periode Filter</span>
                     </div>
                     <span class="text-xl font-black text-[#00509E]">Rp {{ number_format($totalOmset, 0, ',', '.') }}</span>
                 </div>
             </div>
 
+            <!-- TABEL DATA ANTREAN -->
             <div class="bg-white rounded-2xl border border-[#E0E3E8] shadow-sm overflow-hidden">
                 <div class="p-4 border-b border-[#E0E3E8] flex justify-between items-center">
                     <h3 class="text-xs font-black uppercase tracking-wider text-[#181C20]">Data Transaksi & Tiket Antrean</h3>
@@ -258,12 +308,12 @@
                                 <tr class="hover:bg-[#F8F9FA] transition-colors">
                                     <td class="p-3 font-mono font-bold text-[#00509E]">{{ $tiket->nomor_antrian }}</td>
                                     <td class="p-3 font-bold">
-                                        {{ $tiket->pelanggan->nama }} 
-                                        <br><span class="text-[10px] text-gray-400 font-normal">{{ $tiket->pelanggan->no_hp }}</span>
+                                        {{ $tiket->pelanggan->nama ?? '-' }} 
+                                        <br><span class="text-[10px] text-gray-400 font-normal">{{ $tiket->pelanggan->no_hp ?? '-' }}</span>
                                     </td>
                                     <td class="p-3">
-                                        <span class="bg-blue-50 text-[#00509E] px-2 py-0.5 rounded font-bold block mb-0.5">{{ $tiket->layanan->nama_layanan }}</span>
-                                        <span class="text-[10px] text-gray-500 italic">{{ $tiket->subLayanan->nama_sub_layanan ?? '-' }}</span>
+                                        <span class="bg-blue-50 text-[#00509E] px-2 py-0.5 rounded font-bold block mb-0.5">{{ $tiket->layanan->nama_layanan ?? '-' }}</span>
+                                        <span class="text-[10px] text-gray-500 italic">{{ $tiket->subLayanan->nama_sub_layanan ?? 'Tanpa Sub-Layanan' }}</span>
                                     </td>
                                     <td class="p-3 font-bold">{{ $tiket->cs ? $tiket->cs->nama_lengkap . ' (M'.$tiket->cs->nomor_meja.')' : '-' }}</td>
                                     <td class="p-3">
@@ -280,7 +330,7 @@
                                     <td class="p-3 font-semibold">{{ $tiket->metode_pembayaran ?? 'Tanpa Transaksi' }}</td>
                                     <td class="p-3 text-right font-black text-[#181C20]">Rp {{ number_format($tiket->nominal_pembayaran, 0, ',', '.') }}</td>
                                     <td class="p-3 text-center">
-                                        <button @click="selectedTiket = {{ json_encode($tiket) }}; showModalDetail = true" class="px-2.5 py-1 bg-[#00509E]/10 text-[#00509E] hover:bg-[#00509E] hover:text-white rounded-lg font-bold text-[10px] transition-all">
+                                        <button @click="selectedTiket = {{ json_encode($tiket) }}; showModalDetail = true" class="px-2.5 py-1 bg-[#00509E]/10 text-[#00509E] hover:bg-[#00509E] hover:text-white rounded-lg font-bold text-[10px] transition-all cursor-pointer">
                                             Detail
                                         </button>
                                     </td>
@@ -299,7 +349,7 @@
             <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm">
                 <h3 class="text-sm font-black text-[#181C20] uppercase tracking-wider mb-4 flex items-center gap-2">
                     <span class="material-symbols-outlined text-[#00509E]">show_chart</span>
-                    Grafik Analitik Tren Pendaftaran vs Layanan Selesai (30 Hari Terakhir)
+                    Grafik Analitik Tren Pendaftaran vs Layanan Selesai
                 </h3>
                 <div class="h-64 sm:h-80">
                     <canvas id="queueChart" 
@@ -349,7 +399,6 @@
                 </div>
             </div>
 
-            <!-- BAR FILTER & SORTING CLIENT-SIDE -->
             <div class="bg-[#F8F9FA] p-3.5 rounded-xl border border-[#E0E3E8] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                 <div>
                     <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Jangka Waktu Hari</label>
@@ -413,45 +462,35 @@
                                 <td class="p-3.5 text-right font-black text-[#181C20]" x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(row.total_omset)"></td>
                             </tr>
                         </template>
-                        <template x-if="filteredHistory.length === 0">
-                            <tr>
-                                <td colspan="6" class="p-6 text-center text-gray-400 font-bold">Tidak ada data yang memenuhi kriteria filter.</td>
-                            </tr>
-                        </template>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- TAB 4: STAFF MONITORING & CS ACTIVE LOGS -->
+        <!-- TAB 4: STAFF MONITORING & MEJA -->
         <div x-show="activeTab === 'staff'" class="space-y-6">
-            
-            <!-- PANEL MANAJEMEN AKUN & SLOT MEJA -->
             <div class="bg-white p-4 rounded-2xl border border-[#E0E3E8] shadow-sm flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center gap-2">
                     <span class="material-symbols-outlined text-[#00509E]">tune</span>
                     <h4 class="font-extrabold text-xs text-[#181C20]">Aksi Pengelolaan Staf & Loket:</h4>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
-                    <button @click="showModalCS = true" class="px-3.5 py-2 bg-[#00509E] hover:bg-[#003C7E] text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1">
+                    <button @click="showModalCS = true" class="px-3.5 py-2 bg-[#00509E] hover:bg-[#003C7E] text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1 cursor-pointer">
                         <span class="material-symbols-outlined text-base">person_add</span> Tambah CS Baru
                     </button>
-                    <button @click="showModalMeja = true" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1">
+                    <button @click="showModalMeja = true" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1 cursor-pointer">
                         <span class="material-symbols-outlined text-base">add_box</span> Tambah Slot Meja
                     </button>
                 </div>
             </div>
 
-            <!-- KATALOG SLOT MEJA FISIK -->
+            <!-- KATALOG SLOT MEJA -->
             <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
                 <div class="flex justify-between items-center border-b border-gray-100 pb-3">
                     <h3 class="text-xs font-black uppercase text-[#181C20] flex items-center gap-1.5">
                         <span class="material-symbols-outlined text-[#00509E] text-lg">desk</span>
                         Katalog Ketersediaan Meja Loket
                     </h3>
-                    <span class="text-[10px] font-extrabold px-2.5 py-1 bg-gray-100 text-gray-600 rounded-full">
-                        Master Meja
-                    </span>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -472,14 +511,14 @@
                             <div class="flex items-center gap-1">
                                 <form action="{{ route('admin.meja.toggle', $meja->id) }}" method="POST">
                                     @csrf
-                                    <button type="submit" title="Ubah Status Ketersediaan" class="p-1.5 {{ $meja->is_available ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600' }} rounded-lg font-bold text-xs">
+                                    <button type="submit" title="Ubah Status Ketersediaan" class="p-1.5 {{ $meja->is_available ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600' }} rounded-lg font-bold text-xs cursor-pointer">
                                         <span class="material-symbols-outlined text-sm">power_settings_new</span>
                                     </button>
                                 </form>
                                 <form action="{{ route('admin.meja.delete', $meja->id) }}" method="POST" onsubmit="return confirm('Hapus slot meja ini?')">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" title="Hapus Slot Meja" class="p-1.5 bg-rose-100 text-rose-600 rounded-lg">
+                                    <button type="submit" title="Hapus Slot Meja" class="p-1.5 bg-rose-100 text-rose-600 rounded-lg cursor-pointer">
                                         <span class="material-symbols-outlined text-sm">delete</span>
                                     </button>
                                 </form>
@@ -492,111 +531,88 @@
                     @endforelse
                 </div>
             </div>
+        </div>
 
-            <!-- REKAP LOG CS AKTIF & PENGGUNAAN HARI INI (> 6 JAM) -->
-            @if(isset($csStats) && count($csStats) > 0)
-                <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
-                    <div class="flex justify-between items-center border-b border-gray-100 pb-3">
-                        <h3 class="text-xs font-black uppercase text-[#181C20] flex items-center gap-1.5">
-                            <span class="material-symbols-outlined text-[#00509E] text-lg">timer</span>
-                            Log Durasi CS Online (> 6 Jam Indikator)
-                        </h3>
-                        <span class="text-[10px] font-extrabold px-2.5 py-1 bg-blue-50 text-[#00509E] rounded-full">
-                            Rekap Hari Ini
-                        </span>
+        <!-- TAB 5: TABEL MANAJEMEN LAYANAN & SUB-LAYANAN -->
+        <div x-show="activeTab === 'master_layanan'" class="space-y-6">
+            <div class="bg-white p-4 rounded-2xl border border-[#E0E3E8] shadow-sm flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h3 class="font-black text-sm text-[#181C20]">Pengaturan Layanan Utama & Sub-Layanan</h3>
+                    <p class="text-xs text-gray-500">Kelola master data kategori layanan dan pilihan sub-layanan sektoral untuk CS Console.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button @click="showModalLayanan = true" class="px-3.5 py-2 bg-[#00509E] hover:bg-[#003C7E] text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1 cursor-pointer">
+                        <span class="material-symbols-outlined text-base">add</span> Tambah Kategori Utama
+                    </button>
+                    <button @click="showModalSubLayanan = true" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1 cursor-pointer">
+                        <span class="material-symbols-outlined text-base">playlist_add</span> Tambah Sub-Layanan
+                    </button>
+                </div>
+            </div>
+
+            <!-- TABEL LAYANAN UTAMA & DAFTAR SUB-LAYANAN TERKAIT -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- PANEL KATEGORI UTAMA -->
+                <div class="bg-white rounded-2xl border border-[#E0E3E8] shadow-sm overflow-hidden flex flex-col">
+                    <div class="p-4 bg-[#F8F9FA] border-b border-[#E0E3E8]">
+                        <h4 class="font-black text-xs text-[#00509E] uppercase tracking-wider">Kategori Utama Layanan</h4>
                     </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        @foreach($csStats as $csItem)
-                            <div class="p-3.5 rounded-xl border {{ $csItem['is_over_6h'] ? 'border-amber-300 bg-amber-50/30' : 'border-[#E0E3E8] bg-[#F8F9FA]' }} space-y-2">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <h4 class="font-bold text-xs text-gray-800">{{ $csItem['nama'] }}</h4>
-                                        <p class="text-[10px] text-gray-500">Loket: {{ $csItem['nomor_meja'] ? 'M' . $csItem['nomor_meja'] : 'Belum Pilih Loket' }}</p>
-                                    </div>
-                                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black {{ $csItem['is_active'] ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600' }}">
-                                        {{ $csItem['is_active'] ? 'ONLINE' : 'OFFLINE' }}
-                                    </span>
+                    <div class="p-4 divide-y divide-gray-100">
+                        @forelse($layanans as $lay)
+                            <div class="py-3 flex items-center justify-between">
+                                <div>
+                                    <h5 class="font-bold text-xs text-[#181C20]">{{ $lay->nama_layanan }}</h5>
+                                    <span class="text-[10px] text-gray-400 font-medium">{{ $lay->subLayanans->count() }} Sub-Layanan Terhubung</span>
                                 </div>
-
-                                <div class="pt-2 border-t border-gray-200/80 flex justify-between items-center text-xs">
-                                    <div>
-                                        <span class="text-[9px] text-gray-400 block font-bold">Total Jam Aktif</span>
-                                        <span class="font-black text-xs text-[#00509E]">{{ $csItem['jam_aktif'] }} Jam</span>
-                                    </div>
-                                    <div class="text-right">
-                                        <span class="text-[9px] text-gray-400 block font-bold">Tiket Selesai</span>
-                                        <span class="font-black text-xs text-emerald-600">{{ $csItem['total_tiket'] }} Tiket</span>
-                                    </div>
-                                </div>
-
-                                @if($csItem['is_over_6h'])
-                                    <div class="mt-1 p-1.5 bg-amber-100/80 rounded-lg text-[9px] font-bold text-amber-800 flex items-center gap-1">
-                                        <span class="material-symbols-outlined text-xs">warning</span> Aktif > 6 Jam hari ini.
-                                    </div>
-                                @endif
+                                <form action="{{ route('admin.layanan.destroy', $lay->id) }}" method="POST" onsubmit="return confirm('Hapus kategori layanan ini beserta seluruh sub-layanannya?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition-all cursor-pointer">
+                                        <span class="material-symbols-outlined text-sm">delete</span>
+                                    </button>
+                                </form>
                             </div>
-                        @endforeach
+                        @empty
+                            <div class="p-4 text-center text-gray-400 font-bold text-xs">Belum ada kategori layanan.</div>
+                        @endforelse
                     </div>
                 </div>
-            @endif
 
-            <!-- TABLE LIVEMONITOR PETUGAS CS -->
-            <div class="bg-white border border-[#E0E3E8] rounded-2xl shadow-sm overflow-hidden flex flex-col">
-                <div class="p-6 border-b border-[#E0E3E8] flex justify-between items-center">
-                    <h3 class="text-lg font-black text-[#181C20]">Status Lengkap & Performa Petugas CS</h3>
-                    <span class="text-xs text-[#00509E] font-bold bg-[#00509E]/10 px-3 py-1 rounded-full">Live Monitor</span>
-                </div>
-                
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-sm">
-                        <thead>
-                            <tr class="bg-[#F8F9FA] text-xs font-extrabold text-[#5D3F3B] border-b border-[#E0E3E8] uppercase tracking-wider">
-                                <th class="py-4 px-6">Nomor Loket</th>
-                                <th class="py-4 px-6">Nama Petugas</th>
-                                <th class="py-4 px-6">Status Loket</th>
-                                <th class="py-4 px-6">Tiket Sedang Dilayani</th>
-                                <th class="py-4 px-6 text-center">Total Tiket Diselesaikan</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-[#E0E3E8]">
-                            @forelse($mejaCs as $cs)
-                                <tr class="hover:bg-[#F8F9FA] transition-colors">
-                                    <td class="py-4 px-6 font-extrabold text-[#181C20]">Loket M{{ $cs->nomor_meja }}</td>
-                                    <td class="py-4 px-6 font-bold text-[#181C20] flex items-center gap-2.5">
-                                        <div class="w-8 h-8 rounded-full bg-[#00509E] text-white font-black text-xs flex items-center justify-center shadow-sm">
-                                            {{ $cs->inisial }}
-                                        </div>
-                                        {{ $cs->nama }}
-                                    </td>
-                                    <td class="py-4 px-6">
-                                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border 
-                                            {{ $cs->status === 'Melayani Pelanggan' ? 'bg-amber-50 text-amber-700 border-amber-200' : ($cs->status === 'Aktif' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200') }}">
-                                            <span class="w-2 h-2 rounded-full {{ $cs->status === 'Melayani Pelanggan' ? 'bg-amber-500 animate-pulse' : ($cs->status === 'Aktif' ? 'bg-emerald-600' : 'bg-rose-600') }}"></span>
-                                            {{ $cs->status === 'Melayani Pelanggan' ? 'Melayani Pelanggan' : ($cs->status === 'Aktif' ? 'Standby (Siap Memanggil)' : 'Offline / Tutup') }}
+                <!-- PANEL SUB-LAYANAN SEKTORAL -->
+                <div class="bg-white rounded-2xl border border-[#E0E3E8] shadow-sm overflow-hidden flex flex-col">
+                    <div class="p-4 bg-[#F8F9FA] border-b border-[#E0E3E8]">
+                        <h4 class="font-black text-xs text-emerald-700 uppercase tracking-wider">Daftar Sub-Layanan Sektoral</h4>
+                    </div>
+                    <div class="p-4 divide-y divide-gray-100 max-h-[500px] overflow-y-auto custom-scrollbar">
+                        @forelse($layanans as $lay)
+                            @foreach($lay->subLayanans as $sub)
+                                <div class="py-2.5 flex items-center justify-between">
+                                    <div>
+                                        <h5 class="font-bold text-xs text-gray-800">{{ $sub->nama_sub_layanan }}</h5>
+                                        <span class="text-[9px] bg-blue-50 text-[#00509E] font-bold px-2 py-0.5 rounded border border-blue-100 inline-block mt-0.5">
+                                            {{ $lay->nama_layanan }}
                                         </span>
-                                    </td>
-                                    <td class="py-4 px-6 font-extrabold {{ $cs->tiket_aktif != '-' ? 'text-[#EE2E24]' : 'text-gray-400' }}">
-                                        {{ $cs->tiket_aktif }}
-                                    </td>
-                                    <td class="py-4 px-6 font-black text-[#00509E] text-center text-base">
-                                        {{ $cs->total_dilayani }} Tiket
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="5" class="py-8 text-center text-[#5D3F3B] text-sm">Belum ada akun CS yang terdaftar di sistem.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                                    </div>
+                                    <form action="{{ route('admin.sub_layanan.destroy', $sub->id) }}" method="POST" onsubmit="return confirm('Hapus sub-layanan ini?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition-all cursor-pointer">
+                                            <span class="material-symbols-outlined text-sm">delete</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            @endforeach
+                        @empty
+                            <div class="p-4 text-center text-gray-400 font-bold text-xs">Belum ada sub-layanan.</div>
+                        @endforelse
+                    </div>
                 </div>
             </div>
         </div>
 
     </main>
 
-    <!-- MODAL POPUP 1: TAMBAH PETUGAS CS -->
+    <!-- MODAL POPUP: TAMBAH CS -->
     <div x-show="showModalCS" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-gray-100" @click.away="showModalCS = false">
             <div class="flex justify-between items-center border-b pb-3 border-gray-100">
@@ -612,7 +628,7 @@
                 @csrf
                 <div>
                     <label class="font-bold block mb-1">Nama Lengkap Petugas</label>
-                    <input type="text" name="nama_lengkap" required placeholder="Contoh: Abdul Jamal Ahmad Kusnandar" class="w-full p-2.5 border border-gray-300 rounded-xl focus:border-[#00509E] focus:ring-0">
+                    <input type="text" name="nama_lengkap" required placeholder="Contoh: Abdul Jamal Ahmad" class="w-full p-2.5 border border-gray-300 rounded-xl focus:border-[#00509E] focus:ring-0">
                 </div>
                 <div>
                     <label class="font-bold block mb-1">Username Login</label>
@@ -630,37 +646,68 @@
         </div>
     </div>
 
-    <!-- MODAL POPUP 2: TAMBAH MASTER MEJA -->
-    <div x-show="showModalMeja" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-gray-100" @click.away="showModalMeja = false">
+    <!-- MODAL POPUP: TAMBAH LAYANAN UTAMA -->
+    <div x-show="showModalLayanan" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-gray-100" @click.away="showModalLayanan = false">
             <div class="flex justify-between items-center border-b pb-3 border-gray-100">
                 <h3 class="text-base font-black text-[#181C20] flex items-center gap-2">
-                    <span class="material-symbols-outlined text-emerald-600">add_box</span>
-                    Tambah Slot Loket Meja
+                    <span class="material-symbols-outlined text-[#00509E]">category</span>
+                    Tambah Kategori Layanan Utama
                 </h3>
-                <button @click="showModalMeja = false" class="text-gray-400 hover:text-gray-600">
+                <button @click="showModalLayanan = false" class="text-gray-400 hover:text-gray-600">
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
-            <form action="{{ route('admin.meja.store') }}" method="POST" class="space-y-3 text-xs">
+            <form action="{{ route('admin.layanan.store') }}" method="POST" class="space-y-3 text-xs">
                 @csrf
                 <div>
-                    <label class="font-bold block mb-1">Nomor Meja (Angka)</label>
-                    <input type="number" name="nomor_meja" required placeholder="Contoh: 3" class="w-full p-2.5 border border-gray-300 rounded-xl focus:border-[#00509E] focus:ring-0">
-                </div>
-                <div>
-                    <label class="font-bold block mb-1">Nama Deskripsi Meja</label>
-                    <input type="text" name="nama_meja" required placeholder="Contoh: Loket Meja 03" class="w-full p-2.5 border border-gray-300 rounded-xl focus:border-[#00509E] focus:ring-0">
+                    <label class="font-bold block mb-1">Nama Kategori Layanan</label>
+                    <input type="text" name="nama_layanan" required placeholder="Contoh: Pengaduan Teknis" class="w-full p-2.5 border border-gray-300 rounded-xl focus:border-[#00509E] focus:ring-0">
                 </div>
                 <div class="pt-3 border-t border-gray-100 flex justify-end gap-2">
-                    <button type="button" @click="showModalMeja = false" class="px-4 py-2 bg-gray-100 text-gray-700 font-bold text-xs rounded-xl">Batal</button>
-                    <button type="submit" class="px-5 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-md">Tambah Meja</button>
+                    <button type="button" @click="showModalLayanan = false" class="px-4 py-2 bg-gray-100 text-gray-700 font-bold text-xs rounded-xl">Batal</button>
+                    <button type="submit" class="px-5 py-2 bg-[#00509E] text-white font-bold text-xs rounded-xl shadow-md">Simpan Kategori</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- MODAL POPUP 3: DETAIL TIKET, PROFILING & CATATAN CS -->
+    <!-- MODAL POPUP: TAMBAH SUB-LAYANAN -->
+    <div x-show="showModalSubLayanan" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-gray-100" @click.away="showModalSubLayanan = false">
+            <div class="flex justify-between items-center border-b pb-3 border-gray-100">
+                <h3 class="text-base font-black text-[#181C20] flex items-center gap-2">
+                    <span class="material-symbols-outlined text-emerald-600">playlist_add</span>
+                    Tambah Sub-Layanan Sektoral
+                </h3>
+                <button @click="showModalSubLayanan = false" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <form action="{{ route('admin.sub_layanan.store') }}" method="POST" class="space-y-3 text-xs">
+                @csrf
+                <div>
+                    <label class="font-bold block mb-1">Kategori Utama</label>
+                    <select name="layanan_id" required class="w-full p-2.5 border border-gray-300 rounded-xl focus:border-[#00509E] focus:ring-0 bg-white">
+                        <option value="">-- Pilih Kategori Layanan --</option>
+                        @foreach($layanans as $lay)
+                            <option value="{{ $lay->id }}">{{ $lay->nama_layanan }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="font-bold block mb-1">Nama Sub-Layanan</label>
+                    <input type="text" name="nama_sub_layanan" required placeholder="Contoh: Internet Putus-putus / Lambat" class="w-full p-2.5 border border-gray-300 rounded-xl focus:border-[#00509E] focus:ring-0">
+                </div>
+                <div class="pt-3 border-t border-gray-100 flex justify-end gap-2">
+                    <button type="button" @click="showModalSubLayanan = false" class="px-4 py-2 bg-gray-100 text-gray-700 font-bold text-xs rounded-xl">Batal</button>
+                    <button type="submit" class="px-5 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-md">Simpan Sub-Layanan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL POPUP: DETAIL TIKET & PROFILING LENGKAP -->
     <div x-show="showModalDetail" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-gray-100" @click.away="showModalDetail = false">
             <div class="flex justify-between items-center border-b pb-3 border-gray-100">
@@ -674,7 +721,7 @@
             </div>
 
             <div class="space-y-3 text-xs">
-                <!-- PROFILING PELANGGAN -->
+                <!-- PROFILING PELANGGAN LENGKAP -->
                 <div class="bg-gray-50 p-3 rounded-xl border border-gray-200 space-y-1">
                     <span class="text-gray-400 font-bold block text-[10px] uppercase">Profiling Data Pelanggan</span>
                     <p class="font-extrabold text-[#181C20] text-sm" x-text="(selectedTiket && selectedTiket.pelanggan) ? selectedTiket.pelanggan.nama : '-'"></p>
@@ -730,7 +777,7 @@
         </div>
     </div>
 
-    <!-- DATA JAVASCRIPT MURNI -->
+    <!-- SCRIPT CHART & HISTORY FILTER -->
     <script>
         function historyFilterComponent() {
             return {

@@ -34,7 +34,6 @@
                 </div>
             </div>
 
-            <!-- MENU NAVIGASI DEDICATED (100% IDENTIK) -->
             <nav class="py-3 space-y-1.5 px-2.5">
                 <a href="{{ route('cs.index') }}" class="flex items-center px-3 py-2 text-xs font-bold bg-white/20 text-white rounded-lg shadow-sm border border-white/10 transition-all">
                     <span class="material-symbols-outlined mr-2 text-base">grid_view</span> 
@@ -63,7 +62,6 @@
                 </div>
             </div>
 
-            <!-- TOMBOL SWITCH KE ADMIN DASHBOARD -->
             @if(Auth::check() && (strtolower(Auth::user()->role) === 'admin' || strtolower(Auth::user()->username) === 'admin'))
                 <a href="{{ route('cs.leave') }}" class="w-full py-2 px-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer">
                     <span class="material-symbols-outlined text-base">swap_horiz</span>
@@ -81,7 +79,7 @@
         </div>
     </aside>
 
-    <!-- MOBILE HEADER (100% IDENTIK & PERSISI) -->
+    <!-- MOBILE HEADER -->
     <div class="md:hidden bg-[#00509E] text-white p-3 flex justify-between items-center shadow-md shrink-0 z-30">
         <div class="font-bold text-xs flex items-center gap-2">
             <img src="{{ asset('img/LogoIcon.png') }}" alt="Indibiz" class="w-6 h-6 object-contain drop-shadow-md">
@@ -117,7 +115,6 @@
             </div>
         @endif
 
-        <!-- BANNER MODE SPECTATE -->
         @if($isSpectator)
             <div class="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl flex items-center justify-between text-xs font-bold shrink-0">
                 <div class="flex items-center gap-2">
@@ -196,7 +193,7 @@
             <div class="md:col-span-7 lg:col-span-8 bg-white rounded-xl shadow-sm border border-[#E0E3E8] p-3.5 lg:p-4 flex flex-col h-full min-h-0 overflow-hidden">
                 @if($antreanAktif)
                     <div class="flex flex-col h-full min-h-0 justify-between">
-                        <div class="flex-1 overflow-y-auto pr-1 custom-scrollbar min-h-0 space-y-3">
+                        <div id="form-container-scroll" class="flex-1 overflow-y-auto pr-1 custom-scrollbar min-h-0 space-y-3">
                             <div class="border-b border-[#E0E3E8] pb-2.5 flex flex-wrap justify-between items-start gap-2">
                                 <div>
                                     <span class="text-[9px] font-black text-[#5D3F3B] uppercase tracking-wider">Tiket Sedang Dilayani</span>
@@ -446,7 +443,9 @@
 
         function fetchConsoleRealtime() {
             var modalActive = Alpine.$data(document.body).showModalTransaksi;
-            var isFocusTextarea = document.activeElement && (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT');
+            var activeEl = document.activeElement;
+            var isFocusTextarea = activeEl && (activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'INPUT' || activeEl.tagName === 'SELECT');
+            
             if (modalActive || isFocusTextarea) return;
 
             fetch(window.location.href)
@@ -466,8 +465,20 @@
                     var elemenLama = document.getElementById('main-cs-console');
                     
                     if (elemenBaru && elemenLama) {
+                        var areaAntrean = document.getElementById('area-antrean-realtime');
+                        var scrollAntreanPos = areaAntrean ? areaAntrean.scrollTop : 0;
+                        
+                        var formContainer = document.getElementById('form-container-scroll');
+                        var scrollFormPos = formContainer ? formContainer.scrollTop : 0;
+
                         if (elemenLama.innerHTML !== elemenBaru.innerHTML) {
                             elemenLama.innerHTML = elemenBaru.innerHTML;
+
+                            var newAreaAntrean = document.getElementById('area-antrean-realtime');
+                            if (newAreaAntrean) newAreaAntrean.scrollTop = scrollAntreanPos;
+
+                            var newFormContainer = document.getElementById('form-container-scroll');
+                            if (newFormContainer) newFormContainer.scrollTop = scrollFormPos;
                         }
                     }
                 })
