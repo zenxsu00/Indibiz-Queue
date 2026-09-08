@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\MasterMeja;
 use App\Models\Layanan;
 use App\Models\SubLayanan;
+use App\Models\CsActiveLog;
 use App\Events\TiketDipanggil;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -51,10 +52,59 @@ class CsController extends Controller
      */
     private function resetUserState(User $user)
     {
+        $this->closeActiveLog($user->id);
         $user->is_active = false;
         $user->nomor_meja = null;
         $user->save();
         session()->forget('meja_terpilih');
+    }
+
+    /**
+     * Membuka log durasi CS aktif baru untuk hari ini
+     */
+    private function openActiveLog($userId)
+    {
+        $now = Carbon::now('Asia/Jakarta');
+        $today = $now->toDateString();
+
+        $openLog = CsActiveLog::where('user_id', $userId)
+            ->where('tanggal', $today)
+            ->whereNull('jam_selesai')
+            ->first();
+
+        if (!$openLog) {
+            CsActiveLog::create([
+                'user_id'    => $userId,
+                'tanggal'    => $today,
+                'jam_mulai'  => $now,
+                'jam_selesai' => null,
+                'durasi_menit' => 0,
+            ]);
+        }
+    }
+
+    /**
+     * Menutup log durasi CS aktif & menghitung durasi menit
+     */
+    private function closeActiveLog($userId)
+    {
+        $now = Carbon::now('Asia/Jakarta');
+        $today = $now->toDateString();
+
+        $openLog = CsActiveLog::where('user_id', $userId)
+            ->where('tanggal', $today)
+            ->whereNull('jam_selesai')
+            ->first();
+
+        if ($openLog) {
+            $jamMulai = Carbon::parse($openLog->jam_mulai);
+            $durasiMenit = $jamMulai->diffInMinutes($now);
+
+            $openLog->update([
+                'jam_selesai'  => $now,
+                'durasi_menit' => $durasiMenit,
+            ]);
+        }
     }
 
     /**
@@ -130,6 +180,9 @@ class CsController extends Controller
 
         session(['meja_terpilih' => $request->nomor_meja]);
 
+        // Catat Log CS Aktif
+        $this->openActiveLog($user->id);
+
         return redirect()->route('cs.index')->with('success', "Berhasil masuk ke Loket M{$request->nomor_meja}");
     }
 
@@ -149,6 +202,7 @@ class CsController extends Controller
         if (!$isSpectator && !$user->is_active) {
             $user->is_active = true;
             $user->save();
+            $this->openActiveLog($user->id);
         }
 
         // Tiket Menunggu
@@ -368,7 +422,7 @@ class CsController extends Controller
         return redirect()->route('cs.index')->with('success', "Tiket {$tiket->nomor_antrian} berhasil diselesaikan.");
     }
 
-    // METHOD BARU: KURASI CATATAN KONSULTASI LAMA
+    // METHOD KURASI CATATAN KONSULTASI LAMA
     public function updateKurasi(Request $request, int $id)
     {
         $request->validate([
@@ -391,6 +445,7 @@ class CsController extends Controller
     {
         /** @var User $user */
         $user = Auth::user();
+        $this->closeActiveLog($user->id);
         $user->is_active = false;
         $user->nomor_meja = null;
         $user->save();

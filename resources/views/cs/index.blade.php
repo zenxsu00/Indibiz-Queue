@@ -158,20 +158,20 @@
                     <div class="flex-1 overflow-y-auto custom-scrollbar space-y-2">
                         @forelse($riwayatPelanggan as $rTiket)
                             @php
-                                $isDone = !empty($rTiket->catatan_cs) || !empty($rTiket->keluhan_final);
+                                $isDone = $rTiket->is_curated || !empty($rTiket->catatan_cs) || !empty($rTiket->keluhan_final);
                             @endphp
                             <div class="p-2.5 border rounded-lg bg-gray-50 text-xs space-y-1.5 shadow-sm">
                                 <div class="flex justify-between items-center font-bold text-[#00509E]">
-                                    <span class="text-sm">{{ $rTiket->nomor_antrian }}</span>
+                                    <span class="text-sm font-black">{{ $rTiket->nomor_antrian }}</span>
                                     
-                                    <!-- BADGE INDIKATOR STATUS PENDATAAN -->
+                                    <!-- BADGE INDIKATOR STATUS PENDATAAN (MODUL 2) -->
                                     <span class="text-[9px] px-2 py-0.5 rounded-full font-black {{ $isDone ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
                                         {{ $isDone ? '✓ Sudah Dikerjakan' : '⚠ Belum Dikerjakan' }}
                                     </span>
                                 </div>
 
-                                <p class="font-bold text-gray-800">{{ $rTiket->pelanggan->nama }}</p>
-                                <p class="text-[10px] text-gray-600">Layanan: {{ $rTiket->layanan->nama_layanan }}</p>
+                                <p class="font-bold text-gray-800">{{ $rTiket->pelanggan->nama ?? '-' }}</p>
+                                <p class="text-[10px] text-gray-600">Layanan: {{ $rTiket->layanan->nama_layanan ?? '-' }}</p>
                                 <p class="text-[10px] text-gray-500 italic bg-white p-1.5 rounded border border-gray-200">
                                     "{{ $rTiket->catatan_cs ?? 'Belum ada catatan CS' }}"
                                 </p>
@@ -182,13 +182,13 @@
                                     <!-- TOMBOL KURASI CATATAN TERDAHULU -->
                                     <button type="button" 
                                             @click="kurasiTiket = {{ json_encode($rTiket) }}; showModalKurasi = true" 
-                                            class="text-[10px] bg-[#00509E] text-white px-2 py-1 rounded font-bold hover:bg-[#003C7E] transition-all flex items-center gap-0.5">
+                                            class="text-[10px] bg-[#00509E] text-white px-2.5 py-1 rounded-md font-bold hover:bg-[#003C7E] transition-all flex items-center gap-0.5 shadow-sm">
                                         <span class="material-symbols-outlined text-xs">edit_note</span> Edit / Kurasi
                                     </button>
                                 </div>
                             </div>
                         @empty
-                            <p class="text-xs text-gray-400 text-center py-4">Data tidak ditemukan.</p>
+                            <p class="text-xs text-gray-400 text-center py-4">Data profiling pelanggan tidak ditemukan.</p>
                         @endforelse
                     </div>
                 @else
@@ -276,15 +276,15 @@
                                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                                         <div>
                                             <label class="text-[10px] font-bold text-gray-500 block mb-0.5">Nama Pelanggan</label>
-                                            <input type="text" name="nama_pelanggan" value="{{ $antreanAktif->pelanggan->nama }}" {{ $isSpectator ? 'disabled' : '' }} required class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:border-[#00509E] focus:ring-0">
+                                            <input type="text" name="nama_pelanggan" value="{{ $antreanAktif->pelanggan->nama ?? '' }}" {{ $isSpectator ? 'disabled' : '' }} required class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:border-[#00509E] focus:ring-0">
                                         </div>
                                         <div>
                                             <label class="text-[10px] font-bold text-gray-500 block mb-0.5">Email Pelanggan</label>
-                                            <input type="email" name="email_pelanggan" value="{{ $antreanAktif->pelanggan->email }}" {{ $isSpectator ? 'disabled' : '' }} placeholder="contoh@gmail.com" class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:border-[#00509E] focus:ring-0">
+                                            <input type="email" name="email_pelanggan" value="{{ $antreanAktif->pelanggan->email ?? '' }}" {{ $isSpectator ? 'disabled' : '' }} placeholder="contoh@gmail.com" class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:border-[#00509E] focus:ring-0">
                                         </div>
                                         <div>
                                             <label class="text-[10px] font-bold text-gray-500 block mb-0.5">No. Indibiz / Service ID</label>
-                                            <input type="text" name="no_indibiz" value="{{ $antreanAktif->pelanggan->no_indibiz }}" {{ $isSpectator ? 'disabled' : '' }} placeholder="Contoh: 12233948" class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:border-[#00509E] focus:ring-0">
+                                            <input type="text" name="no_indibiz" value="{{ $antreanAktif->pelanggan->no_indibiz ?? '' }}" {{ $isSpectator ? 'disabled' : '' }} placeholder="Contoh: 12233948" class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:border-[#00509E] focus:ring-0">
                                         </div>
                                     </div>
                                 </div>
