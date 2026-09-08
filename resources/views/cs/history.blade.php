@@ -21,6 +21,7 @@
           kurasiTiket: {},
           selectedLayananId: '',
           selectedPeriod: '{{ $period ?? 'all' }}',
+          selectedCuratedStatus: '{{ $isCurated ?? 'all' }}',
           
           openKurasiModal(tiket) {
               this.kurasiTiket = JSON.parse(JSON.stringify(tiket));
@@ -28,6 +29,7 @@
                   this.kurasiTiket.pelanggan = { nama: '', email: '', no_indibiz: '', no_hp: '' };
               }
               this.selectedLayananId = this.kurasiTiket.layanan_id || '';
+              this.kurasiTiket.is_curated = (this.kurasiTiket.is_curated == 1 || this.kurasiTiket.is_curated === true) ? 1 : 0;
               this.showModalKurasi = true;
           },
 
@@ -176,7 +178,7 @@
             </div>
         @endif
 
-        <!-- HEADER BANNER & SIMPLE SELECT BAR FILTER -->
+        <!-- HEADER BANNER & SELECT BAR FILTER -->
         <div class="bg-white p-3.5 lg:p-4 rounded-xl border border-[#E0E3E8] shadow-sm shrink-0 space-y-3">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <div>
@@ -188,13 +190,22 @@
                 </div>
             </div>
 
-            <!-- FORM FILTER SIMPEL DENGAN SELECT BAR -->
+            <!-- FORM FILTER SIMPEL -->
             <form action="{{ route('cs.history') }}" method="GET" class="flex flex-wrap items-center gap-2 text-xs">
                 
                 <!-- SEARCH TEXT INPUT -->
                 <div class="relative flex-1 min-w-[220px]">
                     <input type="text" name="search" value="{{ $searchQuery }}" placeholder="Cari No HP / Email / Indibiz / Nama..." class="w-full text-xs p-2 pl-8 border border-[#E0E3E8] rounded-lg focus:border-[#00509E] focus:ring-0 font-medium">
                     <span class="material-symbols-outlined absolute left-2.5 top-2 text-gray-400 text-base">search</span>
+                </div>
+
+                <!-- SELECT STATUS KURASI (SEMUA / SUDAH / BELUM) -->
+                <div class="w-full sm:w-auto min-w-[170px]">
+                    <select name="is_curated" x-model="selectedCuratedStatus" @change="$el.form.submit()" class="w-full p-2 border border-[#E0E3E8] bg-gray-50 rounded-lg text-xs font-bold text-gray-700 focus:border-[#00509E] focus:ring-0 cursor-pointer">
+                        <option value="all">Semua Status Kurasi</option>
+                        <option value="1">✓ Sudah Dikurasi</option>
+                        <option value="0">⚠ Belum Dikurasi</option>
+                    </select>
                 </div>
 
                 <!-- SELECT BAR PERIODE -->
@@ -209,7 +220,7 @@
                     </select>
                 </div>
 
-                <!-- INPUT TANGGAL KUSTOM (Hanya tampil jika memilih 'Kustom Tanggal') -->
+                <!-- INPUT TANGGAL KUSTOM -->
                 <template x-if="selectedPeriod === 'custom'">
                     <div class="flex items-center gap-1.5 bg-gray-50 p-1 border border-[#E0E3E8] rounded-lg">
                         <input type="date" name="start_date" value="{{ $startDate ?? '' }}" class="bg-transparent text-xs font-medium focus:outline-none">
@@ -220,7 +231,7 @@
                 </template>
 
                 <!-- TOMBOL RESET FILTER -->
-                @if(($period && $period !== 'all') || !empty($searchQuery))
+                @if(($period && $period !== 'all') || ($isCurated && $isCurated !== 'all') || !empty($searchQuery))
                     <a href="{{ route('cs.history') }}" title="Reset Filter" class="py-2 px-2.5 bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 rounded-lg font-bold flex items-center justify-center transition-all text-xs gap-1">
                         <span class="material-symbols-outlined text-sm">restart_alt</span>
                         <span>Reset</span>
@@ -239,7 +250,7 @@
                             <th class="p-3">Data Pelanggan (Lengkap)</th>
                             <th class="p-3">Layanan / Sub-Layanan</th>
                             <th class="p-3">Hasil Final / Catatan CS</th>
-                            <th class="p-3">Status Lapangan</th>
+                            <th class="p-3">Status</th>
                             <th class="p-3">Waktu Selesai</th>
                             <th class="p-3 text-center">Aksi</th>
                         </tr>
@@ -379,7 +390,7 @@
                 </div>
 
                 <div>
-                    <label class="font-bold text-gray-700 block mb-1">Status Penanganan / Kurasi Lapangan</label>
+                    <label class="font-bold text-gray-700 block mb-1">Status Penanganan / Kurasi</label>
                     <div class="grid grid-cols-2 gap-2">
                         <label class="p-2 border rounded-lg flex items-center gap-2 cursor-pointer" :class="kurasiTiket.is_curated == 1 ? 'border-emerald-500 bg-emerald-50 text-emerald-800 font-bold' : 'border-gray-200 text-gray-600'">
                             <input type="radio" name="is_curated" value="1" x-model="kurasiTiket.is_curated" class="sr-only">

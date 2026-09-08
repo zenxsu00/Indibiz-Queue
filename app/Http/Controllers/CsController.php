@@ -226,7 +226,8 @@ class CsController extends Controller
         $isSpectator = (empty($nomorMejaTerpilih) || $nomorMejaTerpilih == 0) && $user->role === 'admin';
 
         $searchQuery = $request->input('search');
-        $period      = $request->input('period', 'all'); // Default: all
+        $period      = $request->input('period', 'all');
+        $isCurated   = $request->input('is_curated', 'all');
         $startDate   = $request->input('start_date');
         $endDate     = $request->input('end_date');
         
@@ -235,25 +236,25 @@ class CsController extends Controller
 
         $now = Carbon::now('Asia/Jakarta');
 
-        // Filter berdasarkan Select Bar Periode (Diselaraskan dengan Admin Dashboard)
+        // Filter berdasarkan Waktu
         switch ($period) {
             case 'today':
                 $query->whereDate('waktu_selesai', $now->toDateString());
                 break;
 
-            case 'mtd': // Month to Date (Awal Bulan s/d Hari ini)
+            case 'mtd':
                 $query->whereBetween('waktu_selesai', [$now->copy()->startOfMonth(), $now->copy()->endOfDay()]);
                 break;
 
-            case 'last_30': // 30 Hari Terakhir
+            case 'last_30':
                 $query->whereBetween('waktu_selesai', [$now->copy()->subDays(30)->startOfDay(), $now->copy()->endOfDay()]);
                 break;
 
-            case 'ytd': // Year to Date (Awal Tahun s/d Hari ini)
+            case 'ytd':
                 $query->whereBetween('waktu_selesai', [$now->copy()->startOfYear(), $now->copy()->endOfDay()]);
                 break;
 
-            case 'custom': // Rentang Tanggal Manual
+            case 'custom':
                 if ($startDate) {
                     $query->whereDate('waktu_selesai', '>=', $startDate);
                 }
@@ -264,8 +265,16 @@ class CsController extends Controller
 
             case 'all':
             default:
-                // Tidak ada batas waktu
                 break;
+        }
+
+        // Filter berdasarkan Status Kurasi (Sudah vs Belum)
+        if ($isCurated === '1') {
+            $query->where('is_curated', true);
+        } elseif ($isCurated === '0') {
+            $query->where(function($q) {
+                $q->where('is_curated', false)->orWhereNull('is_curated');
+            });
         }
 
         if ($searchQuery) {
@@ -285,7 +294,7 @@ class CsController extends Controller
             $q->where('is_active', true);
         }])->where('is_active', true)->get();
 
-        return view('cs.history', compact('riwayatTiket', 'searchQuery', 'period', 'startDate', 'endDate', 'isSpectator', 'nomorMejaTerpilih', 'layanans'));
+        return view('cs.history', compact('riwayatTiket', 'searchQuery', 'period', 'isCurated', 'startDate', 'endDate', 'isSpectator', 'nomorMejaTerpilih', 'layanans'));
     }
 
     public function panggilSelanjutnya()
@@ -466,7 +475,7 @@ class CsController extends Controller
             'sub_layanan_id'  => 'nullable|exists:sub_layanans,id',
             'keluhan_final'   => 'nullable|string',
             'catatan_cs'      => 'nullable|string',
-            'is_curated'      => 'required|boolean',
+            'is_curated'      => 'required',
         ]);
 
         $tiket = TiketAntrian::findOrFail($id);
@@ -484,7 +493,7 @@ class CsController extends Controller
             'sub_layanan_id' => $request->sub_layanan_id ?: null,
             'keluhan_final'  => $request->keluhan_final,
             'catatan_cs'     => $request->catatan_cs,
-            'is_curated'     => $request->is_curated,
+            'is_curated'     => (bool) $request->is_curated,
         ]);
 
         if ($request->wantsJson()) {
