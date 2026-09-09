@@ -13,6 +13,7 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: #F1F4F9; border-radius: 8px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #C4C7CC; border-radius: 8px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #00509E; }
+        [x-cloak] { display: none !important; }
     </style>
 </head>
 <body class="bg-[#F8F9FA] h-screen w-screen font-sans text-[#181C20] flex flex-col md:flex-row overflow-hidden antialiased selection:bg-[#EE2E24] selection:text-white"
@@ -29,7 +30,7 @@
                   this.kurasiTiket.pelanggan = { nama: '', email: '', no_indibiz: '', no_hp: '' };
               }
               this.selectedLayananId = this.kurasiTiket.layanan_id || '';
-              // Paksa nilai string '1' atau '0' agar binding select option Alpine.js 100% presisi
+              // Konversi ke string '1' atau '0' untuk binding toggle status
               this.kurasiTiket.is_curated = (this.kurasiTiket.is_curated == 1 || this.kurasiTiket.is_curated === true || this.kurasiTiket.is_curated === '1') ? '1' : '0';
               this.showModalKurasi = true;
           },
@@ -158,25 +159,22 @@
                 </div>
             </div>
 
-            <!-- FORM FILTER SIMPEL -->
+            <!-- FORM FILTER -->
             <form action="{{ route('cs.history') }}" method="GET" class="flex flex-wrap items-center gap-2 text-xs">
                 
-                <!-- SEARCH TEXT INPUT -->
                 <div class="relative flex-1 min-w-[220px]">
                     <input type="text" name="search" value="{{ $searchQuery }}" placeholder="Cari No HP / Email / Indibiz / Nama..." class="w-full text-xs p-2 pl-8 border border-[#E0E3E8] rounded-lg focus:border-[#00509E] focus:ring-0 font-medium">
                     <span class="material-symbols-outlined absolute left-2.5 top-2 text-gray-400 text-base">search</span>
                 </div>
 
-                <!-- SELECT STATUS KURASI (SEMUA / SUDAH / BELUM) -->
                 <div class="w-full sm:w-auto min-w-[170px]">
                     <select name="is_curated" x-model="selectedCuratedStatus" @change="$el.form.submit()" class="w-full p-2 border border-[#E0E3E8] bg-gray-50 rounded-lg text-xs font-bold text-gray-700 focus:border-[#00509E] focus:ring-0 cursor-pointer">
                         <option value="all">Semua Status Kurasi</option>
-                        <option value="1">✓ Sudah Dikurasi</option>
-                        <option value="0">⚠ Belum Dikurasi</option>
+                        <option value="1">✓ Selesai / Dikurasi</option>
+                        <option value="0">⚠ Perlu Lapangan / Belum</option>
                     </select>
                 </div>
 
-                <!-- SELECT BAR PERIODE -->
                 <div class="w-full sm:w-auto min-w-[180px]">
                     <select name="period" x-model="selectedPeriod" @change="$el.form.submit()" class="w-full p-2 border border-[#E0E3E8] bg-gray-50 rounded-lg text-xs font-bold text-gray-700 focus:border-[#00509E] focus:ring-0 cursor-pointer">
                         <option value="all">Semua Waktu (All Time)</option>
@@ -188,7 +186,6 @@
                     </select>
                 </div>
 
-                <!-- INPUT TANGGAL KUSTOM -->
                 <template x-if="selectedPeriod === 'custom'">
                     <div class="flex items-center gap-1.5 bg-gray-50 p-1 border border-[#E0E3E8] rounded-lg">
                         <input type="date" name="start_date" value="{{ $startDate ?? '' }}" class="bg-transparent text-xs font-medium focus:outline-none">
@@ -198,7 +195,6 @@
                     </div>
                 </template>
 
-                <!-- TOMBOL RESET FILTER -->
                 @if(($period && $period !== 'all') || ($isCurated && $isCurated !== 'all') || !empty($searchQuery))
                     <a href="{{ route('cs.history') }}" title="Reset Filter" class="py-2 px-2.5 bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 rounded-lg font-bold flex items-center justify-center transition-all text-xs gap-1">
                         <span class="material-symbols-outlined text-sm">restart_alt</span>
@@ -218,7 +214,7 @@
                             <th class="p-3">Data Pelanggan (Lengkap)</th>
                             <th class="p-3">Layanan / Sub-Layanan</th>
                             <th class="p-3">Hasil Final / Catatan CS</th>
-                            <th class="p-3">Status</th>
+                            <th class="p-3">Status Penanganan</th>
                             <th class="p-3">Waktu Selesai</th>
                             <th class="p-3 text-center">Aksi</th>
                         </tr>
@@ -249,7 +245,7 @@
                                     <p class="text-[10px] text-gray-500 italic line-clamp-1">Catatan CS: "{{ $tiket->catatan_cs ?? 'Belum ada' }}"</p>
                                 </td>
                                 <td class="p-3">
-                                    <span class="text-[9px] px-2 py-0.5 rounded-full font-black inline-flex items-center gap-1 {{ $isDone ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
+                                    <span class="text-[9px] px-2.5 py-1 rounded-full font-black inline-flex items-center gap-1 shadow-sm {{ $isDone ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-800 border border-amber-300' }}">
                                         {{ $isDone ? '✓ Selesai / Dikurasi' : '⚠ Perlu Lapangan / Belum' }}
                                     </span>
                                 </td>
@@ -298,6 +294,7 @@
             <form id="form-edit-kurasi" :action="'{{ url('/cs-desk/kurasi') }}/' + kurasiTiket.id" method="POST" class="space-y-3 text-xs">
                 @csrf
 
+                <!-- Profiling Pelanggan -->
                 <div class="bg-gray-50 p-3 rounded-xl border border-gray-200 space-y-2">
                     <h4 class="font-black text-[#00509E] flex items-center gap-1 uppercase text-[10px]">
                         <span class="material-symbols-outlined text-sm">person_edit</span> Edit Profiling Pelanggan
@@ -318,6 +315,7 @@
                     </div>
                 </div>
 
+                <!-- Kategori & Sub Layanan -->
                 <div class="bg-blue-50/50 p-3 rounded-xl border border-blue-100 space-y-2">
                     <h4 class="font-black text-[#00509E] flex items-center gap-1 uppercase text-[10px]">
                         <span class="material-symbols-outlined text-sm">category</span> Edit Kategori & Sub-Layanan
@@ -347,23 +345,54 @@
                     </div>
                 </div>
 
+                <!-- Textarea Auto Expand: Hasil Tindakan -->
                 <div>
                     <label class="font-bold text-gray-700 block mb-1">Hasil Tindakan / Keluhan Final</label>
-                    <textarea name="keluhan_final" x-model="kurasiTiket.keluhan_final" rows="2" placeholder="Hasil akhir keluhan..." class="w-full p-2.5 border border-gray-300 rounded-lg focus:border-[#00509E] focus:ring-0 font-medium"></textarea>
+                    <textarea name="keluhan_final" 
+                              x-model="kurasiTiket.keluhan_final" 
+                              rows="1" 
+                              oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
+                              placeholder="Hasil akhir keluhan..." 
+                              class="w-full p-2.5 border border-gray-300 rounded-lg focus:border-[#00509E] focus:ring-0 font-medium resize-none overflow-hidden transition-all"></textarea>
                 </div>
 
+                <!-- Textarea Auto Expand: Catatan CS -->
                 <div>
                     <label class="font-bold text-gray-700 block mb-1">Catatan Konsultasi CS</label>
-                    <textarea name="catatan_cs" x-model="kurasiTiket.catatan_cs" rows="2" placeholder="Catatan internal..." class="w-full p-2.5 border border-gray-300 rounded-lg focus:border-[#00509E] focus:ring-0 font-medium"></textarea>
+                    <textarea name="catatan_cs" 
+                              x-model="kurasiTiket.catatan_cs" 
+                              rows="1" 
+                              oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
+                              placeholder="Catatan internal..." 
+                              class="w-full p-2.5 border border-gray-300 rounded-lg focus:border-[#00509E] focus:ring-0 font-medium resize-none overflow-hidden transition-all"></textarea>
                 </div>
 
-                <!-- SELECT DENGAN ATRIBUT NAME & BINDING AMAN -->
+                <!-- SWITCH TOGGLE BUTTON UNTUK STATUS PENANGANAN -->
                 <div>
-                    <label class="font-bold text-gray-700 block mb-1">Status Penanganan / Kurasi</label>
-                    <select name="is_curated" x-model="kurasiTiket.is_curated" class="w-full p-2.5 border border-gray-300 rounded-xl text-xs font-bold focus:border-[#00509E] focus:ring-0 bg-white cursor-pointer">
-                        <option value="1">✓ Selesai / Dikurasi</option>
-                        <option value="0">⚠ Perlu Lapangan / Belum</option>
-                    </select>
+                    <label class="font-bold text-gray-700 block mb-1.5">Status Penanganan Pekerjaan</label>
+                    
+                    <!-- Input hidden yang akan dikirim ke Server -->
+                    <input type="hidden" name="is_curated" :value="kurasiTiket.is_curated">
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <!-- Button Hijau: Selesai -->
+                        <button type="button" 
+                                @click="kurasiTiket.is_curated = '1'" 
+                                :class="kurasiTiket.is_curated == '1' ? 'bg-emerald-600 text-white border-emerald-600 shadow-md ring-2 ring-emerald-300' : 'bg-emerald-50 text-emerald-800 border-emerald-200 opacity-50 hover:opacity-100'"
+                                class="py-2.5 px-3 rounded-xl border text-xs font-black flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+                            <span class="material-symbols-outlined text-base">check_circle</span>
+                            <span>Selesai (Hijau)</span>
+                        </button>
+
+                        <!-- Button Kuning: Belum Selesai / Perlu Lapangan -->
+                        <button type="button" 
+                                @click="kurasiTiket.is_curated = '0'" 
+                                :class="kurasiTiket.is_curated == '0' ? 'bg-amber-500 text-white border-amber-500 shadow-md ring-2 ring-amber-300' : 'bg-amber-50 text-amber-800 border-amber-200 opacity-50 hover:opacity-100'"
+                                class="py-2.5 px-3 rounded-xl border text-xs font-black flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+                            <span class="material-symbols-outlined text-base">engineering</span>
+                            <span>Belum Selesai (Kuning)</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="pt-3 border-t border-gray-100 flex flex-wrap justify-between items-center gap-2">

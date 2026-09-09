@@ -42,11 +42,15 @@ return new class extends Migration
             $table->string('bukti_pembayaran')->nullable();
             
             $table->enum('status', ['Menunggu', 'Diproses', 'Selesai', 'Batal'])->default('Menunggu');
+            $table->boolean('is_curated')->default(0)->nullable()->comment('0: Perlu Lapangan/Belum, 1: Selesai/Dikurasi');
             $table->integer('jumlah_dipanggil')->default(0);
             
             $table->timestamp('waktu_dibuat')->useCurrent();
             $table->timestamp('waktu_diproses')->nullable();
+            $table->timestamp('waktu_dipanggil')->nullable();
+            $table->timestamp('waktu_mulai_konsul')->nullable();
             $table->timestamp('waktu_selesai')->nullable();
+            $table->timestamp('waktu_selesai_konsul')->nullable();
             $table->timestamps();
         });
     }

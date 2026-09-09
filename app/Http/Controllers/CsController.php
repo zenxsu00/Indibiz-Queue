@@ -67,11 +67,11 @@ class CsController extends Controller
 
         if (!$openLog) {
             CsActiveLog::create([
-                'user_id'    => $userId,
-                'tanggal'    => $today,
-                'jam_mulai'  => $now,
+                'user_id'     => $userId,
+                'tanggal'     => $today,
+                'jam_mulai'   => $now,
                 'jam_selesai' => null,
-                'durasi_menit' => 0,
+                'durasi_menit'=> 0,
             ]);
         }
     }
@@ -236,7 +236,6 @@ class CsController extends Controller
 
         $now = Carbon::now('Asia/Jakarta');
 
-        // Filter berdasarkan Waktu
         switch ($period) {
             case 'today':
                 $query->whereDate('waktu_selesai', $now->toDateString());
@@ -268,7 +267,6 @@ class CsController extends Controller
                 break;
         }
 
-        // Filter berdasarkan Status Kurasi (1 = Sudah, 0 = Belum)
         if ($isCurated === '1') {
             $query->where('is_curated', 1);
         } elseif ($isCurated === '0') {
@@ -436,6 +434,7 @@ class CsController extends Controller
             'metode_pembayaran'  => 'nullable|string',
             'nominal_pembayaran' => 'nullable|numeric|min:0',
             'bukti_pembayaran'   => 'nullable|string|max:100',
+            'is_curated'         => 'nullable',
         ]);
 
         if ($tiket->pelanggan) {
@@ -445,6 +444,9 @@ class CsController extends Controller
                 'no_indibiz' => $request->no_indibiz,
             ]);
         }
+
+        $rawCurated = $request->input('is_curated');
+        $curatedVal = ($rawCurated === '1' || $rawCurated === 1 || $rawCurated === true || $rawCurated === 'true') ? 1 : 0;
 
         $now = Carbon::now('Asia/Jakarta');
         $tiket->update([
@@ -458,7 +460,7 @@ class CsController extends Controller
             'bukti_pembayaran'     => $request->bukti_pembayaran,
             'waktu_selesai'        => $now,
             'waktu_selesai_konsul' => $now,
-            'is_curated'           => 1,
+            'is_curated'           => $curatedVal,
         ]);
 
         $this->safeBroadcast($tiket);
