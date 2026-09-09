@@ -22,6 +22,7 @@
           adaTransaksi: false, 
           metodePembayaran: 'Cash', 
           isCuratedVal: '1',
+          isSubmitting: false,
           selectedLayananId: '{{ $antreanAktif->layanan_id ?? '' }}'
       }">
 
@@ -117,6 +118,13 @@
             </div>
         @endif
 
+        @if(session('error'))
+            <div class="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-bold flex items-center gap-2 shrink-0">
+                <span class="material-symbols-outlined text-base">error</span>
+                <span>{{ session('error') }}</span>
+            </div>
+        @endif
+
         @if($isSpectator)
             <div class="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl flex items-center justify-between text-xs font-bold shrink-0">
                 <div class="flex items-center gap-2">
@@ -135,11 +143,16 @@
             <div class="md:col-span-5 lg:col-span-4 bg-white rounded-xl shadow-sm border border-[#E0E3E8] p-3 lg:p-3.5 flex flex-col h-full min-h-0 overflow-hidden">
                 
                 @if(!$isSpectator)
-                    <form action="{{ route('cs.panggil_selanjutnya') }}" method="POST" class="w-full shrink-0 mb-3">
+                    <form action="{{ route('cs.panggil_selanjutnya') }}" method="POST" onsubmit="Alpine.$data(document.body).isSubmitting = true;" class="w-full shrink-0 mb-3">
                         @csrf
-                        <button type="submit" class="w-full bg-[#EE2E24] hover:bg-[#CE1111] text-white py-2.5 px-3 rounded-lg font-black text-xs lg:text-sm tracking-wide flex items-center justify-center gap-1.5 shadow-md hover:shadow-lg transition-all cursor-pointer">
-                            <span class="material-symbols-outlined text-lg lg:text-xl">campaign</span>
-                            <span>PANGGIL ANTREAN SELANJUTNYA</span>
+                        <button type="submit" 
+                                :disabled="isSubmitting"
+                                class="w-full bg-[#EE2E24] hover:bg-[#CE1111] disabled:bg-gray-400 text-white py-2.5 px-3 rounded-lg font-black text-xs lg:text-sm tracking-wide flex items-center justify-center gap-1.5 shadow-md hover:shadow-lg transition-all cursor-pointer">
+                            <span class="material-symbols-outlined text-lg lg:text-xl" :class="isSubmitting ? 'animate-spin' : ''">
+                                <template x-if="!isSubmitting">campaign</template>
+                                <template x-if="isSubmitting">sync</template>
+                            </span>
+                            <span x-text="isSubmitting ? 'MEMPROSES PANGGILAN...' : 'PANGGIL ANTREAN SELANJUTNYA'"></span>
                         </button>
                     </form>
                 @else
@@ -171,9 +184,9 @@
                             </div>
 
                             @if(!$isSpectator)
-                                <form action="{{ route('cs.panggil_spesifik', $tiket->id) }}" method="POST" class="m-0 shrink-0">
+                                <form action="{{ route('cs.panggil_spesifik', $tiket->id) }}" method="POST" onsubmit="Alpine.$data(document.body).isSubmitting = true;" class="m-0 shrink-0">
                                     @csrf
-                                    <button type="submit" class="text-[10px] bg-[#00509E] hover:bg-[#003C7E] text-white px-2.5 py-1.5 rounded-md font-bold transition-colors shadow-sm cursor-pointer">
+                                    <button type="submit" :disabled="isSubmitting" class="text-[10px] bg-[#00509E] hover:bg-[#003C7E] disabled:bg-gray-400 text-white px-2.5 py-1.5 rounded-md font-bold transition-colors shadow-sm cursor-pointer">
                                         Panggil
                                     </button>
                                 </form>
@@ -485,10 +498,12 @@
 
         function fetchConsoleRealtime() {
             var modalActive = Alpine.$data(document.body).showModalTransaksi;
+            var isSubmitting = Alpine.$data(document.body).isSubmitting;
             var activeEl = document.activeElement;
             var isFocusTextarea = activeEl && (activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'INPUT' || activeEl.tagName === 'SELECT');
             
-            if (modalActive || isFocusTextarea) return;
+            // JIKA SEDANG SUBMIT FORM ATAU INPUT DIISI, SKIPP AUTO-REFRESH
+            if (modalActive || isFocusTextarea || isSubmitting) return;
 
             fetch(window.location.href)
                 .then(function(response) {
