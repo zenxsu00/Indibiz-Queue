@@ -189,14 +189,15 @@ class CsController extends Controller
             $this->openActiveLog($user->id);
         }
 
+        // Antrean menunggu tetap difilter untuk hari ini
         $antreanMenunggu = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan'])
                             ->whereDate('waktu_dibuat', $hariIni)
                             ->where('status', 'Menunggu')
                             ->orderBy('waktu_dibuat', 'asc')
                             ->get();
 
+        // PERBAIKAN: Hapus whereDate pada antreanAktif agar tiket diproses dari hari kapanpun TETAP MUNCUL DI FORM KANAN
         $antreanAktif = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan'])
-                            ->whereDate('waktu_dibuat', $hariIni)
                             ->where('status', 'Diproses')
                             ->where('user_id', $user->id)
                             ->first();
@@ -304,6 +305,7 @@ class CsController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
+        // Cek tiket aktif tanpa filter tanggal
         $cekAktif = TiketAntrian::where('status', 'Diproses')->where('user_id', $user->id)->first();
         if ($cekAktif) {
             return back()->with('error', 'Selesaikan tiket ' . $cekAktif->nomor_antrian . ' terlebih dahulu!');
@@ -350,6 +352,7 @@ class CsController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
+        // Cek tiket aktif tanpa filter tanggal
         $cekAktif = TiketAntrian::where('status', 'Diproses')->where('user_id', $user->id)->first();
         if ($cekAktif) {
             return back()->with('error', 'Selesaikan tiket aktif terlebih dahulu!');
