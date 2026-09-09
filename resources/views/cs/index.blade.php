@@ -409,12 +409,16 @@
                     </div>
 
                     <div>
-                        <label class="text-[11px] font-bold text-[#181C20] block mb-1">Nominal Pembayaran (Rp)</label>
-                        <input type="number" id="modal_nominal" placeholder="Contoh: 150000" class="w-full text-xs p-2.5 border border-gray-300 rounded-lg focus:border-[#00509E] focus:ring-0">
+                        <label class="text-[11px] font-bold text-[#181C20] block mb-1">
+                            Nominal Pembayaran (Rp) <span class="text-red-500">*</span>
+                        </label>
+                        <input type="number" id="modal_nominal" min="1" placeholder="Contoh: 150000" class="w-full text-xs p-2.5 border border-gray-300 rounded-lg focus:border-[#00509E] focus:ring-0">
                     </div>
 
                     <div x-show="metodePembayaran === 'QRIS'">
-                        <label class="text-[11px] font-bold text-[#181C20] block mb-1">Kode / Reff Bukti QRIS (Opsional)</label>
+                        <label class="text-[11px] font-bold text-[#181C20] block mb-1">
+                            Kode / Reff Bukti QRIS <span class="text-gray-400 font-normal">(Opsional)</span>
+                        </label>
                         <input type="text" id="modal_bukti" placeholder="Contoh: TRX-9821389" class="w-full text-xs p-2.5 border border-gray-300 rounded-lg focus:border-[#00509E] focus:ring-0">
                     </div>
                 </div>
@@ -460,13 +464,26 @@
             let isAda = Alpine.$data(document.body).adaTransaksi;
             let curatedStatus = Alpine.$data(document.body).isCuratedVal;
 
-            if(isAda) {
+            if (isAda) {
                 let metode = Alpine.$data(document.body).metodePembayaran;
-                let nominal = document.getElementById('modal_nominal').value || 0;
+                let nominalInput = document.getElementById('modal_nominal');
+                let nominalVal = nominalInput ? nominalInput.value.trim() : '';
                 let bukti = document.getElementById('modal_bukti') ? document.getElementById('modal_bukti').value : '';
 
+                if (!nominalVal || parseFloat(nominalVal) <= 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Nominal Wajib Diisi',
+                        text: 'Silakan masukkan nominal pembayaran yang valid sebelum menyelesaikan layanan.',
+                        confirmButtonColor: '#00509E',
+                        customClass: { popup: 'rounded-2xl' }
+                    });
+                    if (nominalInput) nominalInput.focus();
+                    return;
+                }
+
                 document.getElementById('input_metode_pembayaran').value = metode;
-                document.getElementById('input_nominal_pembayaran').value = nominal;
+                document.getElementById('input_nominal_pembayaran').value = nominalVal;
                 document.getElementById('input_bukti_pembayaran').value = bukti;
             } else {
                 document.getElementById('input_metode_pembayaran').value = 'Tanpa Transaksi';
