@@ -13,6 +13,7 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: #F1F4F9; border-radius: 8px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #C4C7CC; border-radius: 8px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #00509E; }
+        [x-cloak] { display: none !important; }
     </style>
 </head>
 <body class="bg-[#F8F9FA] h-screen w-screen font-sans text-[#181C20] flex flex-col md:flex-row overflow-hidden antialiased selection:bg-[#EE2E24] selection:text-white"
@@ -20,6 +21,7 @@
           showModalTransaksi: false, 
           adaTransaksi: false, 
           metodePembayaran: 'Cash', 
+          isCuratedVal: '1',
           selectedLayananId: '{{ $antreanAktif->layanan_id ?? '' }}'
       }">
 
@@ -284,7 +286,13 @@
                                         <span class="material-symbols-outlined text-sm text-[#00509E]">edit_document</span>
                                         Hasil Tindakan / Keluhan Final <span class="text-[10px] text-gray-400 font-normal">(Opsional)</span>
                                     </label>
-                                    <textarea id="keluhan_final" name="keluhan_final" rows="2" {{ $isSpectator ? 'disabled' : '' }} placeholder="Ketik rincian hasil keluhan final atau resolusi..." class="w-full rounded-lg border border-[#E0E3E8] bg-white text-xs text-[#181C20] p-2.5 focus:border-[#00509E] focus:ring-0 transition-all font-medium resize-y shadow-sm"></textarea>
+                                    <textarea id="keluhan_final" 
+                                              name="keluhan_final" 
+                                              rows="1" 
+                                              oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
+                                              {{ $isSpectator ? 'disabled' : '' }} 
+                                              placeholder="Ketik rincian hasil keluhan final atau resolusi..." 
+                                              class="w-full rounded-lg border border-[#E0E3E8] bg-white text-xs text-[#181C20] p-2.5 focus:border-[#00509E] focus:ring-0 transition-all font-medium resize-none overflow-hidden shadow-sm"></textarea>
                                 </div>
 
                                 <div>
@@ -292,12 +300,19 @@
                                         <span class="material-symbols-outlined text-sm text-[#00509E]">note_add</span>
                                         Catatan Konsultasi CS <span class="text-[10px] text-gray-400 font-normal">(Opsional)</span>
                                     </label>
-                                    <textarea id="catatan_cs" name="catatan_cs" rows="2" {{ $isSpectator ? 'disabled' : '' }} placeholder="Ketik catatan internal atau ringkasan saran untuk pelanggan di sini..." class="w-full rounded-lg border border-[#E0E3E8] bg-white text-xs text-[#181C20] p-2.5 focus:border-[#00509E] focus:ring-0 transition-all font-medium resize-y shadow-sm"></textarea>
+                                    <textarea id="catatan_cs" 
+                                              name="catatan_cs" 
+                                              rows="1" 
+                                              oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
+                                              {{ $isSpectator ? 'disabled' : '' }} 
+                                              placeholder="Ketik catatan internal atau ringkasan saran untuk pelanggan di sini..." 
+                                              class="w-full rounded-lg border border-[#E0E3E8] bg-white text-xs text-[#181C20] p-2.5 focus:border-[#00509E] focus:ring-0 transition-all font-medium resize-none overflow-hidden shadow-sm"></textarea>
                                 </div>
 
                                 <input type="hidden" name="metode_pembayaran" id="input_metode_pembayaran" value="">
                                 <input type="hidden" name="nominal_pembayaran" id="input_nominal_pembayaran" value="0">
                                 <input type="hidden" name="bukti_pembayaran" id="input_bukti_pembayaran" value="">
+                                <input type="hidden" name="is_curated" id="input_is_curated" value="1">
                             </form>
 
                             <form id="form-tidak-hadir" action="{{ route('cs.batal_atau_kembalikan', $antreanAktif->id) }}" method="POST" class="hidden">
@@ -342,7 +357,7 @@
         </div>
     </main>
 
-    <!-- MODAL TRANSAKSI -->
+    <!-- MODAL TRANSAKSI & STATUS PENANGANAN -->
     <div x-show="showModalTransaksi" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl max-w-md w-full p-5 lg:p-6 shadow-2xl border border-gray-100 space-y-4" @click.away="showModalTransaksi = false">
             <div class="flex justify-between items-center border-b pb-3 border-gray-100">
@@ -359,10 +374,10 @@
                 <p class="text-xs text-gray-600 font-medium">Apakah ada transaksi keuangan / pembayaran pada tiket ini?</p>
                 
                 <div class="grid grid-cols-2 gap-3">
-                    <button type="button" @click="adaTransaksi = false" :class="!adaTransaksi ? 'border-2 border-[#00509E] bg-[#00509E]/5 text-[#00509E]' : 'border border-gray-200 text-gray-600'" class="py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all">
+                    <button type="button" @click="adaTransaksi = false" :class="!adaTransaksi ? 'border-2 border-[#00509E] bg-[#00509E]/5 text-[#00509E]' : 'border border-gray-200 text-gray-600'" class="py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer">
                         <span class="material-symbols-outlined text-sm">block</span> Tidak Ada (Gratis)
                     </button>
-                    <button type="button" @click="adaTransaksi = true" :class="adaTransaksi ? 'border-2 border-[#EE2E24] bg-red-50 text-[#EE2E24]' : 'border border-gray-200 text-gray-600'" class="py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all">
+                    <button type="button" @click="adaTransaksi = true" :class="adaTransaksi ? 'border-2 border-[#EE2E24] bg-red-50 text-[#EE2E24]' : 'border border-gray-200 text-gray-600'" class="py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer">
                         <span class="material-symbols-outlined text-sm">paid</span> Ada Transaksi
                     </button>
                 </div>
@@ -371,10 +386,10 @@
                     <div>
                         <label class="text-[11px] font-bold text-[#181C20] block mb-1">Metode Pembayaran</label>
                         <div class="grid grid-cols-2 gap-2">
-                            <button type="button" @click="metodePembayaran = 'Cash'" :class="metodePembayaran === 'Cash' ? 'bg-[#00509E] text-white' : 'bg-gray-100 text-gray-700'" class="py-2 rounded-lg font-bold text-xs flex items-center justify-center gap-1">
+                            <button type="button" @click="metodePembayaran = 'Cash'" :class="metodePembayaran === 'Cash' ? 'bg-[#00509E] text-white' : 'bg-gray-100 text-gray-700'" class="py-2 rounded-lg font-bold text-xs flex items-center justify-center gap-1 cursor-pointer">
                                 <span class="material-symbols-outlined text-sm">local_atm</span> Cash / Tunai
                             </button>
-                            <button type="button" @click="metodePembayaran = 'QRIS'" :class="metodePembayaran === 'QRIS' ? 'bg-[#00509E] text-white' : 'bg-gray-100 text-gray-700'" class="py-2 rounded-lg font-bold text-xs flex items-center justify-center gap-1">
+                            <button type="button" @click="metodePembayaran = 'QRIS'" :class="metodePembayaran === 'QRIS' ? 'bg-[#00509E] text-white' : 'bg-gray-100 text-gray-700'" class="py-2 rounded-lg font-bold text-xs flex items-center justify-center gap-1 cursor-pointer">
                                 <span class="material-symbols-outlined text-sm">qr_code_2</span> QRIS / Bank
                             </button>
                         </div>
@@ -390,13 +405,37 @@
                         <input type="text" id="modal_bukti" placeholder="Contoh: TRX-9821389" class="w-full text-xs p-2.5 border border-gray-300 rounded-lg focus:border-[#00509E] focus:ring-0">
                     </div>
                 </div>
+
+                <!-- SWITCH TOGGLE BUTTON STATUS PENANGANAN -->
+                <div class="pt-3 border-t border-gray-100 space-y-1.5">
+                    <label class="font-bold text-gray-700 block text-xs">Status Penanganan Pekerjaan</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <!-- Button Hijau: Selesai di Loket -->
+                        <button type="button" 
+                                @click="isCuratedVal = '1'" 
+                                :class="isCuratedVal == '1' ? 'bg-emerald-600 text-white border-emerald-600 shadow-md ring-2 ring-emerald-300' : 'bg-emerald-50 text-emerald-800 border-emerald-200 opacity-50 hover:opacity-100'"
+                                class="py-2.5 px-3 rounded-xl border text-xs font-black flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+                            <span class="material-symbols-outlined text-base">check_circle</span>
+                            <span>Selesai di Loket</span>
+                        </button>
+
+                        <!-- Button Kuning: Butuh Lapangan / Lanjutan -->
+                        <button type="button" 
+                                @click="isCuratedVal = '0'" 
+                                :class="isCuratedVal == '0' ? 'bg-amber-500 text-white border-amber-500 shadow-md ring-2 ring-amber-300' : 'bg-amber-50 text-amber-800 border-amber-200 opacity-50 hover:opacity-100'"
+                                class="py-2.5 px-3 rounded-xl border text-xs font-black flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+                            <span class="material-symbols-outlined text-base">engineering</span>
+                            <span>Butuh Lapangan</span>
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <div class="pt-3 border-t border-gray-100 flex justify-end gap-2">
-                <button type="button" @click="showModalTransaksi = false" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-lg transition-all">
+                <button type="button" @click="showModalTransaksi = false" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-lg transition-all cursor-pointer">
                     Batal
                 </button>
-                <button type="button" @click="submitSelesaiTiket()" class="px-5 py-2 bg-[#00509E] hover:bg-[#003C7E] text-white font-black text-xs rounded-lg shadow-md transition-all flex items-center gap-1">
+                <button type="button" @click="submitSelesaiTiket()" class="px-5 py-2 bg-[#00509E] hover:bg-[#003C7E] text-white font-black text-xs rounded-lg shadow-md transition-all flex items-center gap-1 cursor-pointer">
                     <span class="material-symbols-outlined text-sm">check</span> Submit & Selesaikan
                 </button>
             </div>
@@ -406,6 +445,8 @@
     <script>
         function submitSelesaiTiket() {
             let isAda = Alpine.$data(document.body).adaTransaksi;
+            let curatedStatus = Alpine.$data(document.body).isCuratedVal;
+
             if(isAda) {
                 let metode = Alpine.$data(document.body).metodePembayaran;
                 let nominal = document.getElementById('modal_nominal').value || 0;
@@ -420,6 +461,7 @@
                 document.getElementById('input_bukti_pembayaran').value = '';
             }
 
+            document.getElementById('input_is_curated').value = curatedStatus;
             document.getElementById('form-selesai-tiket').submit();
         }
 

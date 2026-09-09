@@ -445,7 +445,7 @@ class CsController extends Controller
             ]);
         }
 
-        $rawCurated = $request->input('is_curated');
+        $rawCurated = $request->input('is_curated', 1);
         $curatedVal = ($rawCurated === '1' || $rawCurated === 1 || $rawCurated === true || $rawCurated === 'true') ? 1 : 0;
 
         $now = Carbon::now('Asia/Jakarta');
