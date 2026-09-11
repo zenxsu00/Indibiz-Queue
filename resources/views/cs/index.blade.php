@@ -294,31 +294,61 @@
                                     </div>
                                 </div>
 
+                                <!-- FORM 1 REVISI: Keluhan Final -> Revisi Keluhan Pelanggan -->
                                 <div>
                                     <label class="text-xs font-black text-[#181C20] flex items-center gap-1 mb-1">
                                         <span class="material-symbols-outlined text-sm text-[#00509E]">edit_document</span>
-                                        Hasil Tindakan / Keluhan Final <span class="text-[10px] text-gray-400 font-normal">(Opsional)</span>
+                                        Revisi Keluhan Pelanggan <span class="text-[10px] text-gray-400 font-normal">(Opsional)</span>
                                     </label>
                                     <textarea id="keluhan_final" 
                                               name="keluhan_final" 
                                               rows="1" 
                                               oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
                                               {{ $isSpectator ? 'disabled' : '' }} 
-                                              placeholder="Ketik rincian hasil keluhan final atau resolusi..." 
+                                              placeholder="Ketik kustomisasi atau penyesuaian keluhan sesungguhnya jika berbeda dari Kiosk..." 
                                               class="w-full rounded-lg border border-[#E0E3E8] bg-white text-xs text-[#181C20] p-2.5 focus:border-[#00509E] focus:ring-0 transition-all font-medium resize-none overflow-hidden shadow-sm"></textarea>
                                 </div>
 
+                                <!-- FORM 2 REVISI: Catatan CS -> Catatan Hasil Konsul / Resolusi + QUICK TEMPLATE CHIPS -->
                                 <div>
-                                    <label class="text-xs font-black text-[#181C20] flex items-center gap-1 mb-1">
-                                        <span class="material-symbols-outlined text-sm text-[#00509E]">note_add</span>
-                                        Catatan Konsultasi CS <span class="text-[10px] text-gray-400 font-normal">(Opsional)</span>
-                                    </label>
+                                    <div class="flex flex-wrap items-center justify-between gap-1 mb-1">
+                                        <label class="text-xs font-black text-[#181C20] flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-sm text-[#00509E]">note_add</span>
+                                            Catatan Hasil Konsul / Resolusi <span class="text-[10px] text-gray-400 font-normal">(Opsional)</span>
+                                        </label>
+                                        
+                                        <!-- QUICK TEMPLATE PRESET CHIPS -->
+                                        @if(!$isSpectator)
+                                            <div class="flex items-center gap-1 flex-wrap">
+                                                <button type="button" 
+                                                        onclick="tumpukTemplate('Telah dilakukan edukasi fitur dan penggunaan aplikasi Indibiz kepada pelanggan.')"
+                                                        class="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 text-[#00509E] text-[10px] font-bold rounded border border-blue-200 transition-all cursor-pointer">
+                                                    + Edukasi Aplikasi
+                                                </button>
+                                                <button type="button" 
+                                                        onclick="tumpukTemplate('Proses reset password dan konfigurasi ulang kredensial akun berhasil.')"
+                                                        class="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 text-[#00509E] text-[10px] font-bold rounded border border-blue-200 transition-all cursor-pointer">
+                                                    + Reset Password
+                                                </button>
+                                                <button type="button" 
+                                                        onclick="tumpukTemplate('Kendala teknis tercatat dan dijadwalkan untuk penanganan kunjungan teknisi lapangan.')"
+                                                        class="px-2 py-0.5 bg-amber-50 hover:bg-amber-100 text-amber-800 text-[10px] font-bold rounded border border-amber-200 transition-all cursor-pointer">
+                                                    + Jadwal Teknisi
+                                                </button>
+                                                <button type="button" 
+                                                        onclick="tumpukTemplate('Penjelasan rincian skema tagihan dan metode pembayaran telah diselesaikan.')"
+                                                        class="px-2 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded border border-emerald-200 transition-all cursor-pointer">
+                                                    + Info Tagihan
+                                                </button>
+                                            </div>
+                                        @endif
+                                    </div>
                                     <textarea id="catatan_cs" 
                                               name="catatan_cs" 
                                               rows="1" 
                                               oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
                                               {{ $isSpectator ? 'disabled' : '' }} 
-                                              placeholder="Ketik catatan internal atau ringkasan saran untuk pelanggan di sini..." 
+                                              placeholder="Ketik catatan solusi, langkah perbaikan, atau gunakan chip bantuan di atas..." 
                                               class="w-full rounded-lg border border-[#E0E3E8] bg-white text-xs text-[#181C20] p-2.5 focus:border-[#00509E] focus:ring-0 transition-all font-medium resize-none overflow-hidden shadow-sm"></textarea>
                                 </div>
 
@@ -333,15 +363,30 @@
                             </form>
                         </div>
 
+                        <!-- BARIS AKSI TIKET AKTIF -->
                         <div class="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-[#E0E3E8] shrink-0 mt-1">
                             @if(!$isSpectator)
-                                <button type="button" 
-                                        data-nomor="{{ $antreanAktif->nomor_antrian }}" 
-                                        onclick="konfirmasiTidakHadir(this.getAttribute('data-nomor'))" 
-                                        class="px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold text-[10px] lg:text-[11px] shadow-sm transition-all flex items-center gap-1 cursor-pointer">
-                                    <span class="material-symbols-outlined text-sm">person_off</span>
-                                    <span>Tidak Hadir / Panggil Ulang</span>
-                                </button>
+                                <div class="flex items-center gap-1.5">
+                                    <!-- RECALL AUDIO BUTTON -->
+                                    <form action="{{ route('cs.panggil_ulang', $antreanAktif->id) }}" method="POST" class="m-0">
+                                        @csrf
+                                        <button type="submit" 
+                                                title="Panggil ulang audio antrean di Layar Display TV"
+                                                class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-[10px] lg:text-[11px] shadow-sm transition-all flex items-center gap-1 cursor-pointer">
+                                            <span class="material-symbols-outlined text-sm">campaign</span>
+                                            <span>Panggil Ulang Audio</span>
+                                        </button>
+                                    </form>
+
+                                    <!-- TIDAK HADIR BUTTON -->
+                                    <button type="button" 
+                                            data-nomor="{{ $antreanAktif->nomor_antrian }}" 
+                                            onclick="konfirmasiTidakHadir(this.getAttribute('data-nomor'))" 
+                                            class="px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold text-[10px] lg:text-[11px] shadow-sm transition-all flex items-center gap-1 cursor-pointer">
+                                        <span class="material-symbols-outlined text-sm">person_off</span>
+                                        <span>Tidak Hadir</span>
+                                    </button>
+                                </div>
 
                                 <button type="button" @click="showModalTransaksi = true" class="px-4 py-2 bg-[#00509E] hover:bg-[#003C7E] text-white rounded-lg font-black text-xs shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 cursor-pointer">
                                     <span class="material-symbols-outlined text-base">check_circle</span>
@@ -460,6 +505,19 @@
     </div>
 
     <script>
+        function tumpukTemplate(teksTemplate) {
+            let textarea = document.getElementById('catatan_cs');
+            if (!textarea) return;
+
+            if (textarea.value.trim() !== '') {
+                textarea.value += '\n' + teksTemplate;
+            } else {
+                textarea.value = teksTemplate;
+            }
+
+            textarea.dispatchEvent(new Event('input'));
+        }
+
         function submitSelesaiTiket() {
             let isAda = Alpine.$data(document.body).adaTransaksi;
             let curatedStatus = Alpine.$data(document.body).isCuratedVal;
@@ -519,7 +577,6 @@
             var activeEl = document.activeElement;
             var isFocusTextarea = activeEl && (activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'INPUT' || activeEl.tagName === 'SELECT');
             
-            // JIKA SEDANG SUBMIT FORM ATAU INPUT DIISI, SKIPP AUTO-REFRESH
             if (modalActive || isFocusTextarea || isSubmitting) return;
 
             fetch(window.location.href)

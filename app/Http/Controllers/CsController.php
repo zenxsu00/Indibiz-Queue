@@ -189,14 +189,12 @@ class CsController extends Controller
             $this->openActiveLog($user->id);
         }
 
-        // Antrean menunggu tetap difilter untuk hari ini
         $antreanMenunggu = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan'])
                             ->whereDate('waktu_dibuat', $hariIni)
                             ->where('status', 'Menunggu')
                             ->orderBy('waktu_dibuat', 'asc')
                             ->get();
 
-        // PERBAIKAN: Hapus whereDate pada antreanAktif agar tiket diproses dari hari kapanpun TETAP MUNCUL DI FORM KANAN
         $antreanAktif = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan'])
                             ->where('status', 'Diproses')
                             ->where('user_id', $user->id)
@@ -305,7 +303,6 @@ class CsController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
-        // Cek tiket aktif tanpa filter tanggal
         $cekAktif = TiketAntrian::where('status', 'Diproses')->where('user_id', $user->id)->first();
         if ($cekAktif) {
             return back()->with('error', 'Selesaikan tiket ' . $cekAktif->nomor_antrian . ' terlebih dahulu!');
@@ -352,7 +349,6 @@ class CsController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
-        // Cek tiket aktif tanpa filter tanggal
         $cekAktif = TiketAntrian::where('status', 'Diproses')->where('user_id', $user->id)->first();
         if ($cekAktif) {
             return back()->with('error', 'Selesaikan tiket aktif terlebih dahulu!');
@@ -384,6 +380,29 @@ class CsController extends Controller
             DB::rollBack();
             return back()->with('error', 'Gagal memanggil tiket.');
         }
+    }
+
+    // METHOD BARU: RECALL AUDIO PANGGILAN Saja
+    public function panggilUlang(int $id)
+    {
+        if (!$this->checkValidMeja()) {
+            return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus oleh Admin.');
+        }
+
+        /** @var User $user */
+        $user = Auth::user();
+        
+        $tiket = TiketAntrian::where('id', $id)
+                    ->where('user_id', $user->id)
+                    ->where('status', 'Diproses')
+                    ->first();
+
+        if ($tiket) {
+            $this->safeBroadcast($tiket);
+            return back()->with('success', "Memanggil ulang suara antrean {$tiket->nomor_antrian}");
+        }
+
+        return back()->with('error', 'Tiket aktif tidak ditemukan.');
     }
 
     public function batalAtauKembalikan(int $id)

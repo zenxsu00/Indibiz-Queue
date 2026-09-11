@@ -62,6 +62,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/cs/history', [CsController::class, 'historyPage'])->name('cs.history');
     Route::post('/cs-desk/panggil-selanjutnya', [CsController::class, 'panggilSelanjutnya'])->name('cs.panggil_selanjutnya');
     Route::post('/cs-desk/panggil-spesifik/{id}', [CsController::class, 'panggilSpesifik'])->name('cs.panggil_spesifik');
+    Route::post('/cs-desk/panggil-ulang/{id}', [CsController::class, 'panggilUlang'])->name('cs.panggil_ulang'); // ROUTE BARU RECALL AUDIO
     Route::post('/cs-desk/batal-atau-kembalikan/{id}', [CsController::class, 'batalAtauKembalikan'])->name('cs.batal_atau_kembalikan');
     Route::post('/cs-desk/selesaikan/{id}', [CsController::class, 'selesaikanTiket'])->name('cs.selesaikan');
     
