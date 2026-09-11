@@ -6,7 +6,6 @@ use App\Models\User;
 use App\Models\Layanan;
 use App\Models\Pelanggan;
 use App\Models\TiketAntrian;
-use App\Models\HariLibur;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -17,18 +16,10 @@ use Illuminate\Support\Facades\RateLimiter;
 class TiketController extends Controller
 {
     /**
-     * Memeriksa apakah operasional buka (Ada CS aktif & Bukan Hari Libur)
+     * Memeriksa apakah operasional buka (Wajib ada CS aktif di meja)
      */
     private function checkIsOperational(): bool
     {
-        $today = Carbon::today('Asia/Jakarta');
-
-        // Proteksi Hari Libur
-        $isLibur = HariLibur::whereDate('tanggal', $today)->exists();
-        if ($isLibur) {
-            return false;
-        }
-
         return User::where('is_active', true)
             ->whereNotNull('nomor_meja')
             ->where('nomor_meja', '!=', 0)
@@ -47,11 +38,11 @@ class TiketController extends Controller
     }
 
     /**
-     * Memproses Pengambilan Tiket Antrean Baru (Safe Database Transaction)
+     * Memproses Pengambilan Tiket Antrean Baru
      */
     public function store(Request $request): RedirectResponse
     {
-        // Rate limiter per IP device
+        // 1. RATE LIMITER: Maksimal 1 request per 5 detik dari IP device yang sama
         $executed = RateLimiter::attempt(
             'ambil-tiket-ip:' . $request->ip(),
             $perMinute = 1,
@@ -63,6 +54,7 @@ class TiketController extends Controller
             return back()->with('error', 'Harap tunggu 5 detik sebelum mengambil tiket antrean kembali.');
         }
 
+        // 2. Proteksi Operasional: Wajib ada CS aktif di meja
         if (!$this->checkIsOperational()) {
             return back()->with('error', 'Maaf, loket layanan saat ini sedang tutup / tidak beroperasi.');
         }
@@ -92,7 +84,7 @@ class TiketController extends Controller
             $layanan = Layanan::findOrFail($request->layanan_id);
             $today = Carbon::today('Asia/Jakarta');
 
-            // LOCK FOR UPDATE MENCEGAH NOMOR GANDA
+            // LOCK FOR UPDATE MENCEGAH DUPLIKASI NOMOR ANTREAN BENTROK
             $urutanHariIni = TiketAntrian::whereDate('waktu_dibuat', $today)
                 ->lockForUpdate()
                 ->count() + 1;
@@ -102,13 +94,13 @@ class TiketController extends Controller
             $kodeTiket = $today->format('dmY') . '-' . $layanan->kode_layanan . '-' . $nomorUrut;
 
             $tiket = TiketAntrian::create([
-                'kode_tiket'     => $kodeTiket,
-                'nomor_antrian'  => $nomorAntrian,
-                'pelanggan_id'   => $pelanggan->id,
-                'layanan_id'     => $layanan->id,
-                'keluhan_awal'   => $request->keluhan_awal,
-                'status'         => 'Menunggu',
-                'waktu_dibuat'   => Carbon::now('Asia/Jakarta'),
+                'kode_tiket'    => $kodeTiket,
+                'nomor_antrian' => $nomorAntrian,
+                'pelanggan_id'  => $pelanggan->id,
+                'layanan_id'    => $layanan->id,
+                'keluhan_awal'  => $request->keluhan_awal,
+                'status'        => 'Menunggu',
+                'waktu_dibuat'  => Carbon::now('Asia/Jakarta'),
             ]);
 
             return redirect()->route('antrean.tiket', ['id' => $tiket->id]);
