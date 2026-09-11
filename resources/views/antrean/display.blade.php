@@ -45,7 +45,7 @@
 
             <button onclick="playTestCall()" class="bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 px-3 py-1 rounded-xl font-bold text-[10px] transition-all flex items-center gap-1.5 cursor-pointer">
                 <span class="material-symbols-outlined text-sm">volume_up</span>
-                <span>PANGGIL ULANG</span>
+                <span>TEST SUARA</span>
             </button>
 
             <div id="live-clock" class="font-mono text-xs font-black bg-slate-900 border border-slate-700/80 px-2.5 py-1 rounded-xl text-emerald-400">
@@ -310,10 +310,10 @@
 
             if (heroHideTimer) clearTimeout(heroHideTimer);
 
-            // TEPAT 3 DETIK: Reset ke Mode Standby
+            // TEPAT 5 DETIK: Reset ke Mode Standby
             heroHideTimer = setTimeout(function() {
                 resetHeroToStandby();
-            }, 3000);
+            }, 5000);
         }
 
         function resetHeroToStandby() {
@@ -343,7 +343,7 @@
         }
 
         function playTestCall() {
-            speakQueueCall('A-004', '1');
+            speakQueueCall('A-001', '1');
         }
 
         function fetchDisplayData() {
@@ -367,12 +367,11 @@
                 var noMeja = activeCall.cs ? (activeCall.cs.nomor_meja || '1') : '1';
                 var namaLayanan = activeCall.layanan ? activeCall.layanan.nama_layanan : 'Layanan CS';
 
-                var countDipanggil = activeCall.jumlah_dipanggil || 0;
                 var csId = activeCall.user_id || (activeCall.cs ? activeCall.cs.id : '0');
-                var waktuDiproses = activeCall.waktu_diproses || '';
+                var waktuDipanggil = activeCall.waktu_dipanggil || activeCall.waktu_diproses || '';
 
-                // Kunci unik gabungan waktu_diproses agar tidak ter-trigger ulang saat ada tiket lain berubah status
-                var currentKey = activeCall.id + '_cs' + csId + '_' + countDipanggil + '_' + waktuDiproses;
+                // PERBAIKAN BUG: Gunakan waktu_dipanggil agar trigger panggil ulang unik & dieksekusi
+                var currentKey = activeCall.id + '_cs' + csId + '_' + waktuDipanggil;
 
                 if (currentKey !== lastCallUniqueKey) {
                     lastCallUniqueKey = currentKey;
@@ -496,7 +495,7 @@
         }
 
         fetchDisplayData();
-        setInterval(fetchDisplayData, 2500);
+        setInterval(fetchDisplayData, 2000);
     </script>
 </body>
 </html>

@@ -21,11 +21,11 @@ class DisplayController extends Controller
     {
         $today = Carbon::today('Asia/Jakarta');
 
-        // PERBAIKAN BUG: Urutkan berdasarkan waktu_diproses paling akhir agar tidak terdistraksi perubahan status/updated_at tiket lain
+        // PERBAIKAN BUG: Urutkan berdasarkan waktu_dipanggil paling akhir agar trigger Panggil Ulang terbaca
         $sedangDipanggil = TiketAntrian::with(['cs', 'layanan'])
             ->where('status', 'Diproses')
             ->whereDate('waktu_dibuat', $today)
-            ->orderBy('waktu_diproses', 'desc')
+            ->orderBy('waktu_dipanggil', 'desc')
             ->get();
 
         $antreanMenunggu = TiketAntrian::with(['layanan', 'pelanggan'])
@@ -52,14 +52,15 @@ class DisplayController extends Controller
             });
 
             return [
-                'nomor_meja'     => $meja->nomor_meja,
-                'nama_meja'      => $meja->nama_meja,
-                'is_occupied'    => !is_null($userCS),
-                'nama_cs'        => $userCS ? $userCS->nama_lengkap : null,
-                'tiket_aktif'    => $tiketAktif ? $tiketAktif->nomor_antrian : null,
-                'nama_layanan'   => $tiketAktif && $tiketAktif->layanan ? $tiketAktif->layanan->nama_layanan : null,
-                'is_calling'     => !is_null($tiketAktif),
-                'waktu_diproses' => $tiketAktif ? $tiketAktif->waktu_diproses : null,
+                'nomor_meja'      => $meja->nomor_meja,
+                'nama_meja'       => $meja->nama_meja,
+                'is_occupied'     => !is_null($userCS),
+                'nama_cs'         => $userCS ? $userCS->nama_lengkap : null,
+                'tiket_aktif'     => $tiketAktif ? $tiketAktif->nomor_antrian : null,
+                'nama_layanan'    => $tiketAktif && $tiketAktif->layanan ? $tiketAktif->layanan->nama_layanan : null,
+                'is_calling'      => !is_null($tiketAktif),
+                'waktu_diproses'  => $tiketAktif ? $tiketAktif->waktu_diproses : null,
+                'waktu_dipanggil' => $tiketAktif ? $tiketAktif->waktu_dipanggil : null,
             ];
         });
 
