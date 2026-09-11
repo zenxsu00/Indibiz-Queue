@@ -209,7 +209,7 @@
                 @if($antreanAktif)
                     <div class="flex flex-col h-full min-h-0 justify-between">
                         <div id="form-container-scroll" class="flex-1 overflow-y-auto pr-1 custom-scrollbar min-h-0 space-y-3">
-                            <div class="border-b border-[#E0E3E8] pb-2.5 flex flex-wrap justify-between items-start gap-2">
+                            <div class="border-b border-[#E0E3E8] pb-2.5 flex flex-wrap justify-between items-center gap-2">
                                 <div>
                                     <span class="text-[9px] font-black text-[#5D3F3B] uppercase tracking-wider">Tiket Sedang Dilayani</span>
                                     <div class="flex items-center gap-2 mt-0.5">
@@ -224,12 +224,26 @@
                                         <p class="text-[10px] font-mono text-gray-400">Ref ID: {{ $antreanAktif->kode_tiket }}</p>
                                     @endif
                                 </div>
-                                <div class="text-right bg-[#F8F9FA] px-2.5 py-1 rounded-lg border border-[#E0E3E8]">
-                                    <span class="text-[8px] text-[#5D3F3B] font-bold uppercase tracking-wider block">Waktu Ambil</span>
-                                    <p class="text-xs font-black text-[#181C20]">
-                                        {{ $antreanAktif->waktu_dibuat ? \Carbon\Carbon::parse($antreanAktif->waktu_dibuat)->format('H:i') : '-' }}
-                                        <span class="text-[9px] font-bold text-gray-500">WIB</span>
-                                    </p>
+
+                                <!-- STOPWATCH / TIMER PENANGANAN REALTIME (DATA DIKIRIM LEWAT HTML ATRIBUT) -->
+                                <div class="flex items-center gap-3">
+                                    <div id="cs-stopwatch-box" 
+                                         data-waktu-mulai="{{ $antreanAktif->waktu_mulai_konsul ?? $antreanAktif->waktu_diproses }}"
+                                         class="flex items-center gap-2 bg-slate-900 text-white px-3 py-1.5 rounded-xl border border-slate-700 shadow-md">
+                                        <span class="material-symbols-outlined text-amber-400 text-base animate-spin">timer</span>
+                                        <div class="flex flex-col">
+                                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-none">DURASI KONSUL</span>
+                                            <span id="cs-stopwatch-time" class="font-mono text-sm lg:text-base font-black text-emerald-400 leading-tight">00:00</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="text-right bg-[#F8F9FA] px-2.5 py-1 rounded-lg border border-[#E0E3E8]">
+                                        <span class="text-[8px] text-[#5D3F3B] font-bold uppercase tracking-wider block">Waktu Ambil</span>
+                                        <p class="text-xs font-black text-[#181C20]">
+                                            {{ $antreanAktif->waktu_dibuat ? \Carbon\Carbon::parse($antreanAktif->waktu_dibuat)->format('H:i') : '-' }}
+                                            <span class="text-[9px] font-bold text-gray-500">WIB</span>
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
 
@@ -497,6 +511,49 @@
     </div>
 
     <script>
+        // LOGIKA STOPWATCH / TIMER PENANGANAN TIKET AKTIF (AMBIL DARI ATRIBUT HTML)
+        function initStopwatch() {
+            var boxElem = document.getElementById('cs-stopwatch-box');
+            if (!boxElem) return;
+
+            var waktuMulaiStr = boxElem.getAttribute('data-waktu-mulai');
+            if (!waktuMulaiStr) return;
+
+            var startTime = new Date(waktuMulaiStr.replace(/-/g, "/")).getTime();
+
+            function updateStopwatch() {
+                var now = new Date().getTime();
+                var diffSec = Math.floor((now - startTime) / 1000);
+
+                if (diffSec < 0) diffSec = 0;
+
+                var minutes = Math.floor(diffSec / 60);
+                var seconds = diffSec % 60;
+
+                var formattedTime = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+                
+                var timeElem = document.getElementById('cs-stopwatch-time');
+
+                if (timeElem) timeElem.innerText = formattedTime;
+
+                // Peringatan visual jika durasi penanganan > 15 Menit
+                if (boxElem) {
+                    if (minutes >= 15) {
+                        boxElem.className = "flex items-center gap-2 bg-red-900 text-white px-3 py-1.5 rounded-xl border border-red-600 shadow-md animate-pulse";
+                        if (timeElem) timeElem.className = "font-mono text-sm lg:text-base font-black text-red-300 leading-tight";
+                    } else if (minutes >= 10) {
+                        boxElem.className = "flex items-center gap-2 bg-amber-900 text-white px-3 py-1.5 rounded-xl border border-amber-600 shadow-md";
+                        if (timeElem) timeElem.className = "font-mono text-sm lg:text-base font-black text-amber-300 leading-tight";
+                    }
+                }
+            }
+
+            updateStopwatch();
+            setInterval(updateStopwatch, 1000);
+        }
+
+        document.addEventListener('DOMContentLoaded', initStopwatch);
+
         // FUNGSI PANGGIL ULANG AUDIO VIA AJAX (TANPA RELOAD HALAMAN)
         function panggilUlangAudio(tiketId) {
             fetch('/cs-desk/panggil-ulang/' + tiketId, {

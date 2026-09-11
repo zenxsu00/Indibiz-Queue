@@ -48,14 +48,14 @@ class CsController extends Controller
 
     private function resetUserState(User $user)
     {
-        $this->closeActiveLog($user->id);
+        $this->closeActiveLog((int) $user->id);
         $user->is_active = false;
         $user->nomor_meja = null;
         $user->save();
         session()->forget('meja_terpilih');
     }
 
-    private function openActiveLog($userId)
+    private function openActiveLog(int $userId)
     {
         $now = Carbon::now('Asia/Jakarta');
         $today = $now->toDateString();
@@ -76,7 +76,7 @@ class CsController extends Controller
         }
     }
 
-    private function closeActiveLog($userId)
+    private function closeActiveLog(int $userId)
     {
         $now = Carbon::now('Asia/Jakarta');
         $today = $now->toDateString();
@@ -165,7 +165,7 @@ class CsController extends Controller
         $user->save();
 
         session(['meja_terpilih' => $request->nomor_meja]);
-        $this->openActiveLog($user->id);
+        $this->openActiveLog((int) $user->id);
 
         return redirect()->route('cs.index')->with('success', "Berhasil masuk ke Loket M{$request->nomor_meja}");
     }
@@ -186,7 +186,7 @@ class CsController extends Controller
         if (!$isSpectator && !$user->is_active) {
             $user->is_active = true;
             $user->save();
-            $this->openActiveLog($user->id);
+            $this->openActiveLog((int) $user->id);
         }
 
         $antreanMenunggu = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan'])
@@ -537,7 +537,7 @@ class CsController extends Controller
     {
         /** @var User $user */
         $user = Auth::user();
-        $this->closeActiveLog($user->id);
+        $this->closeActiveLog((int) $user->id);
         $user->is_active = false;
         $user->nomor_meja = null;
         $user->save();
