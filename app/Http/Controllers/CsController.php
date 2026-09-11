@@ -382,7 +382,7 @@ class CsController extends Controller
         }
     }
 
-    // METHOD BARU: RECALL AUDIO PANGGILAN Saja
+    // RECALL AUDIO PANGGILAN
     public function panggilUlang(int $id)
     {
         if (!$this->checkValidMeja()) {
@@ -398,6 +398,10 @@ class CsController extends Controller
                     ->first();
 
         if ($tiket) {
+            // Update timestamp agar terdeteksi perubahan payload broadcast di Layar Display
+            $tiket->waktu_dipanggil = Carbon::now('Asia/Jakarta');
+            $tiket->save();
+
             $this->safeBroadcast($tiket);
             return back()->with('success', "Memanggil ulang suara antrean {$tiket->nomor_antrian}");
         }

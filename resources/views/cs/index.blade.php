@@ -294,7 +294,6 @@
                                     </div>
                                 </div>
 
-                                <!-- FORM 1 REVISI: Keluhan Final -> Revisi Keluhan Pelanggan -->
                                 <div>
                                     <label class="text-xs font-black text-[#181C20] flex items-center gap-1 mb-1">
                                         <span class="material-symbols-outlined text-sm text-[#00509E]">edit_document</span>
@@ -309,7 +308,6 @@
                                               class="w-full rounded-lg border border-[#E0E3E8] bg-white text-xs text-[#181C20] p-2.5 focus:border-[#00509E] focus:ring-0 transition-all font-medium resize-none overflow-hidden shadow-sm"></textarea>
                                 </div>
 
-                                <!-- FORM 2 REVISI: Catatan CS -> Catatan Hasil Konsul / Resolusi + QUICK TEMPLATE CHIPS -->
                                 <div>
                                     <div class="flex flex-wrap items-center justify-between gap-1 mb-1">
                                         <label class="text-xs font-black text-[#181C20] flex items-center gap-1">
@@ -317,7 +315,6 @@
                                             Catatan Hasil Konsul / Resolusi <span class="text-[10px] text-gray-400 font-normal">(Opsional)</span>
                                         </label>
                                         
-                                        <!-- QUICK TEMPLATE PRESET CHIPS -->
                                         @if(!$isSpectator)
                                             <div class="flex items-center gap-1 flex-wrap">
                                                 <button type="button" 
@@ -363,11 +360,9 @@
                             </form>
                         </div>
 
-                        <!-- BARIS AKSI TIKET AKTIF -->
                         <div class="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-[#E0E3E8] shrink-0 mt-1">
                             @if(!$isSpectator)
                                 <div class="flex items-center gap-1.5">
-                                    <!-- RECALL AUDIO BUTTON -->
                                     <form action="{{ route('cs.panggil_ulang', $antreanAktif->id) }}" method="POST" class="m-0">
                                         @csrf
                                         <button type="submit" 
@@ -378,7 +373,6 @@
                                         </button>
                                     </form>
 
-                                    <!-- TIDAK HADIR BUTTON -->
                                     <button type="button" 
                                             data-nomor="{{ $antreanAktif->nomor_antrian }}" 
                                             onclick="konfirmasiTidakHadir(this.getAttribute('data-nomor'))" 
@@ -468,11 +462,9 @@
                     </div>
                 </div>
 
-                <!-- SWITCH TOGGLE BUTTON STATUS PENANGANAN -->
                 <div class="pt-3 border-t border-gray-100 space-y-1.5">
                     <label class="font-bold text-gray-700 block text-xs">Status Penanganan Pekerjaan</label>
                     <div class="grid grid-cols-2 gap-2">
-                        <!-- Button Hijau: Selesai di Loket -->
                         <button type="button" 
                                 @click="isCuratedVal = '1'" 
                                 :class="isCuratedVal == '1' ? 'bg-emerald-600 text-white border-emerald-600 shadow-md ring-2 ring-emerald-300' : 'bg-emerald-50 text-emerald-800 border-emerald-200 opacity-50 hover:opacity-100'"
@@ -481,7 +473,6 @@
                             <span>Selesai di Loket</span>
                         </button>
 
-                        <!-- Button Kuning: Butuh Lapangan / Lanjutan -->
                         <button type="button" 
                                 @click="isCuratedVal = '0'" 
                                 :class="isCuratedVal == '0' ? 'bg-amber-500 text-white border-amber-500 shadow-md ring-2 ring-amber-300' : 'bg-amber-50 text-amber-800 border-amber-200 opacity-50 hover:opacity-100'"
@@ -574,10 +565,18 @@
         function fetchConsoleRealtime() {
             var modalActive = Alpine.$data(document.body).showModalTransaksi;
             var isSubmitting = Alpine.$data(document.body).isSubmitting;
-            var activeEl = document.activeElement;
-            var isFocusTextarea = activeEl && (activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'INPUT' || activeEl.tagName === 'SELECT');
             
-            if (modalActive || isFocusTextarea || isSubmitting) return;
+            // Pengecekan aktif focus
+            var activeEl = document.activeElement;
+            var isFocusInput = activeEl && (activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'INPUT' || activeEl.tagName === 'SELECT');
+
+            // Pengecekan isi textarea
+            var keluhanEl = document.getElementById('keluhan_final');
+            var catatanEl = document.getElementById('catatan_cs');
+            var isTextareaFilled = (keluhanEl && keluhanEl.value.trim() !== '') || (catatanEl && catatanEl.value.trim() !== '');
+
+            // Kunci auto refresh jika modal buka, sedang ketik/isi data, atau submit
+            if (modalActive || isFocusInput || isTextareaFilled || isSubmitting) return;
 
             fetch(window.location.href)
                 .then(function(response) {
