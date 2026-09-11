@@ -22,43 +22,60 @@ class DisplayController extends Controller
         try {
             $today = Carbon::today('Asia/Jakarta');
 
-            // Ambil tiket yang sedang diproses
+            // 1. Ambil tiket yang sedang diproses
             $sedangDipanggil = TiketAntrian::with(['cs', 'layanan'])
                 ->where('status', 'Diproses')
                 ->whereDate('waktu_dibuat', $today)
                 ->orderBy('waktu_dipanggil', 'desc')
                 ->get();
 
+            // 2. Ambil tiket yang sedang menunggu
             $antreanMenunggu = TiketAntrian::with(['layanan', 'pelanggan'])
                 ->where('status', 'Menunggu')
                 ->whereDate('waktu_dibuat', $today)
                 ->oldest('id')
-                ->take(5)
+                ->take(6)
                 ->get();
 
-            // HITUNG RATA-RATA DURASI PELAYANAN HARI INI (dalam menit)
+            // 3. HITUNG RATA-RATA DURASI PELAYANAN CS HARI INI (dalam menit)
             $tiketSelesaiHariIni = TiketAntrian::where('status', 'Selesai')
                 ->whereDate('waktu_dibuat', $today)
                 ->whereNotNull('waktu_mulai_konsul')
                 ->whereNotNull('waktu_selesai_konsul')
                 ->get();
 
-            $totalDurasiMenit = 0;
+            $totalDurasiLayanan = 0;
             $jumlahTiketSelesai = $tiketSelesaiHariIni->count();
 
             foreach ($tiketSelesaiHariIni as $t) {
                 $mulai = Carbon::parse($t->waktu_mulai_konsul);
                 $selesai = Carbon::parse($t->waktu_selesai_konsul);
-                $totalDurasiMenit += $mulai->diffInMinutes($selesai);
+                $totalDurasiLayanan += $mulai->diffInMinutes($selesai);
             }
 
-            // Jika belum ada data transaksi hari ini, set null/0 agar UI tidak menampilkan angka bohong
-            $avgDurasiMenit = $jumlahTiketSelesai > 0 ? (int) round($totalDurasiMenit / $jumlahTiketSelesai) : null;
+            $avgDurasiLayanan = $jumlahTiketSelesai > 0 ? (int) round($totalDurasiLayanan / $jumlahTiketSelesai) : null;
 
-            // Ambil seluruh master meja yang tersedia
+            // 4. HITUNG RATA-RATA WAKTU TUNGGU DIPANGGIL HARI INI (dalam menit)
+            $tiketDipanggilHariIni = TiketAntrian::whereIn('status', ['Diproses', 'Selesai'])
+                ->whereDate('waktu_dibuat', $today)
+                ->whereNotNull('waktu_dipanggil')
+                ->whereNotNull('waktu_dibuat')
+                ->get();
+
+            $totalWaktuTunggu = 0;
+            $jumlahTiketDipanggil = $tiketDipanggilHariIni->count();
+
+            foreach ($tiketDipanggilHariIni as $td) {
+                $dibuat = Carbon::parse($td->waktu_dibuat);
+                $dipanggil = Carbon::parse($td->waktu_dipanggil);
+                $totalWaktuTunggu += $dibuat->diffInMinutes($dipanggil);
+            }
+
+            $avgWaktuTunggu = $jumlahTiketDipanggil > 0 ? (int) round($totalWaktuTunggu / $jumlahTiketDipanggil) : null;
+
+            // 5. Data Meja CS
             $masterMeja = MasterMeja::where('is_available', true)->orderBy('nomor_meja', 'asc')->get();
 
-            // Ambil CS yang sedang aktif/online menduduki meja
             $activeUsers = User::where('is_active', true)
                 ->whereNotNull('nomor_meja')
                 ->where('nomor_meja', '!=', 0)
@@ -85,21 +102,27 @@ class DisplayController extends Controller
                 ];
             });
 
-            // HITUNG ESTIMASI PENUMPUKAN WAKTU TUNGGU UNTUK ANTREAN BERIKUTNYA
+            // 6. Estimasi waktu tunggu dinamis untuk antrean menunggu
             $jumlahCSAktif = max(1, $activeUsers->count());
-            $durasiAcuan = $avgDurasiMenit ?? 10; // Untuk estimasi jika antrean kosong/baru
+            $durasiAcuan = $avgDurasiLayanan ?? 10;
             
             $listAntreanMenungguWithEstimasi = $antreanMenunggu->map(function ($item, $index) use ($durasiAcuan, $jumlahCSAktif) {
                 $estimasiMenit = ceil(($index + 1) / $jumlahCSAktif) * $durasiAcuan;
                 $item->estimasi_tunggu_menit = $estimasiMenit;
+                
+                // Hitung berapa menit tiket ini sudah menunggu sejak diambil
+                $waktuDibuat = Carbon::parse($item->waktu_dibuat);
+                $item->sudah_menunggu_menit = $waktuDibuat->diffInMinutes(Carbon::now('Asia/Jakarta'));
+
                 return $item;
             });
 
             return response()->json([
-                'sedangDipanggil' => $sedangDipanggil,
-                'antreanMenunggu' => $listAntreanMenungguWithEstimasi,
-                'mejaList'        => $mejaList,
-                'avgDurasiMenit'  => $avgDurasiMenit,
+                'sedangDipanggil'  => $sedangDipanggil,
+                'antreanMenunggu'  => $listAntreanMenungguWithEstimasi,
+                'mejaList'         => $mejaList,
+                'avgDurasiLayanan' => $avgDurasiLayanan,
+                'avgWaktuTunggu'   => $avgWaktuTunggu,
             ]);
         } catch (\Exception $e) {
             return response()->json([

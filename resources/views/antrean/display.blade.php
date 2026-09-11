@@ -34,12 +34,21 @@
             </div>
         </div>
 
-        <div class="flex items-center gap-3">
-            <!-- WIDGET RATA-RATA DURASI SERVIS REALTIME -->
-            <div class="flex items-center gap-2 bg-slate-900/90 border border-slate-800 px-3 py-1 rounded-xl">
+        <div class="flex items-center gap-2.5">
+            <!-- WIDGET 1: RATA-RATA WAKTU TUNGGU DIPANGGIL -->
+            <div class="flex items-center gap-2 bg-slate-900/90 border border-slate-800 px-2.5 py-1 rounded-xl">
+                <span class="material-symbols-outlined text-blue-400 text-sm">hourglass_top</span>
+                <div>
+                    <span class="text-[7px] font-bold text-slate-400 uppercase block leading-none">RATA-RATA TUNGGU</span>
+                    <span id="label-avg-tunggu" class="text-xs font-black text-blue-400 leading-none">Belum Ada Data</span>
+                </div>
+            </div>
+
+            <!-- WIDGET 2: RATA-RATA DURASI SERVIS CS -->
+            <div class="flex items-center gap-2 bg-slate-900/90 border border-slate-800 px-2.5 py-1 rounded-xl">
                 <span class="material-symbols-outlined text-amber-400 text-sm">avg_time</span>
                 <div>
-                    <span class="text-[8px] font-bold text-slate-400 uppercase block leading-none">RATA-RATA PROSES</span>
+                    <span class="text-[7px] font-bold text-slate-400 uppercase block leading-none">RATA-RATA PROSES CS</span>
                     <span id="label-avg-durasi" class="text-xs font-black text-amber-400 leading-none">Belum Ada Data</span>
                 </div>
             </div>
@@ -47,14 +56,14 @@
             <div class="flex items-center gap-1.5 bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-xl">
                 <span class="material-symbols-outlined text-xs text-red-500">graphic_eq</span>
                 <span class="text-[10px] text-slate-400 font-bold">Synthesizer:</span>
-                <select id="voice-select" class="bg-transparent text-slate-200 text-[11px] font-bold focus:outline-none max-w-[130px] truncate">
+                <select id="voice-select" class="bg-transparent text-slate-200 text-[11px] font-bold focus:outline-none max-w-[120px] truncate">
                     <option value="">Memuat Suara...</option>
                 </select>
             </div>
 
-            <button onclick="playTestCall()" class="bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 px-3 py-1 rounded-xl font-bold text-[10px] transition-all flex items-center gap-1.5 cursor-pointer">
+            <button onclick="playTestCall()" class="bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 px-2.5 py-1 rounded-xl font-bold text-[10px] transition-all flex items-center gap-1 cursor-pointer">
                 <span class="material-symbols-outlined text-sm">volume_up</span>
-                <span>TEST SUARA</span>
+                <span>TEST</span>
             </button>
 
             <div id="live-clock" class="font-mono text-xs font-black bg-slate-900 border border-slate-700/80 px-2.5 py-1 rounded-xl text-emerald-400">
@@ -357,11 +366,20 @@
             fetch('{{ url("/api/display-antrean-data") }}')
                 .then(response => response.json())
                 .then(data => {
-                    var avgLabel = document.getElementById('label-avg-durasi');
-                    if (data.avgDurasiMenit !== null && data.avgDurasiMenit !== undefined) {
-                        avgLabel.innerText = '± ' + data.avgDurasiMenit + ' Mnt / Tiket';
+                    // Update Widget Rata-Rata Durasi Layanan CS
+                    var avgDurasiLabel = document.getElementById('label-avg-durasi');
+                    if (data.avgDurasiLayanan !== null && data.avgDurasiLayanan !== undefined) {
+                        avgDurasiLabel.innerText = '± ' + data.avgDurasiLayanan + ' Mnt / Tiket';
                     } else {
-                        avgLabel.innerText = 'Belum Ada Data';
+                        avgDurasiLabel.innerText = 'Belum Ada Data';
+                    }
+
+                    // Update Widget Rata-Rata Waktu Tunggu Dipanggil
+                    var avgTungguLabel = document.getElementById('label-avg-tunggu');
+                    if (data.avgWaktuTunggu !== null && data.avgWaktuTunggu !== undefined) {
+                        avgTungguLabel.innerText = '± ' + data.avgWaktuTunggu + ' Mnt';
+                    } else {
+                        avgTungguLabel.innerText = 'Belum Ada Data';
                     }
 
                     renderSedangDipanggil(data.sedangDipanggil);
@@ -409,11 +427,8 @@
 
             var html = '';
             mejaList.forEach(function(meja) {
-                var noMejaPad = String(meja.nomor_meja).padStart(2, '0');
-
                 if (meja.is_occupied) {
                     if (meja.is_calling) {
-                        // FIX: Fallback berantai waktu mulai agar Stopwatch dipastikan muncul & berjalan
                         var startTimeVal = meja.waktu_mulai_konsul || meja.waktu_diproses || meja.waktu_dipanggil || (new Date().toISOString());
 
                         html += `
