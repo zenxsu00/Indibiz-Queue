@@ -360,19 +360,20 @@
                             </form>
                         </div>
 
+                        <!-- BARIS AKSI TIKET AKTIF -->
                         <div class="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-[#E0E3E8] shrink-0 mt-1">
                             @if(!$isSpectator)
                                 <div class="flex items-center gap-1.5">
-                                    <form action="{{ route('cs.panggil_ulang', $antreanAktif->id) }}" method="POST" class="m-0">
-                                        @csrf
-                                        <button type="submit" 
-                                                title="Panggil ulang audio antrean di Layar Display TV"
-                                                class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-[10px] lg:text-[11px] shadow-sm transition-all flex items-center gap-1 cursor-pointer">
-                                            <span class="material-symbols-outlined text-sm">campaign</span>
-                                            <span>Panggil Ulang Audio</span>
-                                        </button>
-                                    </form>
+                                    <!-- RECALL AUDIO BUTTON (AJAX FETCH TANPA SUBMIT FORM/RELOAD) -->
+                                    <button type="button" 
+                                            onclick="panggilUlangAudio('{{ $antreanAktif->id }}')"
+                                            title="Panggil ulang audio antrean di Layar Display TV"
+                                            class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-[10px] lg:text-[11px] shadow-sm transition-all flex items-center gap-1 cursor-pointer">
+                                        <span class="material-symbols-outlined text-sm">campaign</span>
+                                        <span>Panggil Ulang Audio</span>
+                                    </button>
 
+                                    <!-- TIDAK HADIR BUTTON -->
                                     <button type="button" 
                                             data-nomor="{{ $antreanAktif->nomor_antrian }}" 
                                             onclick="konfirmasiTidakHadir(this.getAttribute('data-nomor'))" 
@@ -496,6 +497,39 @@
     </div>
 
     <script>
+        // FUNGSI PANGGIL ULANG AUDIO VIA AJAX (TANPA RELOAD HALAMAN)
+        function panggilUlangAudio(tiketId) {
+            fetch('/cs-desk/panggil-ulang/' + tiketId, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.status === 'success') {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: data.message,
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Memanggil',
+                        text: data.message || 'Terjadi kesalahan sistem.'
+                    });
+                }
+            })
+            .catch(function(err) {
+                console.error('Recall Error:', err);
+            });
+        }
+
         function tumpukTemplate(teksTemplate) {
             let textarea = document.getElementById('catatan_cs');
             if (!textarea) return;
@@ -566,16 +600,13 @@
             var modalActive = Alpine.$data(document.body).showModalTransaksi;
             var isSubmitting = Alpine.$data(document.body).isSubmitting;
             
-            // Pengecekan aktif focus
             var activeEl = document.activeElement;
             var isFocusInput = activeEl && (activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'INPUT' || activeEl.tagName === 'SELECT');
 
-            // Pengecekan isi textarea
             var keluhanEl = document.getElementById('keluhan_final');
             var catatanEl = document.getElementById('catatan_cs');
             var isTextareaFilled = (keluhanEl && keluhanEl.value.trim() !== '') || (catatanEl && catatanEl.value.trim() !== '');
 
-            // Kunci auto refresh jika modal buka, sedang ketik/isi data, atau submit
             if (modalActive || isFocusInput || isTextareaFilled || isSubmitting) return;
 
             fetch(window.location.href)
@@ -591,25 +622,14 @@
                     var parser = new DOMParser();
                     var doc = parser.parseFromString(html, 'text/html');
                     
-                    var elemenBaru = doc.getElementById('main-cs-console');
-                    var elemenLama = document.getElementById('main-cs-console');
-                    
-                    if (elemenBaru && elemenLama) {
-                        var areaAntrean = document.getElementById('area-antrean-realtime');
-                        var scrollAntreanPos = areaAntrean ? areaAntrean.scrollTop : 0;
-                        
-                        var formContainer = document.getElementById('form-container-scroll');
-                        var scrollFormPos = formContainer ? formContainer.scrollTop : 0;
+                    // HANYA UPDATE KONTEN SISI KIRI (DAFTAR ANTREAN MENUNGGU) UNTUK MENJAGA TEKS & FORM AKTIF DI SISI KANAN
+                    var antreanBaru = doc.getElementById('area-antrean-realtime');
+                    var antreanLama = document.getElementById('area-antrean-realtime');
 
-                        if (elemenLama.innerHTML !== elemenBaru.innerHTML) {
-                            elemenLama.innerHTML = elemenBaru.innerHTML;
-
-                            var newAreaAntrean = document.getElementById('area-antrean-realtime');
-                            if (newAreaAntrean) newAreaAntrean.scrollTop = scrollAntreanPos;
-
-                            var newFormContainer = document.getElementById('form-container-scroll');
-                            if (newFormContainer) newFormContainer.scrollTop = scrollFormPos;
-                        }
+                    if (antreanBaru && antreanLama && antreanLama.innerHTML !== antreanBaru.innerHTML) {
+                        var scrollPos = antreanLama.scrollTop;
+                        antreanLama.innerHTML = antreanBaru.innerHTML;
+                        antreanLama.scrollTop = scrollPos;
                     }
                 })
                 .catch(function(error) { console.error('Gagal memperbarui antrean:', error); });
