@@ -382,11 +382,11 @@ class CsController extends Controller
         }
     }
 
-    // RECALL AUDIO PANGGILAN
+    // RECALL AUDIO PANGGILAN (RETURN JSON RESPONS)
     public function panggilUlang(int $id)
     {
         if (!$this->checkValidMeja()) {
-            return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus oleh Admin.');
+            return response()->json(['status' => 'error', 'message' => 'Meja loket Anda telah dihapus oleh Admin.'], 403);
         }
 
         /** @var User $user */
@@ -398,15 +398,14 @@ class CsController extends Controller
                     ->first();
 
         if ($tiket) {
-            // Update timestamp agar terdeteksi perubahan payload broadcast di Layar Display
             $tiket->waktu_dipanggil = Carbon::now('Asia/Jakarta');
             $tiket->save();
 
             $this->safeBroadcast($tiket);
-            return back()->with('success', "Memanggil ulang suara antrean {$tiket->nomor_antrian}");
+            return response()->json(['status' => 'success', 'message' => "Memanggil ulang suara antrean {$tiket->nomor_antrian}"]);
         }
 
-        return back()->with('error', 'Tiket aktif tidak ditemukan.');
+        return response()->json(['status' => 'error', 'message' => 'Tiket aktif tidak ditemukan.'], 404);
     }
 
     public function batalAtauKembalikan(int $id)
