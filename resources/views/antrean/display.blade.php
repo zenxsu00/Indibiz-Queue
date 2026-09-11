@@ -35,10 +35,19 @@
         </div>
 
         <div class="flex items-center gap-3">
+            <!-- WIDGET RATA-RATA DURASI SERVIS -->
+            <div class="flex items-center gap-2 bg-slate-900/90 border border-slate-800 px-3 py-1 rounded-xl">
+                <span class="material-symbols-outlined text-amber-400 text-sm">avg_time</span>
+                <div>
+                    <span class="text-[8px] font-bold text-slate-400 uppercase block leading-none">RATA-RATA PROSES</span>
+                    <span id="label-avg-durasi" class="text-xs font-black text-amber-400 leading-none">± 10 Mnt / Tiket</span>
+                </div>
+            </div>
+
             <div class="flex items-center gap-1.5 bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-xl">
                 <span class="material-symbols-outlined text-xs text-red-500">graphic_eq</span>
                 <span class="text-[10px] text-slate-400 font-bold">Synthesizer:</span>
-                <select id="voice-select" class="bg-transparent text-slate-200 text-[11px] font-bold focus:outline-none max-w-[140px] truncate">
+                <select id="voice-select" class="bg-transparent text-slate-200 text-[11px] font-bold focus:outline-none max-w-[130px] truncate">
                     <option value="">Memuat Suara...</option>
                 </select>
             </div>
@@ -106,7 +115,7 @@
                 </div>
             </div>
 
-            <!-- STATUS MEJA PELAYANAN (BARIS BWAH - DINAMIS sesuai Jumlah Meja) -->
+            <!-- STATUS MEJA PELAYANAN (BARIS BWAH - DINAMIS) -->
             <div class="bg-[#0D1322] border border-slate-800/80 rounded-2xl p-2.5 flex flex-col gap-1.5 shrink-0">
                 <div class="flex items-center justify-between text-[10px] font-bold border-b border-slate-800 pb-1">
                     <span class="text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
@@ -291,7 +300,6 @@
             var badgeText = document.getElementById('hero-badge-text');
             var badgeBox = document.getElementById('hero-badge-direksi');
 
-            // Set UI Aktif Panggilan
             box.className = "flex-1 bg-gradient-to-b from-[#11182B] to-[#0A0F1D] border-2 border-red-500/80 rounded-2xl p-3.5 flex flex-col justify-between shadow-[0_0_30px_rgba(238,46,36,0.25)] relative overflow-hidden transition-all duration-500";
             statusDot.className = "w-2.5 h-2.5 rounded-full bg-red-500 animate-ping";
             statusTitle.className = "text-xs font-black tracking-widest text-red-500 uppercase";
@@ -310,7 +318,6 @@
 
             if (heroHideTimer) clearTimeout(heroHideTimer);
 
-            // TEPAT 5 DETIK: Reset ke Mode Standby
             heroHideTimer = setTimeout(function() {
                 resetHeroToStandby();
             }, 5000);
@@ -350,6 +357,9 @@
             fetch('{{ url("/api/display-antrean-data") }}')
                 .then(response => response.json())
                 .then(data => {
+                    if (data.avgDurasiMenit) {
+                        document.getElementById('label-avg-durasi').innerText = '± ' + data.avgDurasiMenit + ' Mnt / Tiket';
+                    }
                     renderSedangDipanggil(data.sedangDipanggil);
                     renderMejaGridDinamis(data.mejaList);
                     renderAntreanMenunggu(data.antreanMenunggu);
@@ -370,7 +380,6 @@
                 var csId = activeCall.user_id || (activeCall.cs ? activeCall.cs.id : '0');
                 var waktuDipanggil = activeCall.waktu_dipanggil || activeCall.waktu_diproses || '';
 
-                // PERBAIKAN BUG: Gunakan waktu_dipanggil agar trigger panggil ulang unik & dieksekusi
                 var currentKey = activeCall.id + '_cs' + csId + '_' + waktuDipanggil;
 
                 if (currentKey !== lastCallUniqueKey) {
@@ -472,6 +481,7 @@
             listMenunggu.forEach(function(item, index) {
                 var namaLayanan = item.layanan ? item.layanan.nama_layanan : 'Layanan';
                 var isNext = index === 0;
+                var estTunggu = item.estimasi_tunggu_menit || ((index + 1) * 10);
 
                 html += `
                     <div class="bg-slate-900/90 border ${isNext ? 'border-amber-500/50 bg-amber-500/5' : 'border-slate-800'} rounded-xl p-2.5 flex items-center justify-between">
@@ -485,6 +495,9 @@
                         <div class="text-right">
                             <span class="text-[8px] font-black uppercase ${isNext ? 'text-amber-400 bg-amber-500/10 border border-amber-500/30' : 'text-slate-400 bg-slate-800'} px-2 py-0.5 rounded-md block">
                                 ${isNext ? 'Siap Dipanggil' : 'Menunggu'}
+                            </span>
+                            <span class="text-[8px] text-amber-400/80 font-bold block mt-1">
+                                Est. ± ${estTunggu} mnt
                             </span>
                         </div>
                     </div>

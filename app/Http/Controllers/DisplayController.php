@@ -22,11 +22,11 @@ class DisplayController extends Controller
         try {
             $today = Carbon::today('Asia/Jakarta');
 
-            // Ambil tiket yang sedang diproses, urutkan berdasarkan waktu dipanggil/diproses
+            // Ambil tiket yang sedang diproses
             $sedangDipanggil = TiketAntrian::with(['cs', 'layanan'])
                 ->where('status', 'Diproses')
                 ->whereDate('waktu_dibuat', $today)
-                ->orderBy('updated_at', 'desc')
+                ->orderBy('waktu_dipanggil', 'desc')
                 ->get();
 
             $antreanMenunggu = TiketAntrian::with(['layanan', 'pelanggan'])
@@ -35,6 +35,27 @@ class DisplayController extends Controller
                 ->oldest('id')
                 ->take(5)
                 ->get();
+
+            // HITUNG RATA-RATA DURASI PELAYANAN HARI INI (dalam menit)
+            $tiketSelesaiHariIni = TiketAntrian::where('status', 'Selesai')
+                ->whereDate('waktu_dibuat', $today)
+                ->whereNotNull('waktu_mulai_konsul')
+                ->whereNotNull('waktu_selesai_konsul')
+                ->get();
+
+            $totalDurasiMenit = 0;
+            $jumlahTiketSelesai = $tiketSelesaiHariIni->count();
+
+            foreach ($tiketSelesaiHariIni as $t) {
+                $mulai = Carbon::parse($t->waktu_mulai_konsul);
+                $selesai = Carbon::parse($t->waktu_selesai_konsul);
+                // PERBAIKAN: Menggunakan tanda panah (->) bukan titik dua (::)
+                $totalDurasiMenit += $mulai->diffInMinutes($selesai);
+            }
+
+            // Default estimasi per tiket jika belum ada histori hari ini = 10 menit
+            $avgDurasiMenit = $jumlahTiketSelesai > 0 ? round($totalDurasiMenit / $jumlahTiketSelesai) : 10;
+            if ($avgDurasiMenit < 1) $avgDurasiMenit = 5;
 
             // Ambil seluruh master meja yang tersedia
             $masterMeja = MasterMeja::where('is_available', true)->orderBy('nomor_meja', 'asc')->get();
@@ -53,22 +74,33 @@ class DisplayController extends Controller
                 });
 
                 return [
-                    'nomor_meja'      => $meja->nomor_meja,
-                    'nama_meja'       => $meja->nama_meja,
-                    'is_occupied'     => !is_null($userCS),
-                    'nama_cs'         => $userCS ? $userCS->nama_lengkap : null,
-                    'tiket_aktif'     => $tiketAktif ? $tiketAktif->nomor_antrian : null,
-                    'nama_layanan'    => $tiketAktif && $tiketAktif->layanan ? $tiketAktif->layanan->nama_layanan : null,
-                    'is_calling'      => !is_null($tiketAktif),
-                    'waktu_diproses'  => $tiketAktif ? (string) $tiketAktif->waktu_diproses : null,
-                    'waktu_dipanggil' => $tiketAktif ? (string) ($tiketAktif->waktu_dipanggil ?? $tiketAktif->waktu_diproses ?? $tiketAktif->updated_at) : null,
+                    'nomor_meja'        => $meja->nomor_meja,
+                    'nama_meja'         => $meja->nama_meja,
+                    'is_occupied'       => !is_null($userCS),
+                    'nama_cs'           => $userCS ? $userCS->nama_lengkap : null,
+                    'tiket_aktif'       => $tiketAktif ? $tiketAktif->nomor_antrian : null,
+                    'nama_layanan'      => $tiketAktif && $tiketAktif->layanan ? $tiketAktif->layanan->nama_layanan : null,
+                    'is_calling'        => !is_null($tiketAktif),
+                    'waktu_diproses'    => $tiketAktif ? (string) $tiketAktif->waktu_diproses : null,
+                    'waktu_mulai_konsul'=> $tiketAktif ? (string) ($tiketAktif->waktu_mulai_konsul ?? $tiketAktif->waktu_diproses) : null,
+                    'waktu_dipanggil'   => $tiketAktif ? (string) ($tiketAktif->waktu_dipanggil ?? $tiketAktif->waktu_diproses) : null,
                 ];
+            });
+
+            // HITUNG ESTIMASI PENUMPUKAN WAKTU TUNGGU UNTUK ANTREAN BERIKUTNYA
+            $jumlahCSAktif = max(1, $activeUsers->count());
+            $listAntreanMenungguWithEstimasi = $antreanMenunggu->map(function ($item, $index) use ($avgDurasiMenit, $jumlahCSAktif) {
+                // Teori Antrean: Waktu tunggu = (Urutan antrean / Jumlah CS Aktif) * Rata-rata durasi
+                $estimasiMenit = ceil(($index + 1) / $jumlahCSAktif) * $avgDurasiMenit;
+                $item->estimasi_tunggu_menit = $estimasiMenit;
+                return $item;
             });
 
             return response()->json([
                 'sedangDipanggil' => $sedangDipanggil,
-                'antreanMenunggu' => $antreanMenunggu,
+                'antreanMenunggu' => $listAntreanMenungguWithEstimasi,
                 'mejaList'        => $mejaList,
+                'avgDurasiMenit'  => $avgDurasiMenit,
             ]);
         } catch (\Exception $e) {
             return response()->json([
