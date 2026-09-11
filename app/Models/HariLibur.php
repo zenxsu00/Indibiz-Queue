@@ -16,7 +16,7 @@ class HariLibur extends Model
     ];
 
     protected $casts = [
-        'tanggal' => 'date',
+        'tanggal'     => 'date',
         'is_nasional' => 'boolean',
     ];
 }

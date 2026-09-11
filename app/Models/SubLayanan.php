@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SubLayanan extends Model
 {
@@ -15,12 +17,16 @@ class SubLayanan extends Model
         'is_active',
     ];
 
-    public function layanan()
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
+    public function layanan(): BelongsTo
     {
         return $this->belongsTo(Layanan::class, 'layanan_id');
     }
 
-    public function tiketAntrians()
+    public function tiketAntrians(): HasMany
     {
         return $this->hasMany(TiketAntrian::class, 'sub_layanan_id');
     }

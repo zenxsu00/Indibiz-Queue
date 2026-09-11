@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Pelanggan extends Model
 {
@@ -17,7 +18,7 @@ class Pelanggan extends Model
         'alamat',
     ];
 
-    public function tiketAntrians()
+    public function tiketAntrians(): HasMany
     {
         return $this->hasMany(TiketAntrian::class, 'pelanggan_id');
     }

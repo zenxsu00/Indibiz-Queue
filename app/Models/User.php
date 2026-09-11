@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -37,5 +38,15 @@ class User extends Authenticatable
             'is_active'    => 'boolean',
             'last_seen_at' => 'datetime',
         ];
+    }
+
+    public function tiketAntrians(): HasMany
+    {
+        return $this->hasMany(TiketAntrian::class, 'user_id');
+    }
+
+    public function csActiveLogs(): HasMany
+    {
+        return $this->hasMany(CsActiveLog::class, 'user_id');
     }
 }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CsActiveLog extends Model
 {
@@ -19,7 +20,14 @@ class CsActiveLog extends Model
         'durasi_menit',
     ];
 
-    public function cs()
+    protected $casts = [
+        'tanggal'     => 'date',
+        'jam_mulai'   => 'datetime',
+        'jam_selesai' => 'datetime',
+        'durasi_menit'=> 'integer',
+    ];
+
+    public function cs(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }

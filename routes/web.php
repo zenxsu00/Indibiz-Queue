@@ -46,23 +46,20 @@ Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// Route Pilih Meja CS Console
+// 3. MODUL TERPROTEKSI (WAJIB LOGIN)
 Route::middleware(['auth'])->group(function () {
+    
+    // Pilih Meja & Console CS
     Route::get('/cs/pilih-meja', [CsController::class, 'selectMeja'])->name('cs.select-meja');
     Route::post('/cs/pilih-meja', [CsController::class, 'setMeja'])->name('cs.process-meja');
     Route::get('/cs/leave', [CsController::class, 'leaveConsole'])->name('cs.leave');
     Route::post('/cs/ping-heartbeat', [CsController::class, 'pingHeartbeat'])->name('cs.ping');
-});
 
-// 3. MODUL DENGAN PROTEKSI LOGIN
-Route::middleware(['auth'])->group(function () {
-    
-    // Console CS
     Route::get('/cs-desk', [CsController::class, 'index'])->name('cs.index');
     Route::get('/cs/history', [CsController::class, 'historyPage'])->name('cs.history');
     Route::post('/cs-desk/panggil-selanjutnya', [CsController::class, 'panggilSelanjutnya'])->name('cs.panggil_selanjutnya');
     Route::post('/cs-desk/panggil-spesifik/{id}', [CsController::class, 'panggilSpesifik'])->name('cs.panggil_spesifik');
-    Route::post('/cs-desk/panggil-ulang/{id}', [CsController::class, 'panggilUlang'])->name('cs.panggil_ulang'); // ROUTE BARU RECALL AUDIO
+    Route::post('/cs-desk/panggil-ulang/{id}', [CsController::class, 'panggilUlang'])->name('cs.panggil_ulang');
     Route::post('/cs-desk/batal-atau-kembalikan/{id}', [CsController::class, 'batalAtauKembalikan'])->name('cs.batal_atau_kembalikan');
     Route::post('/cs-desk/selesaikan/{id}', [CsController::class, 'selesaikanTiket'])->name('cs.selesaikan');
     

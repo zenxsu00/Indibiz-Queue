@@ -6,19 +6,29 @@ use App\Models\User;
 use App\Models\Layanan;
 use App\Models\Pelanggan;
 use App\Models\TiketAntrian;
+use App\Models\HariLibur;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 
 class TiketController extends Controller
 {
     /**
-     * Memeriksa apakah ada CS yang sedang aktif dan bertugas di slot meja
+     * Memeriksa apakah operasional buka (Ada CS aktif & Bukan Hari Libur)
      */
     private function checkIsOperational(): bool
     {
+        $today = Carbon::today('Asia/Jakarta');
+
+        // Proteksi Hari Libur
+        $isLibur = HariLibur::whereDate('tanggal', $today)->exists();
+        if ($isLibur) {
+            return false;
+        }
+
         return User::where('is_active', true)
             ->whereNotNull('nomor_meja')
             ->where('nomor_meja', '!=', 0)
@@ -37,17 +47,15 @@ class TiketController extends Controller
     }
 
     /**
-     * Memproses Pengambilan Tiket Antrean Baru
+     * Memproses Pengambilan Tiket Antrean Baru (Safe Database Transaction)
      */
     public function store(Request $request): RedirectResponse
     {
-        // 1. RATE LIMITER: Maksimal 1 request per 5 detik dari IP device yang sama
+        // Rate limiter per IP device
         $executed = RateLimiter::attempt(
             'ambil-tiket-ip:' . $request->ip(),
             $perMinute = 1,
-            function() {
-                // Callback kosong
-            },
+            function() {},
             $decaySeconds = 5
         );
 
@@ -55,7 +63,6 @@ class TiketController extends Controller
             return back()->with('error', 'Harap tunggu 5 detik sebelum mengambil tiket antrean kembali.');
         }
 
-        // 2. Proteksi Operasional: Wajib ada CS aktif di meja
         if (!$this->checkIsOperational()) {
             return back()->with('error', 'Maaf, loket layanan saat ini sedang tutup / tidak beroperasi.');
         }
@@ -68,41 +75,44 @@ class TiketController extends Controller
             'alamat'       => 'nullable|string',
         ]);
 
-        $pelanggan = Pelanggan::firstOrCreate(
-            ['no_hp' => $request->no_hp],
-            [
+        return DB::transaction(function () use ($request) {
+            $pelanggan = Pelanggan::firstOrCreate(
+                ['no_hp' => $request->no_hp],
+                [
+                    'nama'   => $request->nama,
+                    'alamat' => $request->alamat,
+                ]
+            );
+
+            $pelanggan->update([
                 'nama'   => $request->nama,
-                'alamat' => $request->alamat,
-            ]
-        );
+                'alamat' => $request->alamat ?? $pelanggan->alamat,
+            ]);
 
-        $pelanggan->update([
-            'nama'   => $request->nama,
-            'alamat' => $request->alamat ?? $pelanggan->alamat,
-        ]);
+            $layanan = Layanan::findOrFail($request->layanan_id);
+            $today = Carbon::today('Asia/Jakarta');
 
-        $layanan = Layanan::findOrFail($request->layanan_id);
-        $today = Carbon::today('Asia/Jakarta');
+            // LOCK FOR UPDATE MENCEGAH NOMOR GANDA
+            $urutanHariIni = TiketAntrian::whereDate('waktu_dibuat', $today)
+                ->lockForUpdate()
+                ->count() + 1;
 
-        // HITUNG GLOBAL URUTAN HARI INI TANPA FILTER LAYANAN_ID
-        $urutanHariIni = TiketAntrian::whereDate('waktu_dibuat', $today)->count() + 1;
+            $nomorUrut = str_pad((string)$urutanHariIni, 3, '0', STR_PAD_LEFT);
+            $nomorAntrian = $layanan->kode_layanan . '-' . $nomorUrut;
+            $kodeTiket = $today->format('dmY') . '-' . $layanan->kode_layanan . '-' . $nomorUrut;
 
-        $nomorUrut = str_pad((string)$urutanHariIni, 3, '0', STR_PAD_LEFT);
-        $nomorAntrian = $layanan->kode_layanan . '-' . $nomorUrut;
+            $tiket = TiketAntrian::create([
+                'kode_tiket'     => $kodeTiket,
+                'nomor_antrian'  => $nomorAntrian,
+                'pelanggan_id'   => $pelanggan->id,
+                'layanan_id'     => $layanan->id,
+                'keluhan_awal'   => $request->keluhan_awal,
+                'status'         => 'Menunggu',
+                'waktu_dibuat'   => Carbon::now('Asia/Jakarta'),
+            ]);
 
-        $kodeTiket = $today->format('dmY') . '-' . $layanan->kode_layanan . '-' . $nomorUrut;
-
-        $tiket = TiketAntrian::create([
-            'kode_tiket'     => $kodeTiket,
-            'nomor_antrian'  => $nomorAntrian,
-            'pelanggan_id'   => $pelanggan->id,
-            'layanan_id'     => $layanan->id,
-            'keluhan_awal'   => $request->keluhan_awal,
-            'status'         => 'Menunggu',
-            'waktu_dibuat'   => Carbon::now('Asia/Jakarta'),
-        ]);
-
-        return redirect()->route('antrean.tiket', ['id' => $tiket->id]);
+            return redirect()->route('antrean.tiket', ['id' => $tiket->id]);
+        });
     }
 
     /**
@@ -114,7 +124,6 @@ class TiketController extends Controller
 
         $sisaAntrean = 0;
         if ($tiket->status === 'Menunggu') {
-            // Sisa antrean dihitung berdasarkan urutan global sebelum tiket ini
             $sisaAntrean = TiketAntrian::where('status', 'Menunggu')
                 ->where('id', '<', $tiket->id)
                 ->whereDate('waktu_dibuat', Carbon::today('Asia/Jakarta'))

@@ -16,6 +16,7 @@ class MasterMeja extends Model
     ];
 
     protected $casts = [
+        'nomor_meja'   => 'integer',
         'is_available' => 'boolean',
     ];
 }

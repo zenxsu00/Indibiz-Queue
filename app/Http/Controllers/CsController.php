@@ -10,6 +10,7 @@ use App\Models\SubLayanan;
 use App\Models\CsActiveLog;
 use App\Events\TiketDipanggil;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -382,7 +383,6 @@ class CsController extends Controller
         }
     }
 
-    // RECALL AUDIO PANGGILAN (RETURN JSON RESPONS)
     public function panggilUlang(int $id)
     {
         if (!$this->checkValidMeja()) {
@@ -416,26 +416,29 @@ class CsController extends Controller
 
         /** @var User $user */
         $user = Auth::user();
-        $tiket = TiketAntrian::findOrFail($id);
 
-        if (($tiket->jumlah_dipanggil ?? 1) >= 2) {
+        return DB::transaction(function () use ($id, $user) {
+            $tiket = TiketAntrian::where('id', $id)->lockForUpdate()->firstOrFail();
+
+            if (($tiket->jumlah_dipanggil ?? 1) >= 2) {
+                $tiket->update([
+                    'status'  => 'Batal',
+                    'user_id' => $user->id
+                ]);
+
+                $this->safeBroadcast($tiket);
+                return redirect()->route('cs.index')->with('success', "Tiket {$tiket->nomor_antrian} dibatalkan karena tidak hadir 2x.");
+            }
+
             $tiket->update([
-                'status'  => 'Batal',
-                'user_id' => $user->id
+                'status'       => 'Menunggu',
+                'user_id'      => null,
+                'waktu_dibuat' => Carbon::now('Asia/Jakarta')
             ]);
 
             $this->safeBroadcast($tiket);
-            return redirect()->route('cs.index')->with('success', "Tiket {$tiket->nomor_antrian} dibatalkan karena tidak hadir 2x.");
-        }
-
-        $tiket->update([
-            'status'       => 'Menunggu',
-            'user_id'      => null,
-            'waktu_dibuat' => Carbon::now('Asia/Jakarta')
-        ]);
-
-        $this->safeBroadcast($tiket);
-        return redirect()->route('cs.index')->with('success', "Tiket {$tiket->nomor_antrian} dipindahkan ke urutan antrean paling belakang untuk panggilan ke-2.");
+            return redirect()->route('cs.index')->with('success', "Tiket {$tiket->nomor_antrian} dipindahkan ke urutan antrean paling belakang untuk panggilan ke-2.");
+        });
     }
 
     public function selesaikanTiket(Request $request, int $id)
@@ -453,7 +456,13 @@ class CsController extends Controller
             'email_pelanggan'    => 'nullable|email|max:255',
             'no_indibiz'         => 'nullable|string|max:255',
             'layanan_id'         => 'nullable|exists:layanans,id',
-            'sub_layanan_id'     => 'nullable|exists:sub_layanans,id',
+            'sub_layanan_id'     => [
+                'nullable',
+                Rule::exists('sub_layanans', 'id')->where(function ($query) use ($request, $tiket) {
+                    $layananId = $request->layanan_id ?? $tiket->layanan_id;
+                    $query->where('layanan_id', $layananId);
+                }),
+            ],
             'keluhan_final'      => 'nullable|string',
             'catatan_cs'         => 'nullable|string',
             'metode_pembayaran'  => 'nullable|string',
@@ -470,9 +479,6 @@ class CsController extends Controller
             ]);
         }
 
-        $rawCurated = $request->input('is_curated', 1);
-        $curatedVal = ($rawCurated === '1' || $rawCurated === 1 || $rawCurated === true || $rawCurated === 'true') ? 1 : 0;
-
         $now = Carbon::now('Asia/Jakarta');
         $tiket->update([
             'layanan_id'           => $request->layanan_id ?? $tiket->layanan_id,
@@ -485,7 +491,7 @@ class CsController extends Controller
             'bukti_pembayaran'     => $request->bukti_pembayaran,
             'waktu_selesai'        => $now,
             'waktu_selesai_konsul' => $now,
-            'is_curated'           => $curatedVal,
+            'is_curated'           => $request->boolean('is_curated', true),
         ]);
 
         $this->safeBroadcast($tiket);
@@ -515,15 +521,12 @@ class CsController extends Controller
             ]);
         }
 
-        $rawCurated = $request->input('is_curated');
-        $curatedVal = ($rawCurated === '1' || $rawCurated === 1 || $rawCurated === true || $rawCurated === 'true') ? 1 : 0;
-
         $tiket->update([
             'layanan_id'     => $request->layanan_id ?? $tiket->layanan_id,
             'sub_layanan_id' => $request->sub_layanan_id ?: null,
             'keluhan_final'  => $request->keluhan_final,
             'catatan_cs'     => $request->catatan_cs,
-            'is_curated'     => $curatedVal,
+            'is_curated'     => $request->boolean('is_curated', true),
         ]);
 
         if ($request->wantsJson()) {

@@ -43,6 +43,8 @@ class TiketAntrian extends Model
         'waktu_mulai_konsul'   => 'datetime',
         'waktu_selesai'        => 'datetime',
         'waktu_selesai_konsul' => 'datetime',
+        'jumlah_dipanggil'     => 'integer',
+        'nominal_pembayaran'   => 'decimal:2',
         'is_curated'           => 'boolean',
     ];
 
