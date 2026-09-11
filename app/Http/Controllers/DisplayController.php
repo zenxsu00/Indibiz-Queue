@@ -19,56 +19,63 @@ class DisplayController extends Controller
 
     public function getDataJson(Request $request)
     {
-        $today = Carbon::today('Asia/Jakarta');
+        try {
+            $today = Carbon::today('Asia/Jakarta');
 
-        // PERBAIKAN BUG: Urutkan berdasarkan waktu_dipanggil paling akhir agar trigger Panggil Ulang terbaca
-        $sedangDipanggil = TiketAntrian::with(['cs', 'layanan'])
-            ->where('status', 'Diproses')
-            ->whereDate('waktu_dibuat', $today)
-            ->orderBy('waktu_dipanggil', 'desc')
-            ->get();
+            // Ambil tiket yang sedang diproses, urutkan berdasarkan waktu dipanggil/diproses
+            $sedangDipanggil = TiketAntrian::with(['cs', 'layanan'])
+                ->where('status', 'Diproses')
+                ->whereDate('waktu_dibuat', $today)
+                ->orderBy('updated_at', 'desc')
+                ->get();
 
-        $antreanMenunggu = TiketAntrian::with(['layanan', 'pelanggan'])
-            ->where('status', 'Menunggu')
-            ->whereDate('waktu_dibuat', $today)
-            ->oldest('id')
-            ->take(5)
-            ->get();
+            $antreanMenunggu = TiketAntrian::with(['layanan', 'pelanggan'])
+                ->where('status', 'Menunggu')
+                ->whereDate('waktu_dibuat', $today)
+                ->oldest('id')
+                ->take(5)
+                ->get();
 
-        // Ambil seluruh master meja yang tersedia untuk render dinamis
-        $masterMeja = MasterMeja::where('is_available', true)->orderBy('nomor_meja', 'asc')->get();
+            // Ambil seluruh master meja yang tersedia
+            $masterMeja = MasterMeja::where('is_available', true)->orderBy('nomor_meja', 'asc')->get();
 
-        // Ambil CS yang sedang aktif/online menduduki meja
-        $activeUsers = User::where('is_active', true)
-            ->whereNotNull('nomor_meja')
-            ->where('nomor_meja', '!=', 0)
-            ->get()
-            ->keyBy('nomor_meja');
+            // Ambil CS yang sedang aktif/online menduduki meja
+            $activeUsers = User::where('is_active', true)
+                ->whereNotNull('nomor_meja')
+                ->where('nomor_meja', '!=', 0)
+                ->get()
+                ->keyBy('nomor_meja');
 
-        $mejaList = $masterMeja->map(function ($meja) use ($activeUsers, $sedangDipanggil) {
-            $userCS = $activeUsers->get($meja->nomor_meja);
-            $tiketAktif = $sedangDipanggil->first(function ($tiket) use ($meja) {
-                return $tiket->cs && $tiket->cs->nomor_meja == $meja->nomor_meja;
+            $mejaList = $masterMeja->map(function ($meja) use ($activeUsers, $sedangDipanggil) {
+                $userCS = $activeUsers->get($meja->nomor_meja);
+                $tiketAktif = $sedangDipanggil->first(function ($tiket) use ($meja) {
+                    return $tiket->cs && $tiket->cs->nomor_meja == $meja->nomor_meja;
+                });
+
+                return [
+                    'nomor_meja'      => $meja->nomor_meja,
+                    'nama_meja'       => $meja->nama_meja,
+                    'is_occupied'     => !is_null($userCS),
+                    'nama_cs'         => $userCS ? $userCS->nama_lengkap : null,
+                    'tiket_aktif'     => $tiketAktif ? $tiketAktif->nomor_antrian : null,
+                    'nama_layanan'    => $tiketAktif && $tiketAktif->layanan ? $tiketAktif->layanan->nama_layanan : null,
+                    'is_calling'      => !is_null($tiketAktif),
+                    'waktu_diproses'  => $tiketAktif ? (string) $tiketAktif->waktu_diproses : null,
+                    'waktu_dipanggil' => $tiketAktif ? (string) ($tiketAktif->waktu_dipanggil ?? $tiketAktif->waktu_diproses ?? $tiketAktif->updated_at) : null,
+                ];
             });
 
-            return [
-                'nomor_meja'      => $meja->nomor_meja,
-                'nama_meja'       => $meja->nama_meja,
-                'is_occupied'     => !is_null($userCS),
-                'nama_cs'         => $userCS ? $userCS->nama_lengkap : null,
-                'tiket_aktif'     => $tiketAktif ? $tiketAktif->nomor_antrian : null,
-                'nama_layanan'    => $tiketAktif && $tiketAktif->layanan ? $tiketAktif->layanan->nama_layanan : null,
-                'is_calling'      => !is_null($tiketAktif),
-                'waktu_diproses'  => $tiketAktif ? $tiketAktif->waktu_diproses : null,
-                'waktu_dipanggil' => $tiketAktif ? $tiketAktif->waktu_dipanggil : null,
-            ];
-        });
-
-        return response()->json([
-            'sedangDipanggil' => $sedangDipanggil,
-            'antreanMenunggu' => $antreanMenunggu,
-            'mejaList'        => $mejaList,
-        ]);
+            return response()->json([
+                'sedangDipanggil' => $sedangDipanggil,
+                'antreanMenunggu' => $antreanMenunggu,
+                'mejaList'        => $mejaList,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => true,
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function ttsElevenLabs(Request $request)
