@@ -35,12 +35,12 @@
         </div>
 
         <div class="flex items-center gap-3">
-            <!-- WIDGET RATA-RATA DURASI SERVIS -->
+            <!-- WIDGET RATA-RATA DURASI SERVIS REALTIME -->
             <div class="flex items-center gap-2 bg-slate-900/90 border border-slate-800 px-3 py-1 rounded-xl">
                 <span class="material-symbols-outlined text-amber-400 text-sm">avg_time</span>
                 <div>
                     <span class="text-[8px] font-bold text-slate-400 uppercase block leading-none">RATA-RATA PROSES</span>
-                    <span id="label-avg-durasi" class="text-xs font-black text-amber-400 leading-none">± 10 Mnt / Tiket</span>
+                    <span id="label-avg-durasi" class="text-xs font-black text-amber-400 leading-none">Belum Ada Data</span>
                 </div>
             </div>
 
@@ -115,7 +115,7 @@
                 </div>
             </div>
 
-            <!-- STATUS MEJA PELAYANAN (BARIS BWAH - DINAMIS) -->
+            <!-- STATUS MEJA PELAYANAN (BARIS BWAH - DINAMIS DENGAN STOPWATCH LIVE) -->
             <div class="bg-[#0D1322] border border-slate-800/80 rounded-2xl p-2.5 flex flex-col gap-1.5 shrink-0">
                 <div class="flex items-center justify-between text-[10px] font-bold border-b border-slate-800 pb-1">
                     <span class="text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
@@ -172,7 +172,7 @@
         </span>
     </footer>
 
-    <!-- SCRIPT REALTIME & SPEECH SYNTHESIS -->
+    <!-- SCRIPT REALTIME, SPEECH SYNTHESIS & STOPWATCH TV -->
     <script>
         var lastCallUniqueKey = '';
         var audioCtx = null;
@@ -357,9 +357,13 @@
             fetch('{{ url("/api/display-antrean-data") }}')
                 .then(response => response.json())
                 .then(data => {
-                    if (data.avgDurasiMenit) {
-                        document.getElementById('label-avg-durasi').innerText = '± ' + data.avgDurasiMenit + ' Mnt / Tiket';
+                    var avgLabel = document.getElementById('label-avg-durasi');
+                    if (data.avgDurasiMenit !== null && data.avgDurasiMenit !== undefined) {
+                        avgLabel.innerText = '± ' + data.avgDurasiMenit + ' Mnt / Tiket';
+                    } else {
+                        avgLabel.innerText = 'Belum Ada Data';
                     }
+
                     renderSedangDipanggil(data.sedangDipanggil);
                     renderMejaGridDinamis(data.mejaList);
                     renderAntreanMenunggu(data.antreanMenunggu);
@@ -409,15 +413,24 @@
 
                 if (meja.is_occupied) {
                     if (meja.is_calling) {
+                        // FIX: Fallback berantai waktu mulai agar Stopwatch dipastikan muncul & berjalan
+                        var startTimeVal = meja.waktu_mulai_konsul || meja.waktu_diproses || meja.waktu_dipanggil || (new Date().toISOString());
+
                         html += `
                             <div class="bg-slate-900/90 border border-red-500/60 rounded-xl p-2 flex flex-col justify-between shadow-[0_0_15px_rgba(238,46,36,0.15)] transition-all">
                                 <div class="flex items-center justify-between text-[9px]">
                                     <span class="font-black text-white uppercase">${meja.nama_meja}</span>
                                     <span class="bg-red-500/20 text-red-400 border border-red-500/30 font-black px-1.5 py-0.5 rounded text-[8px] uppercase animate-pulse">DIPANGGIL</span>
                                 </div>
-                                <div class="my-0.5">
-                                    <span class="text-xl font-black text-white font-mono tracking-tight">${meja.tiket_aktif}</span>
-                                    <p class="text-[8px] text-slate-300 font-medium truncate">${meja.nama_layanan || ''}</p>
+                                <div class="my-1 flex items-center justify-between">
+                                    <div>
+                                        <span class="text-xl font-black text-white font-mono tracking-tight">${meja.tiket_aktif}</span>
+                                        <p class="text-[8px] text-slate-300 font-medium truncate max-w-[100px]">${meja.nama_layanan || ''}</p>
+                                    </div>
+                                    <div class="text-right bg-slate-950/80 px-2 py-1 rounded-lg border border-slate-800">
+                                        <span class="text-[7px] text-slate-400 font-bold block uppercase leading-none mb-0.5">DURASI</span>
+                                        <span id="timer-meja-${meja.nomor_meja}" data-start="${startTimeVal}" class="font-mono text-xs font-black text-amber-400 leading-none">00:00</span>
+                                    </div>
                                 </div>
                                 <div class="text-[8px] text-slate-400 truncate border-t border-slate-800 pt-0.5 flex justify-between">
                                     <span>Petugas: <strong class="text-white">${meja.nama_cs}</strong></span>
@@ -462,7 +475,29 @@
             });
 
             gridElem.innerHTML = html;
+            updateMejaTimers();
         }
+
+        function updateMejaTimers() {
+            var timerElems = document.querySelectorAll('[id^="timer-meja-"]');
+            timerElems.forEach(function(elem) {
+                var startStr = elem.getAttribute('data-start');
+                if (!startStr) return;
+
+                var startTime = new Date(startStr.replace(/-/g, "/")).getTime();
+                var now = new Date().getTime();
+                var diffSec = Math.floor((now - startTime) / 1000);
+
+                if (isNaN(diffSec) || diffSec < 0) diffSec = 0;
+
+                var minutes = Math.floor(diffSec / 60);
+                var seconds = diffSec % 60;
+
+                elem.innerText = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+            });
+        }
+
+        setInterval(updateMejaTimers, 1000);
 
         function renderAntreanMenunggu(listMenunggu) {
             var container = document.getElementById('box-antrean-menunggu');

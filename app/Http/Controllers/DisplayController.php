@@ -49,13 +49,11 @@ class DisplayController extends Controller
             foreach ($tiketSelesaiHariIni as $t) {
                 $mulai = Carbon::parse($t->waktu_mulai_konsul);
                 $selesai = Carbon::parse($t->waktu_selesai_konsul);
-                // PERBAIKAN: Menggunakan tanda panah (->) bukan titik dua (::)
                 $totalDurasiMenit += $mulai->diffInMinutes($selesai);
             }
 
-            // Default estimasi per tiket jika belum ada histori hari ini = 10 menit
-            $avgDurasiMenit = $jumlahTiketSelesai > 0 ? round($totalDurasiMenit / $jumlahTiketSelesai) : 10;
-            if ($avgDurasiMenit < 1) $avgDurasiMenit = 5;
+            // Jika belum ada data transaksi hari ini, set null/0 agar UI tidak menampilkan angka bohong
+            $avgDurasiMenit = $jumlahTiketSelesai > 0 ? (int) round($totalDurasiMenit / $jumlahTiketSelesai) : null;
 
             // Ambil seluruh master meja yang tersedia
             $masterMeja = MasterMeja::where('is_available', true)->orderBy('nomor_meja', 'asc')->get();
@@ -89,9 +87,10 @@ class DisplayController extends Controller
 
             // HITUNG ESTIMASI PENUMPUKAN WAKTU TUNGGU UNTUK ANTREAN BERIKUTNYA
             $jumlahCSAktif = max(1, $activeUsers->count());
-            $listAntreanMenungguWithEstimasi = $antreanMenunggu->map(function ($item, $index) use ($avgDurasiMenit, $jumlahCSAktif) {
-                // Teori Antrean: Waktu tunggu = (Urutan antrean / Jumlah CS Aktif) * Rata-rata durasi
-                $estimasiMenit = ceil(($index + 1) / $jumlahCSAktif) * $avgDurasiMenit;
+            $durasiAcuan = $avgDurasiMenit ?? 10; // Untuk estimasi jika antrean kosong/baru
+            
+            $listAntreanMenungguWithEstimasi = $antreanMenunggu->map(function ($item, $index) use ($durasiAcuan, $jumlahCSAktif) {
+                $estimasiMenit = ceil(($index + 1) / $jumlahCSAktif) * $durasiAcuan;
                 $item->estimasi_tunggu_menit = $estimasiMenit;
                 return $item;
             });
