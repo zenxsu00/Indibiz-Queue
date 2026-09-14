@@ -599,6 +599,50 @@
 
     </main>
 
+    <!-- MODAL POPUP: DETAIL TIKET ANTREAN -->
+    <div x-show="showModalDetail" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-gray-100 my-8" @click.away="showModalDetail = false">
+            <div class="flex justify-between items-center border-b pb-3 border-gray-100">
+                <h3 class="text-base font-black text-[#181C20] flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[#00509E]">info</span>
+                    Detail Tiket Antrean <span x-text="selectedTiket ? selectedTiket.nomor_antrian : ''" class="text-[#00509E]"></span>
+                </h3>
+                <button @click="showModalDetail = false" class="text-gray-400 hover:text-gray-600"><span class="material-symbols-outlined">close</span></button>
+            </div>
+
+            <template x-if="selectedTiket">
+                <div class="space-y-3 text-xs">
+                    <div class="bg-gray-50 p-3 rounded-xl border border-gray-200 space-y-1">
+                        <span class="text-[10px] font-black text-[#00509E] uppercase">Informasi Pelanggan</span>
+                        <p class="font-bold text-gray-800 text-sm" x-text="selectedTiket.pelanggan ? selectedTiket.pelanggan.nama : '-'"></p>
+                        <p class="text-gray-600" x-text="'No HP: ' + (selectedTiket.pelanggan ? selectedTiket.pelanggan.no_hp : '-')"></p>
+                        <p class="text-gray-600" x-text="'Email: ' + (selectedTiket.pelanggan ? selectedTiket.pelanggan.email : '-')"></p>
+                        <p class="text-gray-600" x-text="'Indibiz ID: ' + (selectedTiket.pelanggan ? selectedTiket.pelanggan.no_indibiz : '-')"></p>
+                    </div>
+
+                    <div class="bg-blue-50/50 p-3 rounded-xl border border-blue-100 space-y-1">
+                        <span class="text-[10px] font-black text-[#00509E] uppercase">Layanan & Penanganan</span>
+                        <p class="font-bold text-gray-800" x-text="'Kategori: ' + (selectedTiket.layanan ? selectedTiket.layanan.nama_layanan : '-')"></p>
+                        <p class="text-gray-600" x-text="'Sub-Layanan: ' + (selectedTiket.sub_layanan ? selectedTiket.sub_layanan.nama_sub_layanan : '-')"></p>
+                        <p class="text-gray-600" x-text="'Petugas CS: ' + (selectedTiket.cs ? selectedTiket.cs.nama_lengkap + ' (Meja ' + selectedTiket.cs.nomor_meja + ')' : '-')"></p>
+                    </div>
+
+                    <div class="space-y-1">
+                        <span class="font-bold text-gray-700 block">Keluhan / Catatan</span>
+                        <p class="p-2.5 bg-yellow-50 rounded-lg border border-yellow-200 italic" x-text="'Awal: ' + (selectedTiket.keluhan_awal || '-')"></p>
+                        <p class="p-2.5 bg-gray-50 rounded-lg border border-gray-200 italic" x-text="'Final: ' + (selectedTiket.keluhan_final || '-')"></p>
+                        <p class="p-2.5 bg-gray-50 rounded-lg border border-gray-200 italic" x-text="'Catatan CS: ' + (selectedTiket.catatan_cs || '-')"></p>
+                    </div>
+
+                    <div class="pt-2 border-t flex justify-between items-center text-gray-500 font-semibold">
+                        <span x-text="'Metode: ' + (selectedTiket.metode_pembayaran || 'Tanpa Transaksi')"></span>
+                        <span class="font-black text-[#181C20] text-sm" x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(selectedTiket.nominal_pembayaran || 0)"></span>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
     <!-- MODAL POPUP: KUSTOMISASI CETAK PDF INTERAKTIF -->
     <div x-show="showModalPdf" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-gray-100" @click.away="showModalPdf = false">
@@ -679,7 +723,7 @@
         </div>
     </div>
 
-    <!-- MODAL CS & MEJA & DETAIL TIKET -->
+    <!-- MODAL CS & MEJA -->
     <div x-show="showModalCS" x-cloak class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalCS = false">
             <h3 class="text-base font-black">Tambah Petugas CS Baru</h3>
@@ -689,6 +733,18 @@
                 <div><label class="font-bold block mb-1">Username</label><input type="text" name="username" required class="w-full p-2.5 border rounded-xl"></div>
                 <div><label class="font-bold block mb-1">Password</label><input type="password" name="password" required class="w-full p-2.5 border rounded-xl"></div>
                 <div class="flex justify-end gap-2"><button type="button" @click="showModalCS = false" class="px-4 py-2 bg-gray-100 rounded-xl font-bold">Batal</button><button type="submit" class="px-5 py-2 bg-[#00509E] text-white font-bold rounded-xl">Simpan</button></div>
+            </form>
+        </div>
+    </div>
+
+    <div x-show="showModalMeja" x-cloak class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalMeja = false">
+            <h3 class="text-base font-black">Tambah Slot Meja Fisik</h3>
+            <form action="{{ route('admin.meja.store') }}" method="POST" class="space-y-3 text-xs">
+                @csrf
+                <div><label class="font-bold block mb-1">Nomor Meja</label><input type="number" name="nomor_meja" required class="w-full p-2.5 border rounded-xl"></div>
+                <div><label class="font-bold block mb-1">Nama Meja / Loket</label><input type="text" name="nama_meja" required placeholder="Contoh: Meja Loket 1" class="w-full p-2.5 border rounded-xl"></div>
+                <div class="flex justify-end gap-2"><button type="button" @click="showModalMeja = false" class="px-4 py-2 bg-gray-100 rounded-xl font-bold">Batal</button><button type="submit" class="px-5 py-2 bg-emerald-600 text-white font-bold rounded-xl">Simpan Slot Meja</button></div>
             </form>
         </div>
     </div>

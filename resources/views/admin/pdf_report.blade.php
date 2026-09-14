@@ -15,7 +15,7 @@
         .total-box { margin-top: 15px; text-align: right; font-size: 12px; font-weight: bold; }
     </style>
 </head>
-<body onload="window.print()">
+<body>
 
     <div class="header">
         <h2>INDIBIZ SERVICE DESK - LAPORAN ANTREAN & TRANSAKSI</h2>
