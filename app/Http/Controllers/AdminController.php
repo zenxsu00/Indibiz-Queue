@@ -259,7 +259,6 @@ class AdminController extends Controller
         $startDateOut = $startDate ? $startDate : Carbon::today('Asia/Jakarta')->startOfDay();
         $endDateOut   = $endDate ? $endDate : Carbon::today('Asia/Jakarta')->endOfDay();
 
-        // DIPASTIKAN RETURN VIEW KE admin.index KEMBALI
         return view('admin.index', [
             'totalHariIni'         => $totalHariIni,
             'menunggu'             => $menunggu,
