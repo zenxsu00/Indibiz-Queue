@@ -15,7 +15,7 @@ class AdminController extends Controller
 {
     public function index(Request $request)
     {
-        $period = $request->get('period', 'today'); // Default ke today jika pertama kali buka
+        $period = $request->get('period', 'all'); // Default ke all time
         $layananId = $request->layanan_id;
 
         $startDate = null;
@@ -58,7 +58,7 @@ class AdminController extends Controller
 
         $query = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan', 'cs']);
 
-        // Hanya terapkan filter tanggal jika BUKAN "all"
+        // Hanya terapkan filter tanggal jika BUKAN "all" (ada nilai $startDate dan $endDate)
         if ($startDate && $endDate) {
             $query->whereBetween('waktu_dibuat', [$startDate, $endDate]);
         }
@@ -72,16 +72,14 @@ class AdminController extends Controller
         $totalHariIni  = $allFilteredTickets->count();
         $menunggu      = $allFilteredTickets->where('status', 'Menunggu')->count();
 
-        // -------------------------------------------------------------
-        // 1. HITUNG RATA-RATA DURASI LAYANAN CS (PERIODE FILTER)
-        // -------------------------------------------------------------
+        // 1. HITUNG RATA-RATA DURASI LAYANAN CS
         $tiketSelesaiFilter = $allFilteredTickets->where('status', 'Selesai')
-            ->filter(fn($t) => !empty($t->waktu_mulai_konsul ?? $t->waktu_diproses) && !empty($t->waktu_selesai_konsul ?? $t->waktu_selesai));
+            ->filter(fn($t) => !empty($t->waktu_mulai_konsul ?? $t->waktu_dipproses) && !empty($t->waktu_selesai_konsul ?? $t->waktu_selesai));
 
         if ($tiketSelesaiFilter->count() > 0) {
             $totalDetikLayanan = 0;
             foreach ($tiketSelesaiFilter as $t) {
-                $mulai = Carbon::parse($t->waktu_mulai_konsul ?? $t->waktu_diproses, 'Asia/Jakarta');
+                $mulai = Carbon::parse($t->waktu_mulai_konsul ?? $t->waktu_dipproses, 'Asia/Jakarta');
                 $selesai = Carbon::parse($t->waktu_selesai_konsul ?? $t->waktu_selesai, 'Asia/Jakarta');
                 $totalDetikLayanan += $mulai->diffInSeconds($selesai);
             }
@@ -93,17 +91,15 @@ class AdminController extends Controller
             $avgDurasiLayananText = "Belum Ada Data";
         }
 
-        // -------------------------------------------------------------
-        // 2. HITUNG RATA-RATA WAKTU TUNGGU DIPANGGIL (PERIODE FILTER)
-        // -------------------------------------------------------------
+        // 2. HITUNG RATA-RATA WAKTU TUNGGU DIPANGGIL
         $tiketDipanggilFilter = $allFilteredTickets->whereIn('status', ['Diproses', 'Selesai'])
-            ->filter(fn($t) => !empty($t->waktu_dibuat) && !empty($t->waktu_dipanggil ?? $t->waktu_diproses));
+            ->filter(fn($t) => !empty($t->waktu_dibuat) && !empty($t->waktu_dipanggil ?? $t->waktu_dipproses));
 
         if ($tiketDipanggilFilter->count() > 0) {
             $totalDetikTunggu = 0;
             foreach ($tiketDipanggilFilter as $td) {
                 $dibuat = Carbon::parse($td->waktu_dibuat, 'Asia/Jakarta');
-                $dipanggil = Carbon::parse($td->waktu_dipanggil ?? $td->waktu_diproses, 'Asia/Jakarta');
+                $dipanggil = Carbon::parse($td->waktu_dipanggil ?? $td->waktu_dipproses, 'Asia/Jakarta');
                 $totalDetikTunggu += $dibuat->diffInSeconds($dipanggil);
             }
             $avgDetikTunggu = round($totalDetikTunggu / $tiketDipanggilFilter->count());
@@ -116,7 +112,7 @@ class AdminController extends Controller
 
         $avgSla = $avgDurasiLayananText;
 
-        // Omset & Riwayat Bulanan
+        // Omset & Riwayat Bulanan (30 Hari Terakhir)
         $satuBulanLalu = Carbon::now('Asia/Jakarta')->subDays(30)->startOfDay();
         $sekarang      = Carbon::now('Asia/Jakarta')->endOfDay();
 
@@ -135,7 +131,7 @@ class AdminController extends Controller
             $totalDetikHari = 0;
             $countSlaHari = 0;
             foreach ($tiketHariSelesai as $th) {
-                $m = $th->waktu_mulai_konsul ?? $th->waktu_diproses;
+                $m = $th->waktu_mulai_konsul ?? $th->waktu_dipproses;
                 $s = $th->waktu_selesai_konsul ?? $th->waktu_selesai;
                 if ($m && $s) {
                     $totalDetikHari += Carbon::parse($m, 'Asia/Jakarta')->diffInSeconds(Carbon::parse($s, 'Asia/Jakarta'));
@@ -219,9 +215,9 @@ class AdminController extends Controller
         $layanans   = Layanan::with('subLayanans')->get();
         $totalOmset = $allFilteredTickets->where('status', 'Selesai')->sum('nominal_pembayaran');
 
-        // Untuk passing tanggal ke view/PDF
-        $startDateOut = $startDate ?? Carbon::minValue();
-        $endDateOut   = $endDate ?? Carbon::now('Asia/Jakarta');
+        // PERBAIKAN: Gunakan Carbon aman untuk view agar tidak melempar 500 error
+        $startDateOut = $startDate ? $startDate : Carbon::today('Asia/Jakarta')->startOfDay();
+        $endDateOut   = $endDate ? $endDate : Carbon::today('Asia/Jakarta')->endOfDay();
 
         return view('admin.index', [
             'totalHariIni'         => $totalHariIni,
@@ -306,8 +302,8 @@ class AdminController extends Controller
             $endDate   = Carbon::parse($request->end_date, 'Asia/Jakarta')->endOfDay();
             $query->whereBetween('waktu_dibuat', [$startDate, $endDate]);
         } else {
-            $startDate = Carbon::minValue();
-            $endDate   = Carbon::now('Asia/Jakarta');
+            $startDate = Carbon::today('Asia/Jakarta')->startOfDay();
+            $endDate   = Carbon::today('Asia/Jakarta')->endOfDay();
         }
 
         if ($layananId) {
