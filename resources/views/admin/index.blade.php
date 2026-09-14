@@ -13,6 +13,7 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: #F1F4F9; border-radius: 8px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #C4C7CC; border-radius: 8px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #00509E; }
+        [x-cloak] { display: none !important; }
     </style>
 </head>
 <body class="bg-[#F8F9FA] min-h-screen font-sans text-[#181C20] flex flex-col lg:flex-row antialiased overflow-x-hidden selection:bg-[#EE2E24] selection:text-white" 
@@ -25,7 +26,9 @@
           showModalSubLayanan: false,
           showModalDetail: false, 
           selectedTiket: null,
-          selectedPeriod: '{{ request('period', 'all') }}'
+          selectedPeriod: '{{ request('period', 'all') }}',
+          selectedLayananId: '{{ $layanans->first()->id ?? '' }}',
+          selectedLayananNama: '{{ $layanans->first()->nama_layanan ?? '' }}'
       }">
 
     <!-- HEADER MOBILE -->
@@ -248,35 +251,51 @@
 
         <!-- TAB 1: OPERATIONS -->
         <div x-show="activeTab === 'operations'" class="space-y-6">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="bg-white border border-[#E0E3E8] rounded-2xl p-5 shadow-sm relative overflow-hidden">
+            
+            <!-- 5 CARDS METRIK UTAMA & ESTIMASI SINKRON TV -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+                <!-- METRIK 1: TOTAL ANTREAN -->
+                <div class="bg-white border border-[#E0E3E8] rounded-2xl p-4 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1.5 bg-[#00509E]"></div>
-                    <span class="text-[10px] text-[#5D3F3B] font-extrabold uppercase tracking-wider block mb-2">Total Antrean</span>
-                    <span class="text-3xl font-black text-[#181C20]">{{ number_format($totalHariIni) }}</span>
+                    <span class="text-[10px] text-[#5D3F3B] font-extrabold uppercase tracking-wider block mb-1.5">Total Antrean</span>
+                    <span class="text-2xl lg:text-3xl font-black text-[#181C20]">{{ number_format($totalHariIni) }}</span>
                 </div>
 
-                <div class="bg-white border border-[#E0E3E8] rounded-2xl p-5 shadow-sm relative overflow-hidden">
+                <!-- METRIK 2: SEDANG MENUNGGU -->
+                <div class="bg-white border border-[#E0E3E8] rounded-2xl p-4 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1.5 bg-amber-500"></div>
-                    <span class="text-[10px] text-[#5D3F3B] font-extrabold uppercase tracking-wider block mb-2">Sedang Menunggu</span>
-                    <span class="text-3xl font-black text-[#181C20]">{{ number_format($menunggu) }}</span>
+                    <span class="text-[10px] text-[#5D3F3B] font-extrabold uppercase tracking-wider block mb-1.5">Sedang Menunggu</span>
+                    <span class="text-2xl lg:text-3xl font-black text-[#181C20]">{{ number_format($menunggu) }}</span>
                 </div>
 
-                <div class="bg-white border border-[#E0E3E8] rounded-2xl p-5 shadow-sm relative overflow-hidden">
+                <!-- METRIK 3: RATA-RATA WAKTU TUNGGU DIPANGGIL (SINKRON TV) -->
+                <div class="bg-white border border-[#E0E3E8] rounded-2xl p-4 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1.5 bg-blue-500"></div>
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[9px] text-[#5D3F3B] font-extrabold uppercase tracking-wider">Avg Waktu Tunggu</span>
+                        <span class="text-[8px] bg-blue-100 text-blue-800 font-black px-1 py-0.5 rounded">TV Display</span>
+                    </div>
+                    <span class="text-2xl font-black text-blue-600">{{ $avgWaktuTungguText }}</span>
+                </div>
+
+                <!-- METRIK 4: RATA-RATA DURASI LAYANAN CS (SINKRON TV) -->
+                <div class="bg-white border border-[#E0E3E8] rounded-2xl p-4 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1.5 bg-emerald-500"></div>
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-[10px] text-[#5D3F3B] font-extrabold uppercase tracking-wider">Rata-Rata SLA</span>
-                        <span class="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">Periode Filter</span>
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[9px] text-[#5D3F3B] font-extrabold uppercase tracking-wider">Avg Durasi CS</span>
+                        <span class="text-[8px] bg-emerald-100 text-emerald-800 font-black px-1 py-0.5 rounded">SLA CS</span>
                     </div>
-                    <span class="text-3xl font-black text-[#181C20]">{{ $avgSla }}</span>
+                    <span class="text-2xl font-black text-emerald-600">{{ $avgDurasiLayananText }}</span>
                 </div>
 
-                <div class="bg-white border border-[#E0E3E8] rounded-2xl p-5 shadow-sm relative overflow-hidden">
+                <!-- METRIK 5: TOTAL OMSET LOKET -->
+                <div class="bg-white border border-[#E0E3E8] rounded-2xl p-4 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1.5 bg-purple-600"></div>
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-[10px] text-[#5D3F3B] font-extrabold uppercase tracking-wider">Total Omset Loket</span>
-                        <span class="text-[9px] bg-purple-100 text-purple-800 font-bold px-1.5 py-0.5 rounded">Periode Filter</span>
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[9px] text-[#5D3F3B] font-extrabold uppercase tracking-wider">Total Omset</span>
+                        <span class="text-[8px] bg-purple-100 text-purple-800 font-black px-1 py-0.5 rounded">Omset</span>
                     </div>
-                    <span class="text-xl font-black text-[#00509E]">Rp {{ number_format($totalOmset, 0, ',', '.') }}</span>
+                    <span class="text-lg lg:text-xl font-black text-[#00509E]">Rp {{ number_format($totalOmset, 0, ',', '.') }}</span>
                 </div>
             </div>
 
@@ -318,7 +337,7 @@
                                     <td class="p-3 font-bold">{{ $tiket->cs ? $tiket->cs->nama_lengkap . ' (M'.$tiket->cs->nomor_meja.')' : '-' }}</td>
                                     <td class="p-3">
                                         <span class="text-[9px] px-2 py-0.5 rounded-full font-black {{ $tiket->is_curated ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
-                                            {{ $tiket->is_curated ? '✓ Dikurasi' : '⚠ Belum' }}
+                                            {{ $tiket->is_curated ? '✓ Selesai Loket' : '🛠 Lapangan' }}
                                         </span>
                                     </td>
                                     <td class="p-3 text-gray-500">{{ \Carbon\Carbon::parse($tiket->waktu_dibuat)->timezone('Asia/Jakarta')->format('d/m/Y H:i') }}</td>
@@ -533,80 +552,103 @@
             </div>
         </div>
 
-        <!-- TAB 5: TABEL MANAJEMEN LAYANAN & SUB-LAYANAN -->
+        <!-- TAB 5: LAYOUT MANAGEMENT LAYANAN PARENT-CHILD (SIDE-BY-SIDE INTERAKTIF) -->
         <div x-show="activeTab === 'master_layanan'" class="space-y-6">
             <div class="bg-white p-4 rounded-2xl border border-[#E0E3E8] shadow-sm flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <h3 class="font-black text-sm text-[#181C20]">Pengaturan Layanan Utama & Sub-Layanan</h3>
-                    <p class="text-xs text-gray-500">Kelola master data kategori layanan dan pilihan sub-layanan sektoral untuk CS Console.</p>
+                    <h3 class="font-black text-sm text-[#181C20]">Pengaturan Parent-Child Layanan & Sub-Layanan</h3>
+                    <p class="text-xs text-gray-500">Klik salah satu Kategori Utama di sebelah kiri untuk melihat, menambah, atau mengelola Sub-Layanan terkait di sebelah kanan.</p>
                 </div>
-                <div class="flex flex-wrap items-center gap-2">
-                    <button @click="showModalLayanan = true" class="px-3.5 py-2 bg-[#00509E] hover:bg-[#003C7E] text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1 cursor-pointer">
-                        <span class="material-symbols-outlined text-base">add</span> Tambah Kategori Utama
-                    </button>
-                    <button @click="showModalSubLayanan = true" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1 cursor-pointer">
-                        <span class="material-symbols-outlined text-base">playlist_add</span> Tambah Sub-Layanan
-                    </button>
-                </div>
+                <button @click="showModalLayanan = true" class="px-3.5 py-2 bg-[#00509E] hover:bg-[#003C7E] text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1 cursor-pointer">
+                    <span class="material-symbols-outlined text-base">add</span> + Kategori Utama
+                </button>
             </div>
 
-            <!-- TABEL LAYANAN UTAMA & DAFTAR SUB-LAYANAN TERKAIT -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- PANEL KATEGORI UTAMA -->
-                <div class="bg-white rounded-2xl border border-[#E0E3E8] shadow-sm overflow-hidden flex flex-col">
-                    <div class="p-4 bg-[#F8F9FA] border-b border-[#E0E3E8]">
-                        <h4 class="font-black text-xs text-[#00509E] uppercase tracking-wider">Kategori Utama Layanan</h4>
+            <!-- GRID SIDE-BY-SIDE: KATEGORI UTAMA (KIRI) vs SUB-LAYANAN (KANAN) -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                <!-- KOLOM KIRI (SPAN 5): DAFTAR KATEGORI LAYANAN UTAMA -->
+                <div class="lg:col-span-5 bg-white rounded-2xl border border-[#E0E3E8] shadow-sm overflow-hidden flex flex-col">
+                    <div class="p-4 bg-[#F8F9FA] border-b border-[#E0E3E8] flex justify-between items-center">
+                        <h4 class="font-black text-xs text-[#00509E] uppercase tracking-wider flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-base">category</span>
+                            Kategori Utama Layanan
+                        </h4>
+                        <span class="text-[10px] font-bold text-gray-400">Total {{ $layanans->count() }} Kategori</span>
                     </div>
-                    <div class="p-4 divide-y divide-gray-100">
+
+                    <div class="p-3 space-y-2 max-h-[550px] overflow-y-auto custom-scrollbar">
                         @forelse($layanans as $lay)
-                            <div class="py-3 flex items-center justify-between">
+                            <div @click="selectedLayananId = '{{ $lay->id }}'; selectedLayananNama = '{{ addslashes($lay->nama_layanan) }}'" 
+                                 :class="selectedLayananId == '{{ $lay->id }}' ? 'border-[#00509E] bg-[#00509E]/5 shadow-sm ring-2 ring-[#00509E]/20' : 'border-[#E0E3E8] hover:bg-[#F8F9FA]'"
+                                 class="p-3 border rounded-xl flex items-center justify-between transition-all cursor-pointer">
                                 <div>
-                                    <h5 class="font-bold text-xs text-[#181C20]">{{ $lay->nama_layanan }}</h5>
-                                    <span class="text-[10px] text-gray-400 font-medium">{{ $lay->subLayanans->count() }} Sub-Layanan Terhubung</span>
+                                    <h5 class="font-extrabold text-xs text-[#181C20] flex items-center gap-1.5">
+                                        <span x-show="selectedLayananId == '{{ $lay->id }}'" class="material-symbols-outlined text-sm text-[#00509E]">check_circle</span>
+                                        {{ $lay->nama_layanan }}
+                                    </h5>
+                                    <span class="text-[10px] text-gray-500 font-semibold mt-0.5 block">
+                                        {{ $lay->subLayanans->count() }} Sub-Layanan Terhubung
+                                    </span>
                                 </div>
-                                <form action="{{ route('admin.layanan.destroy', $lay->id) }}" method="POST" onsubmit="return confirm('Hapus kategori layanan ini beserta seluruh sub-layanannya?')">
+                                <form action="{{ route('admin.layanan.destroy', $lay->id) }}" method="POST" onsubmit="return confirm('Hapus kategori layanan ini beserta seluruh sub-layanannya?')" class="m-0">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition-all cursor-pointer">
+                                    <button type="submit" title="Hapus Kategori Utama" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-all cursor-pointer">
                                         <span class="material-symbols-outlined text-sm">delete</span>
                                     </button>
                                 </form>
                             </div>
                         @empty
-                            <div class="p-4 text-center text-gray-400 font-bold text-xs">Belum ada kategori layanan.</div>
+                            <div class="p-6 text-center text-gray-400 font-bold text-xs">Belum ada kategori layanan.</div>
                         @endforelse
                     </div>
                 </div>
 
-                <!-- PANEL SUB-LAYANAN SEKTORAL -->
-                <div class="bg-white rounded-2xl border border-[#E0E3E8] shadow-sm overflow-hidden flex flex-col">
-                    <div class="p-4 bg-[#F8F9FA] border-b border-[#E0E3E8]">
-                        <h4 class="font-black text-xs text-emerald-700 uppercase tracking-wider">Daftar Sub-Layanan Sektoral</h4>
+                <!-- KOLOM KANAN (SPAN 7): DAFTAR SUB-LAYANAN DINAMIS SESUAI KATEGORI TERPILIH -->
+                <div class="lg:col-span-7 bg-white rounded-2xl border border-[#E0E3E8] shadow-sm overflow-hidden flex flex-col">
+                    <div class="p-4 bg-emerald-50/60 border-b border-emerald-100 flex items-center justify-between">
+                        <div>
+                            <span class="text-[9px] font-black text-emerald-700 uppercase tracking-widest block">SUB-LAYANAN UNTUK:</span>
+                            <h4 class="font-black text-sm text-[#181C20]" x-text="selectedLayananNama || 'Pilih Kategori di Kiri'"></h4>
+                        </div>
+                        
+                        <button x-show="selectedLayananId" @click="showModalSubLayanan = true" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1 cursor-pointer">
+                            <span class="material-symbols-outlined text-base">add</span> + Tambah Sub-Layanan
+                        </button>
                     </div>
-                    <div class="p-4 divide-y divide-gray-100 max-h-[500px] overflow-y-auto custom-scrollbar">
+
+                    <div class="p-4 min-h-[300px] max-h-[550px] overflow-y-auto custom-scrollbar">
                         @forelse($layanans as $lay)
-                            @foreach($lay->subLayanans as $sub)
-                                <div class="py-2.5 flex items-center justify-between">
-                                    <div>
-                                        <h5 class="font-bold text-xs text-gray-800">{{ $sub->nama_sub_layanan }}</h5>
-                                        <span class="text-[9px] bg-blue-50 text-[#00509E] font-bold px-2 py-0.5 rounded border border-blue-100 inline-block mt-0.5">
-                                            {{ $lay->nama_layanan }}
-                                        </span>
+                            <div x-show="selectedLayananId == '{{ $lay->id }}'" class="space-y-2">
+                                @forelse($lay->subLayanans as $sub)
+                                    <div class="p-3 bg-[#F8F9FA] border border-[#E0E3E8] rounded-xl flex items-center justify-between hover:bg-white transition-all">
+                                        <div class="flex items-center gap-2">
+                                            <span class="material-symbols-outlined text-emerald-600 text-base">subdirectory_arrow_right</span>
+                                            <span class="font-extrabold text-xs text-gray-800">{{ $sub->nama_sub_layanan }}</span>
+                                        </div>
+                                        <form action="{{ route('admin.sub_layanan.destroy', $sub->id) }}" method="POST" onsubmit="return confirm('Hapus sub-layanan ini?')" class="m-0">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" title="Hapus Sub-Layanan" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-all cursor-pointer">
+                                                <span class="material-symbols-outlined text-sm">delete</span>
+                                            </button>
+                                        </form>
                                     </div>
-                                    <form action="{{ route('admin.sub_layanan.destroy', $sub->id) }}" method="POST" onsubmit="return confirm('Hapus sub-layanan ini?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition-all cursor-pointer">
-                                            <span class="material-symbols-outlined text-sm">delete</span>
-                                        </button>
-                                    </form>
-                                </div>
-                            @endforeach
+                                @empty
+                                    <div class="p-8 text-center text-gray-400 font-bold border border-dashed rounded-xl text-xs space-y-1">
+                                        <span class="material-symbols-outlined text-2xl block text-gray-300">playlist_remove</span>
+                                        <p>Belum ada sub-layanan untuk kategori ini.</p>
+                                        <p class="text-[10px] text-gray-400">Klik tombol hijau "+ Tambah Sub-Layanan" di atas untuk menambah.</p>
+                                    </div>
+                                @endforelse
+                            </div>
                         @empty
-                            <div class="p-4 text-center text-gray-400 font-bold text-xs">Belum ada sub-layanan.</div>
+                            <div class="p-8 text-center text-gray-400 font-bold text-xs">Silakan tambah kategori utama terlebih dahulu.</div>
                         @endforelse
                     </div>
                 </div>
+
             </div>
         </div>
 
@@ -672,13 +714,13 @@
         </div>
     </div>
 
-    <!-- MODAL POPUP: TAMBAH SUB-LAYANAN -->
+    <!-- MODAL POPUP: TAMBAH SUB-LAYANAN (TERKUNCI KE LAYANAN YANG SEDANG DILIHAT) -->
     <div x-show="showModalSubLayanan" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-gray-100" @click.away="showModalSubLayanan = false">
             <div class="flex justify-between items-center border-b pb-3 border-gray-100">
                 <h3 class="text-base font-black text-[#181C20] flex items-center gap-2">
                     <span class="material-symbols-outlined text-emerald-600">playlist_add</span>
-                    Tambah Sub-Layanan Sektoral
+                    Tambah Sub-Layanan
                 </h3>
                 <button @click="showModalSubLayanan = false" class="text-gray-400 hover:text-gray-600">
                     <span class="material-symbols-outlined">close</span>
@@ -686,19 +728,18 @@
             </div>
             <form action="{{ route('admin.sub_layanan.store') }}" method="POST" class="space-y-3 text-xs">
                 @csrf
+                <input type="hidden" name="layanan_id" :value="selectedLayananId">
+
                 <div>
-                    <label class="font-bold block mb-1">Kategori Utama</label>
-                    <select name="layanan_id" required class="w-full p-2.5 border border-gray-300 rounded-xl focus:border-[#00509E] focus:ring-0 bg-white">
-                        <option value="">-- Pilih Kategori Layanan --</option>
-                        @foreach($layanans as $lay)
-                            <option value="{{ $lay->id }}">{{ $lay->nama_layanan }}</option>
-                        @endforeach
-                    </select>
+                    <label class="font-bold block mb-1">Kategori Utama Terpilih</label>
+                    <input type="text" readonly :value="selectedLayananNama" class="w-full p-2.5 bg-gray-100 border border-gray-300 rounded-xl font-bold text-[#00509E]">
                 </div>
+
                 <div>
-                    <label class="font-bold block mb-1">Nama Sub-Layanan</label>
+                    <label class="font-bold block mb-1">Nama Sub-Layanan Baru</label>
                     <input type="text" name="nama_sub_layanan" required placeholder="Contoh: Internet Putus-putus / Lambat" class="w-full p-2.5 border border-gray-300 rounded-xl focus:border-[#00509E] focus:ring-0">
                 </div>
+
                 <div class="pt-3 border-t border-gray-100 flex justify-end gap-2">
                     <button type="button" @click="showModalSubLayanan = false" class="px-4 py-2 bg-gray-100 text-gray-700 font-bold text-xs rounded-xl">Batal</button>
                     <button type="submit" class="px-5 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-md">Simpan Sub-Layanan</button>
