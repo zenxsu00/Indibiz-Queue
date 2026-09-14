@@ -21,7 +21,6 @@ class AdminController extends Controller
         $startDate = null;
         $endDate = null;
 
-        // Rentang Tanggal Utama
         switch ($period) {
             case 'today':
                 $startDate = Carbon::today('Asia/Jakarta')->startOfDay();
@@ -110,64 +109,9 @@ class AdminController extends Controller
 
         $avgSla = $avgDurasiLayananText;
 
-        // -------------------------------------------------------------
-        // ANALISIS TREN OTOMATIS (PERIOD-OVER-PERIOD COMPARISON)
-        // -------------------------------------------------------------
-        $prevStartDate = null;
-        $prevEndDate = null;
-        $labelKomparasi = "Periode Sebelumnya";
-
-        if ($startDate && $endDate) {
-            $diffInDays = $startDate->diffInDays($endDate) + 1;
-            $prevStartDate = (clone $startDate)->subDays($diffInDays);
-            $prevEndDate = (clone $startDate)->subSecond();
-
-            if ($period === 'today') $labelKomparasi = "Kemarin";
-            elseif ($period === 'wtd') $labelKomparasi = "Minggu Lalu";
-            elseif ($period === 'mtd') $labelKomparasi = "Bulan Lalu";
-            elseif ($period === 'last_30') $labelKomparasi = "30 Hari Sebelumnya";
-            elseif ($period === 'ytd') $labelKomparasi = "Tahun Lalu";
-        }
-
-        $totalLalu = 0;
-        if ($prevStartDate && $prevEndDate) {
-            $queryLalu = TiketAntrian::whereBetween('waktu_dibuat', [$prevStartDate, $prevEndDate]);
-            if ($request->filled('layanan_id')) $queryLalu->where('layanan_id', $layananId);
-            $totalLalu = $queryLalu->count();
-        }
-
-        $analisisOtomatis = [];
-        if ($totalLalu == 0) {
-            $analisisOtomatis['status_tiket'] = "Belum ada baseline data komparasi untuk {$labelKomparasi}. Total tiket saat ini adalah {$totalHariIni} tiket.";
-            $analisisOtomatis['badge_tiket'] = "bg-gray-100 text-gray-700";
-        } else {
-            $selisih = $totalHariIni - $totalLalu;
-            $persenDelta = round(($selisih / $totalLalu) * 100, 1);
-
-            if (abs($persenDelta) <= 3) {
-                $analisisOtomatis['status_tiket'] = "Volume antrean cenderung **STABIL** (fluktuasi {$persenDelta}% dibanding {$labelKomparasi}). Operasional berjalan konsisten.";
-                $analisisOtomatis['badge_tiket'] = "bg-blue-100 text-blue-800";
-            } elseif ($persenDelta > 3 && $persenDelta <= 20) {
-                $analisisOtomatis['status_tiket'] = "Terjadi **PENINGKATAN MODERAT** sebesar **+{$persenDelta}%** ({$totalHariIni} vs {$totalLalu} tiket) dibanding {$labelKomparasi}.";
-                $analisisOtomatis['badge_tiket'] = "bg-emerald-100 text-emerald-800";
-            } elseif ($persenDelta > 20) {
-                $analisisOtomatis['status_tiket'] = "Terjadi **LONJAKAN TINGGI** antrean sebesar **+{$persenDelta}%** dibanding {$labelKomparasi}. Disarankan penambahan petugas loket.";
-                $analisisOtomatis['badge_tiket'] = "bg-emerald-200 text-emerald-900";
-            } elseif ($persenDelta < -3 && $persenDelta >= -20) {
-                $analisisOtomatis['status_tiket'] = "Terjadi **PENURUNAN MODERAT** sebesar **{$persenDelta}%** ({$totalHariIni} vs {$totalLalu} tiket) dibanding {$labelKomparasi}.";
-                $analisisOtomatis['badge_tiket'] = "bg-amber-100 text-amber-800";
-            } else {
-                $analisisOtomatis['status_tiket'] = "Terjadi **PENURUNAN SIGNIFIKAN** sebesar **{$persenDelta}%** dibanding {$labelKomparasi}. Perlu peninjauan arus kedatangan pelanggan.";
-                $analisisOtomatis['badge_tiket'] = "bg-rose-100 text-rose-800";
-            }
-        }
-
-        // -------------------------------------------------------------
-        // DATASET GRAFIK ANALITIK
-        // -------------------------------------------------------------
+        // DATASET GRAFIK
         $allTickets = TiketAntrian::all();
 
-        // Line Chart
         $dates30 = []; $total30 = []; $selesai30 = [];
         $p30 = Carbon::now('Asia/Jakarta')->subDays(29)->daysUntil(Carbon::now('Asia/Jakarta'));
         foreach ($p30 as $d) {
@@ -203,14 +147,6 @@ class AdminController extends Controller
             $totalMtm[] = $allTickets->filter(fn($t) => Carbon::parse($t->waktu_dibuat)->format('Y-m') === $monthKey)->count();
             $selesaiMtm[] = $allTickets->filter(fn($t) => $t->status === 'Selesai' && Carbon::parse($t->waktu_dibuat)->format('Y-m') === $monthKey)->count();
         }
-
-        // Doughnut / Pie Dataset - Status Ratio
-        $statusRatioData = [
-            'Selesai'  => $allFilteredTickets->where('status', 'Selesai')->count(),
-            'Menunggu' => $allFilteredTickets->where('status', 'Menunggu')->count(),
-            'Diproses' => $allFilteredTickets->where('status', 'Diproses')->count(),
-            'Batal'    => $allFilteredTickets->where('status', 'Batal')->count(),
-        ];
 
         // Rekap Bulanan Harian
         $satuBulanLalu = Carbon::now('Asia/Jakarta')->subDays(30)->startOfDay();
@@ -312,8 +248,6 @@ class AdminController extends Controller
             'avgWaktuTungguText'   => $avgWaktuTungguText,
             'totalOmset'           => $totalOmset,
             'distribusiLayanan'    => $distribusiLayanan,
-            'statusRatioData'      => $statusRatioData,
-            'analisisOtomatis'     => $analisisOtomatis,
             'mejaCs'               => $mejaCs,
             'usersCS'              => $usersCS,
             'masterMejas'          => $masterMejas,
@@ -367,16 +301,54 @@ class AdminController extends Controller
         return back()->with('success', 'Sub-Layanan Sektoral berhasil dihapus.');
     }
 
+    // CETAK PDF STABIL DENGAN FILTER PERIODE TANGGAL
     public function cetakPdf(Request $request)
     {
         $period = $request->get('period', 'all');
         $layananId = $request->get('layanan_id');
 
+        $startDate = null;
+        $endDate = null;
+
+        switch ($period) {
+            case 'today':
+                $startDate = Carbon::today('Asia/Jakarta')->startOfDay();
+                $endDate   = Carbon::today('Asia/Jakarta')->endOfDay();
+                break;
+            case 'wtd':
+                $startDate = Carbon::now('Asia/Jakarta')->startOfWeek();
+                $endDate   = Carbon::now('Asia/Jakarta')->endOfDay();
+                break;
+            case 'mtd':
+                $startDate = Carbon::now('Asia/Jakarta')->startOfMonth();
+                $endDate   = Carbon::now('Asia/Jakarta')->endOfDay();
+                break;
+            case 'last_30':
+                $startDate = Carbon::now('Asia/Jakarta')->subDays(29)->startOfDay();
+                $endDate   = Carbon::now('Asia/Jakarta')->endOfDay();
+                break;
+            case 'ytd':
+                $startDate = Carbon::now('Asia/Jakarta')->startOfYear();
+                $endDate   = Carbon::now('Asia/Jakarta')->endOfDay();
+                break;
+            case 'custom':
+                if ($request->filled('start_date') && $request->filled('end_date')) {
+                    $startDate = Carbon::parse($request->start_date, 'Asia/Jakarta')->startOfDay();
+                    $endDate   = Carbon::parse($request->end_date, 'Asia/Jakarta')->endOfDay();
+                }
+                break;
+            case 'all':
+            default:
+                if ($request->filled('start_date') && $request->filled('end_date')) {
+                    $startDate = Carbon::parse($request->start_date, 'Asia/Jakarta')->startOfDay();
+                    $endDate   = Carbon::parse($request->end_date, 'Asia/Jakarta')->endOfDay();
+                }
+                break;
+        }
+
         $query = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan', 'cs']);
 
-        if ($period !== 'all' && $request->filled('start_date') && $request->filled('end_date')) {
-            $startDate = Carbon::parse($request->start_date, 'Asia/Jakarta')->startOfDay();
-            $endDate   = Carbon::parse($request->end_date, 'Asia/Jakarta')->endOfDay();
+        if ($startDate && $endDate) {
             $query->whereBetween('waktu_dibuat', [$startDate, $endDate]);
         } else {
             $startDate = Carbon::today('Asia/Jakarta')->startOfDay();
@@ -390,20 +362,7 @@ class AdminController extends Controller
         $tickets    = $query->orderBy('waktu_dibuat', 'asc')->get();
         $totalOmset = $tickets->where('status', 'Selesai')->sum('nominal_pembayaran');
 
-        // Komponen yang Dicentang
-        $includeSummary = $request->has('inc_summary');
-        $includeCharts  = $request->has('inc_charts');
-        $includeTable   = $request->has('inc_table');
-
-        // Data Base64 Grafik dari Canvas
-        $chartLineBase64 = $request->input('chart_line_base64');
-        $chartPieBase64  = $request->input('chart_pie_base64');
-
-        return view('admin.pdf_report', compact(
-            'tickets', 'startDate', 'endDate', 'totalOmset', 
-            'includeSummary', 'includeCharts', 'includeTable', 
-            'chartLineBase64', 'chartPieBase64'
-        ));
+        return view('admin.pdf_report', compact('tickets', 'startDate', 'endDate', 'totalOmset'));
     }
 
     public function exportCsv()

@@ -36,13 +36,13 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($tickets as $index => $t)
+            @forelse($tickets as $index => $t)
             <tr>
                 <td>{{ $index + 1 }}</td>
                 <td><strong>{{ $t->nomor_antrian }}</strong></td>
-                <td>{{ $t->pelanggan->nama }} ({{ $t->pelanggan->no_hp }})</td>
+                <td>{{ $t->pelanggan->nama ?? '-' }} ({{ $t->pelanggan->no_hp ?? '-' }})</td>
                 <td>
-                    <div>{{ $t->layanan->nama_layanan }}</div>
+                    <div>{{ $t->layanan->nama_layanan ?? '-' }}</div>
                     <div class="sub-text">{{ $t->subLayanan->nama_sub_layanan ?? '-' }}</div>
                 </td>
                 <td>{{ \Carbon\Carbon::parse($t->waktu_dibuat)->timezone('Asia/Jakarta')->format('d/m/Y H:i') }}</td>
@@ -50,7 +50,13 @@
                 <td>{{ $t->metode_pembayaran ?? 'Tanpa Transaksi' }}</td>
                 <td style="text-align: right;">Rp {{ number_format($t->nominal_pembayaran, 0, ',', '.') }}</td>
             </tr>
-            @endforeach
+            @empty
+            <tr>
+                <td colspan="8" style="text-align: center; padding: 15px; color: #888;">
+                    Tidak ada data transaksi / antrean pada periode ini.
+                </td>
+            </tr>
+            @endforelse
         </tbody>
     </table>
 
