@@ -301,7 +301,6 @@ class AdminController extends Controller
         return back()->with('success', 'Sub-Layanan Sektoral berhasil dihapus.');
     }
 
-    // CETAK PDF STABIL DENGAN FILTER PERIODE TANGGAL
     public function cetakPdf(Request $request)
     {
         $period = $request->get('period', 'all');
