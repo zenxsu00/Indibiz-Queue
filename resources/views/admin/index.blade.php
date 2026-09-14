@@ -363,19 +363,45 @@
             </div>
         </div>
 
-        <!-- TAB 2: ANALITIK LAYANAN -->
-        <div x-show="activeTab === 'analytics'" class="space-y-6">
+        <!-- TAB 2: ANALITIK LAYANAN (BERIKUT FILTER WTD, MTD, MTM, 30 DAYS) -->
+        <div x-show="activeTab === 'analytics'" x-data="chartFilterComponent()" class="space-y-6">
             <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm">
-                <h3 class="text-sm font-black text-[#181C20] uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <span class="material-symbols-outlined text-[#00509E]">show_chart</span>
-                    Grafik Analitik Tren Pendaftaran vs Layanan Selesai
-                </h3>
-                <div class="h-64 sm:h-80">
-                    <canvas id="queueChart" 
-                        data-chart-dates='{{ json_encode($chartDates) }}' 
-                        data-chart-total='{{ json_encode($chartTotal) }}' 
-                        data-chart-selesai='{{ json_encode($chartSelesai) }}'>
-                    </canvas>
+                
+                <!-- HEADER & TOMBOL FILTER CHART -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 pb-3 border-b border-gray-100">
+                    <h3 class="text-sm font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[#00509E]">show_chart</span>
+                        Grafik Analitik Tren Pendaftaran vs Layanan Selesai
+                    </h3>
+
+                    <!-- BARIS TOMBOL FILTER PERIODE CHART -->
+                    <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-xl text-xs font-bold">
+                        <button @click="switchChartPeriod('wtd')" 
+                                :class="chartPeriod === 'wtd' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'"
+                                class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">
+                            WTD (Minggu Ini)
+                        </button>
+                        <button @click="switchChartPeriod('mtd')" 
+                                :class="chartPeriod === 'mtd' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'"
+                                class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">
+                            MTD (Bulan Ini)
+                        </button>
+                        <button @click="switchChartPeriod('mtm')" 
+                                :class="chartPeriod === 'mtm' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'"
+                                class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">
+                            MTM / Bulanan
+                        </button>
+                        <button @click="switchChartPeriod('last30')" 
+                                :class="chartPeriod === 'last30' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'"
+                                class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">
+                            30 Hari Terakhir
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CANVAS CHART -->
+                <div class="h-64 sm:h-80 relative">
+                    <canvas id="queueChart" data-chart-sets='{{ json_encode($chartDataSets ?? []) }}'></canvas>
                 </div>
             </div>
 
@@ -820,6 +846,76 @@
 
     <!-- SCRIPT CHART & HISTORY FILTER -->
     <script>
+        var globalQueueChart = null;
+
+        function chartFilterComponent() {
+            return {
+                chartPeriod: 'last30',
+                allDataSets: {},
+                
+                init: function() {
+                    const canvas = document.getElementById('queueChart');
+                    if (canvas && canvas.dataset.chartSets) {
+                        try {
+                            this.allDataSets = JSON.parse(canvas.dataset.chartSets);
+                            this.renderChart('last30');
+                        } catch (e) {
+                            console.error('Error parsing chart datasets:', e);
+                        }
+                    }
+                },
+
+                switchChartPeriod: function(period) {
+                    this.chartPeriod = period;
+                    this.renderChart(period);
+                },
+
+                renderChart: function(periodKey) {
+                    const dataSet = this.allDataSets[periodKey] || this.allDataSets['last30'];
+                    if (!dataSet) return;
+
+                    const canvas = document.getElementById('queueChart');
+                    if (!canvas) return;
+
+                    const ctx = canvas.getContext('2d');
+
+                    if (globalQueueChart) {
+                        globalQueueChart.destroy();
+                    }
+
+                    globalQueueChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: dataSet.dates,
+                            datasets: [
+                                {
+                                    label: 'Total Tiket Masuk',
+                                    data: dataSet.total,
+                                    borderColor: '#00509E',
+                                    backgroundColor: 'rgba(0, 80, 158, 0.1)',
+                                    fill: true,
+                                    tension: 0.3
+                                },
+                                {
+                                    label: 'Layanan Selesai',
+                                    data: dataSet.selesai,
+                                    borderColor: '#10B981',
+                                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                    fill: true,
+                                    tension: 0.3
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { position: 'top' } }
+                        }
+                    });
+                }
+            };
+        }
+
         function historyFilterComponent() {
             return {
                 daysLimit: '30',
@@ -883,46 +979,6 @@
                 }
             };
         }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const chartCanvas = document.getElementById('queueChart');
-            if (chartCanvas) {
-                const chartDates = JSON.parse(chartCanvas.getAttribute('data-chart-dates') || '[]');
-                const chartTotal = JSON.parse(chartCanvas.getAttribute('data-chart-total') || '[]');
-                const chartSelesai = JSON.parse(chartCanvas.getAttribute('data-chart-selesai') || '[]');
-
-                const ctx = chartCanvas.getContext('2d');
-                new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: chartDates,
-                        datasets: [
-                            {
-                                label: 'Total Tiket Masuk',
-                                data: chartTotal,
-                                borderColor: '#00509E',
-                                backgroundColor: 'rgba(0, 80, 158, 0.1)',
-                                fill: true,
-                                tension: 0.3
-                            },
-                            {
-                                label: 'Layanan Selesai',
-                                data: chartSelesai,
-                                borderColor: '#10B981',
-                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                                fill: true,
-                                tension: 0.3
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { position: 'top' } }
-                    }
-                });
-            }
-        });
     </script>
 </body>
 </html>
