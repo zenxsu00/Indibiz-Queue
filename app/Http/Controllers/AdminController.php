@@ -15,17 +15,21 @@ class AdminController extends Controller
 {
     public function index(Request $request)
     {
-        $period = $request->get('period', 'all'); // Default ke all time
+        $period = $request->get('period', 'all');
         $layananId = $request->layanan_id;
 
         $startDate = null;
         $endDate = null;
 
-        // Logika penentuan tanggal berdasarkan dropdown periode
         switch ($period) {
             case 'today':
                 $startDate = Carbon::today('Asia/Jakarta')->startOfDay();
                 $endDate   = Carbon::today('Asia/Jakarta')->endOfDay();
+                break;
+
+            case 'wtd': // Week to Date
+                $startDate = Carbon::now('Asia/Jakarta')->startOfWeek();
+                $endDate   = Carbon::now('Asia/Jakarta')->endOfDay();
                 break;
 
             case 'mtd': // Month to Date
@@ -52,13 +56,11 @@ class AdminController extends Controller
 
             case 'all':
             default:
-                // Jika ALL TIME, biarkan $startDate dan $endDate tetap null
                 break;
         }
 
         $query = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan', 'cs']);
 
-        // Hanya terapkan filter tanggal jika BUKAN "all" (ada nilai $startDate dan $endDate)
         if ($startDate && $endDate) {
             $query->whereBetween('waktu_dibuat', [$startDate, $endDate]);
         }
@@ -74,12 +76,12 @@ class AdminController extends Controller
 
         // 1. HITUNG RATA-RATA DURASI LAYANAN CS
         $tiketSelesaiFilter = $allFilteredTickets->where('status', 'Selesai')
-            ->filter(fn($t) => !empty($t->waktu_mulai_konsul ?? $t->waktu_dipproses) && !empty($t->waktu_selesai_konsul ?? $t->waktu_selesai));
+            ->filter(fn($t) => !empty($t->waktu_mulai_konsul ?? $t->waktu_diproses) && !empty($t->waktu_selesai_konsul ?? $t->waktu_selesai));
 
         if ($tiketSelesaiFilter->count() > 0) {
             $totalDetikLayanan = 0;
             foreach ($tiketSelesaiFilter as $t) {
-                $mulai = Carbon::parse($t->waktu_mulai_konsul ?? $t->waktu_dipproses, 'Asia/Jakarta');
+                $mulai = Carbon::parse($t->waktu_mulai_konsul ?? $t->waktu_diproses, 'Asia/Jakarta');
                 $selesai = Carbon::parse($t->waktu_selesai_konsul ?? $t->waktu_selesai, 'Asia/Jakarta');
                 $totalDetikLayanan += $mulai->diffInSeconds($selesai);
             }
@@ -93,13 +95,13 @@ class AdminController extends Controller
 
         // 2. HITUNG RATA-RATA WAKTU TUNGGU DIPANGGIL
         $tiketDipanggilFilter = $allFilteredTickets->whereIn('status', ['Diproses', 'Selesai'])
-            ->filter(fn($t) => !empty($t->waktu_dibuat) && !empty($t->waktu_dipanggil ?? $t->waktu_dipproses));
+            ->filter(fn($t) => !empty($t->waktu_dibuat) && !empty($t->waktu_dipanggil ?? $t->waktu_diproses));
 
         if ($tiketDipanggilFilter->count() > 0) {
             $totalDetikTunggu = 0;
             foreach ($tiketDipanggilFilter as $td) {
                 $dibuat = Carbon::parse($td->waktu_dibuat, 'Asia/Jakarta');
-                $dipanggil = Carbon::parse($td->waktu_dipanggil ?? $td->waktu_dipproses, 'Asia/Jakarta');
+                $dipanggil = Carbon::parse($td->waktu_dipanggil ?? $td->waktu_diproses, 'Asia/Jakarta');
                 $totalDetikTunggu += $dibuat->diffInSeconds($dipanggil);
             }
             $avgDetikTunggu = round($totalDetikTunggu / $tiketDipanggilFilter->count());
@@ -112,13 +114,56 @@ class AdminController extends Controller
 
         $avgSla = $avgDurasiLayananText;
 
-        // Omset & Riwayat Bulanan (30 Hari Terakhir)
+        // -------------------------------------------------------------
+        // GENERATE DATASET UNTUK GRAFIK ANALITIK DENGAN BERBAGAI PERIODE
+        // -------------------------------------------------------------
+        $allTickets = TiketAntrian::all();
+
+        // A. Filter Chart 30 Hari Terakhir / Default
+        $dates30 = []; $total30 = []; $selesai30 = [];
+        $p30 = Carbon::now('Asia/Jakarta')->subDays(29)->daysUntil(Carbon::now('Asia/Jakarta'));
+        foreach ($p30 as $d) {
+            $tgl = $d->format('Y-m-d');
+            $dates30[] = $d->format('d M');
+            $total30[] = $allTickets->filter(fn($t) => Carbon::parse($t->waktu_dibuat)->format('Y-m-d') === $tgl)->count();
+            $selesai30[] = $allTickets->filter(fn($t) => $t->status === 'Selesai' && Carbon::parse($t->waktu_dibuat)->format('Y-m-d') === $tgl)->count();
+        }
+
+        // B. Filter WTD (Week to Date - Senin s.d. Hari ini)
+        $datesWtd = []; $totalWtd = []; $selesaiWtd = [];
+        $pWtd = Carbon::now('Asia/Jakarta')->startOfWeek()->daysUntil(Carbon::now('Asia/Jakarta'));
+        foreach ($pWtd as $d) {
+            $tgl = $d->format('Y-m-d');
+            $datesWtd[] = $d->translatedFormat('D, d M');
+            $totalWtd[] = $allTickets->filter(fn($t) => Carbon::parse($t->waktu_dibuat)->format('Y-m-d') === $tgl)->count();
+            $selesaiWtd[] = $allTickets->filter(fn($t) => $t->status === 'Selesai' && Carbon::parse($t->waktu_dibuat)->format('Y-m-d') === $tgl)->count();
+        }
+
+        // C. Filter MTD (Month to Date - Tanggal 1 s.d. Hari ini)
+        $datesMtd = []; $totalMtd = []; $selesaiMtd = [];
+        $pMtd = Carbon::now('Asia/Jakarta')->startOfMonth()->daysUntil(Carbon::now('Asia/Jakarta'));
+        foreach ($pMtd as $d) {
+            $tgl = $d->format('Y-m-d');
+            $datesMtd[] = $d->format('d M');
+            $totalMtd[] = $allTickets->filter(fn($t) => Carbon::parse($t->waktu_dibuat)->format('Y-m-d') === $tgl)->count();
+            $selesaiMtd[] = $allTickets->filter(fn($t) => $t->status === 'Selesai' && Carbon::parse($t->waktu_dibuat)->format('Y-m-d') === $tgl)->count();
+        }
+
+        // D. Filter MTM / YTD (Month to Month 12 Bulan Terakhir)
+        $datesMtm = []; $totalMtm = []; $selesaiMtm = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $m = Carbon::now('Asia/Jakarta')->subMonths($i);
+            $monthKey = $m->format('Y-m');
+            $datesMtm[] = $m->translatedFormat('M Y');
+            $totalMtm[] = $allTickets->filter(fn($t) => Carbon::parse($t->waktu_dibuat)->format('Y-m') === $monthKey)->count();
+            $selesaiMtm[] = $allTickets->filter(fn($t) => $t->status === 'Selesai' && Carbon::parse($t->waktu_dibuat)->format('Y-m') === $monthKey)->count();
+        }
+
+        // Riwayat Bulanan
         $satuBulanLalu = Carbon::now('Asia/Jakarta')->subDays(30)->startOfDay();
         $sekarang      = Carbon::now('Asia/Jakarta')->endOfDay();
 
-        $tiketSatuBulan = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan', 'cs'])
-            ->whereBetween('waktu_dibuat', [$satuBulanLalu, $sekarang])
-            ->get();
+        $tiketSatuBulan = $allTickets->filter(fn($t) => Carbon::parse($t->waktu_dibuat)->between($satuBulanLalu, $sekarang));
 
         $historyBulanan = [];
         $periodRange = Carbon::parse($satuBulanLalu, 'Asia/Jakarta')->daysUntil($sekarang);
@@ -131,7 +176,7 @@ class AdminController extends Controller
             $totalDetikHari = 0;
             $countSlaHari = 0;
             foreach ($tiketHariSelesai as $th) {
-                $m = $th->waktu_mulai_konsul ?? $th->waktu_dipproses;
+                $m = $th->waktu_mulai_konsul ?? $th->waktu_diproses;
                 $s = $th->waktu_selesai_konsul ?? $th->waktu_selesai;
                 if ($m && $s) {
                     $totalDetikHari += Carbon::parse($m, 'Asia/Jakarta')->diffInSeconds(Carbon::parse($s, 'Asia/Jakarta'));
@@ -157,17 +202,6 @@ class AdminController extends Controller
             $historyBulanan[] = $row;
         }
         $historyBulanan = array_reverse($historyBulanan);
-
-        $chartDates   = [];
-        $chartTotal   = [];
-        $chartSelesai = [];
-
-        foreach ($periodRange as $date) {
-            $formattedDate  = $date->format('Y-m-d');
-            $chartDates[]   = $date->format('d M');
-            $chartTotal[]   = $tiketSatuBulan->filter(fn($t) => Carbon::parse($t->waktu_dibuat, 'Asia/Jakarta')->format('Y-m-d') === $formattedDate)->count();
-            $chartSelesai[] = $tiketSatuBulan->filter(fn($t) => $t->status === 'Selesai' && Carbon::parse($t->waktu_dibuat, 'Asia/Jakarta')->format('Y-m-d') === $formattedDate)->count();
-        }
 
         $distribusiLayanan = Layanan::all()->map(function($layanan) use ($allFilteredTickets) {
             $item = new stdClass();
@@ -215,7 +249,6 @@ class AdminController extends Controller
         $layanans   = Layanan::with('subLayanans')->get();
         $totalOmset = $allFilteredTickets->where('status', 'Selesai')->sum('nominal_pembayaran');
 
-        // PERBAIKAN: Gunakan Carbon aman untuk view agar tidak melempar 500 error
         $startDateOut = $startDate ? $startDate : Carbon::today('Asia/Jakarta')->startOfDay();
         $endDateOut   = $endDate ? $endDate : Carbon::today('Asia/Jakarta')->endOfDay();
 
@@ -231,9 +264,15 @@ class AdminController extends Controller
             'usersCS'              => $usersCS,
             'masterMejas'          => $masterMejas,
             'allFilteredTickets'   => $allFilteredTickets,
-            'chartDates'           => $chartDates,
-            'chartTotal'           => $chartTotal,
-            'chartSelesai'         => $chartSelesai,
+            
+            // Passing multi-dataset chart ke view
+            'chartDataSets'        => [
+                'wtd' => ['dates' => $datesWtd, 'total' => $totalWtd, 'selesai' => $selesaiWtd],
+                'mtd' => ['dates' => $datesMtd, 'total' => $totalMtd, 'selesai' => $selesaiMtd],
+                'mtm' => ['dates' => $datesMtm, 'total' => $totalMtm, 'selesai' => $selesaiMtm],
+                'last30' => ['dates' => $dates30, 'total' => $total30, 'selesai' => $selesai30],
+            ],
+
             'startDate'            => $startDateOut,
             'endDate'              => $endDateOut,
             'layananId'            => $layananId,
@@ -242,18 +281,10 @@ class AdminController extends Controller
         ]);
     }
 
-    // --- KELOLA LAYANAN UTAMA ---
     public function storeLayanan(Request $request)
     {
-        $request->validate([
-            'nama_layanan' => 'required|string|max:255'
-        ]);
-
-        Layanan::create([
-            'nama_layanan' => $request->nama_layanan,
-            'is_active'    => true
-        ]);
-
+        $request->validate(['nama_layanan' => 'required|string|max:255']);
+        Layanan::create(['nama_layanan' => $request->nama_layanan, 'is_active' => true]);
         return back()->with('success', 'Kategori Layanan Utama berhasil ditambahkan.');
     }
 
@@ -261,24 +292,20 @@ class AdminController extends Controller
     {
         $layanan = Layanan::findOrFail($id);
         $layanan->delete();
-
         return back()->with('success', 'Kategori Layanan beserta seluruh sub-layanannya berhasil dihapus.');
     }
 
-    // --- KELOLA SUB-LAYANAN SEKTORAL ---
     public function storeSubLayanan(Request $request)
     {
         $request->validate([
             'layanan_id'       => 'required|exists:layanans,id',
             'nama_sub_layanan' => 'required|string|max:255'
         ]);
-
         SubLayanan::create([
             'layanan_id'       => $request->layanan_id,
             'nama_sub_layanan' => $request->nama_sub_layanan,
             'is_active'        => true
         ]);
-
         return back()->with('success', 'Sub-Layanan Sektoral berhasil ditambahkan.');
     }
 
@@ -286,7 +313,6 @@ class AdminController extends Controller
     {
         $sub = SubLayanan::findOrFail($id);
         $sub->delete();
-
         return back()->with('success', 'Sub-Layanan Sektoral berhasil dihapus.');
     }
 
