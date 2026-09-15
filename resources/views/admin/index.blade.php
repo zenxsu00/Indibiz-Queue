@@ -403,7 +403,7 @@
                 </p>
             </div>
 
-            <!-- GRID 2 KOLOM: PIE & DONUT CHART -->
+            <!-- GRID 2 KOLOM: PIE & SLA LINE CHART -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- CHART 2: PIE KEPADATAN KATEGORI -->
                 <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
@@ -419,17 +419,17 @@
                     </p>
                 </div>
 
-                <!-- CHART 3: DONUT RASIO STATUS -->
+                <!-- CHART 3: GRAFIK GARIS AVG WAKTU TUNGGU VS DURASI KONSUL -->
                 <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
                     <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2 border-b pb-2">
-                        <span class="material-symbols-outlined text-emerald-600">donut_large</span>
-                        3. Rasio Status Penyelesaian Tiket
+                        <span class="material-symbols-outlined text-blue-600">timeline</span>
+                        3. Tren Rata-Rata Waktu Tunggu vs Durasi Konsul CS (Menit)
                     </h3>
-                    <div class="h-56 relative flex justify-center">
-                        <canvas id="statusDonutChart" data-ratio='{{ json_encode($statusRatioData ?? []) }}'></canvas>
+                    <div class="h-56 relative">
+                        <canvas id="slaTrendChart" data-chart-sets='{{ json_encode($chartDataSets ?? []) }}'></canvas>
                     </div>
                     <p class="text-[10px] text-gray-500 italic border-t pt-2">
-                        💡 **Penjelasan:** Mengidentifikasi rasio tingkat keberhasilan, tiket menunggu, ditransfer, tidak hadir (No Show), dan dibatalkan.
+                        💡 **Penjelasan:** Membandingkan tren rata-rata lamanya pelanggan menunggu dengan durasi penanganan CS di meja konsul (dalam satuan menit).
                     </p>
                 </div>
             </div>
@@ -796,7 +796,7 @@
     <script>
         var globalQueueChart = null;
         var globalPieChart = null;
-        var globalDonutChart = null;
+        var globalSlaChart = null;
         var globalBarChart = null;
 
         function togglePdfCustomDates(val) {
@@ -833,16 +833,17 @@
                         try {
                             this.allDataSets = JSON.parse(canvasLine.dataset.chartSets);
                             this.renderLineChart('last30');
+                            this.renderSlaLineChart('last30');
                         } catch (e) { console.error(e); }
                     }
                     this.renderPieChart();
-                    this.renderDonutChart();
                     this.renderBarChart();
                 },
 
                 switchChartPeriod: function(period) {
                     this.chartPeriod = period;
                     this.renderLineChart(period);
+                    this.renderSlaLineChart(period);
                 },
 
                 renderLineChart: function(periodKey) {
@@ -866,6 +867,51 @@
                     });
                 },
 
+                renderSlaLineChart: function(periodKey) {
+                    const dataSet = this.allDataSets[periodKey || this.chartPeriod] || this.allDataSets['last30'];
+                    const canvas = document.getElementById('slaTrendChart');
+                    if (!canvas || !dataSet) return;
+
+                    const ctx = canvas.getContext('2d');
+                    if (globalSlaChart) globalSlaChart.destroy();
+
+                    globalSlaChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: dataSet.dates,
+                            datasets: [
+                                { 
+                                    label: 'Avg Waktu Tunggu (Menit)', 
+                                    data: dataSet.avg_tunggu || [], 
+                                    borderColor: '#3B82F6', 
+                                    backgroundColor: 'rgba(59, 130, 246, 0.1)', 
+                                    fill: true, 
+                                    tension: 0.3 
+                                },
+                                { 
+                                    label: 'Avg Durasi Konsul CS (Menit)', 
+                                    data: dataSet.avg_layanan || [], 
+                                    borderColor: '#10B981', 
+                                    backgroundColor: 'rgba(16, 185, 129, 0.1)', 
+                                    fill: true, 
+                                    tension: 0.3 
+                                }
+                            ]
+                        },
+                        options: { 
+                            responsive: true, 
+                            maintainAspectRatio: false, 
+                            plugins: { legend: { position: 'top' } },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    title: { display: true, text: 'Waktu (Menit)' }
+                                }
+                            }
+                        }
+                    });
+                },
+
                 renderPieChart: function() {
                     const canvas = document.getElementById('categoryPieChart');
                     if (!canvas || !canvas.dataset.dist) return;
@@ -886,28 +932,6 @@
                                 datasets: [{
                                     data: data,
                                     backgroundColor: ['#00509E', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#64748B']
-                                }]
-                            },
-                            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
-                        });
-                    } catch (e) { console.error(e); }
-                },
-
-                renderDonutChart: function() {
-                    const canvas = document.getElementById('statusDonutChart');
-                    if (!canvas || !canvas.dataset.ratio) return;
-
-                    try {
-                        const raw = JSON.parse(canvas.dataset.ratio);
-                        if (globalDonutChart) globalDonutChart.destroy();
-
-                        globalDonutChart = new Chart(canvas.getContext('2d'), {
-                            type: 'doughnut',
-                            data: {
-                                labels: Object.keys(raw),
-                                datasets: [{
-                                    data: Object.values(raw),
-                                    backgroundColor: ['#10B981', '#F59E0B', '#3B82F6', '#6366F1', '#8B5CF6', '#EF4444']
                                 }]
                             },
                             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
