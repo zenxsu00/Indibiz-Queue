@@ -403,7 +403,7 @@
                 </p>
             </div>
 
-            <!-- GRID 2 KOLOM: PIE & SLA LINE CHART -->
+            <!-- GRAFIK PIE & SLA DEKLARASI TERPISAH / MERGE DENGAN ANIMASI TRANSISI -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- CHART 2: PIE KEPADATAN KATEGORI -->
                 <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
@@ -419,17 +419,51 @@
                     </p>
                 </div>
 
-                <!-- CHART 3: GRAFIK GARIS AVG WAKTU TUNGGU VS DURASI KONSUL -->
-                <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
-                    <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2 border-b pb-2">
-                        <span class="material-symbols-outlined text-blue-600">timeline</span>
-                        3. Tren Rata-Rata Waktu Tunggu vs Durasi Konsul CS (Menit)
-                    </h3>
-                    <div class="h-56 relative">
-                        <canvas id="slaTrendChart" data-chart-sets='{{ json_encode($chartDataSets ?? []) }}'></canvas>
+                <!-- CHART 3: DENGAN TOGGLE MERGE / UNMERGE DAN ANIMASI -->
+                <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3 flex flex-col justify-between">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b pb-2">
+                        <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2">
+                            <span class="material-symbols-outlined text-blue-600">timeline</span>
+                            3. Tren Waktu Tunggu vs Durasi Konsul CS
+                        </h3>
+                        
+                        <!-- SWITCH TOGGLE ANIMATION MERGE / UNMERGE -->
+                        <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-xl text-[10px] font-bold">
+                            <button @click="toggleSlaMode(true)" :class="isMerged ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-2.5 py-1 rounded-lg transition-all duration-300 ease-in-out flex items-center gap-1 cursor-pointer">
+                                <span class="material-symbols-outlined text-xs">merge</span> Mode Gabung
+                            </button>
+                            <button @click="toggleSlaMode(false)" :class="!isMerged ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-2.5 py-1 rounded-lg transition-all duration-300 ease-in-out flex items-center gap-1 cursor-pointer">
+                                <span class="material-symbols-outlined text-xs">call_split</span> Mode Pisah
+                            </button>
+                        </div>
                     </div>
+
+                    <!-- CONTAINER ANIMATED SLIDE/FADE MODE -->
+                    <div class="relative min-h-[220px]">
+                        <!-- MODE COMBINED (1 BOX COMBINED) -->
+                        <div x-show="isMerged" x-transition:enter="transition ease-out duration-500 transform" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="h-56 relative">
+                            <canvas id="slaMergedChart" data-chart-sets='{{ json_encode($chartDataSets ?? []) }}'></canvas>
+                        </div>
+
+                        <!-- MODE SEPARATE (2 SUB-CHARTS SIDE-BY-SIDE) -->
+                        <div x-show="!isMerged" x-cloak x-transition:enter="transition ease-out duration-500 transform" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="grid grid-cols-1 sm:grid-cols-2 gap-3 h-56">
+                            <div class="relative h-full border border-blue-100 p-2 rounded-xl bg-blue-50/30">
+                                <span class="text-[9px] font-extrabold text-blue-700 block text-center mb-1">Rata-Rata Waktu Tunggu (Menit)</span>
+                                <div class="h-44 relative">
+                                    <canvas id="slaTungguSeparateChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="relative h-full border border-emerald-100 p-2 rounded-xl bg-emerald-50/30">
+                                <span class="text-[9px] font-extrabold text-emerald-700 block text-center mb-1">Rata-Rata Durasi Konsul CS (Menit)</span>
+                                <div class="h-44 relative">
+                                    <canvas id="slaKonsulSeparateChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <p class="text-[10px] text-gray-500 italic border-t pt-2">
-                        💡 **Penjelasan:** Membandingkan tren rata-rata lamanya pelanggan menunggu dengan durasi penanganan CS di meja konsul (dalam satuan menit).
+                        💡 **Penjelasan:** Mode Gabung menyatukan 2 kurva sekaligus, sedangkan Mode Pisah mengisolasi tren antrean dan konsul CS secara rinci.
                     </p>
                 </div>
             </div>
@@ -796,7 +830,9 @@
     <script>
         var globalQueueChart = null;
         var globalPieChart = null;
-        var globalSlaChart = null;
+        var globalSlaMergedChart = null;
+        var globalSlaTungguChart = null;
+        var globalSlaKonsulChart = null;
         var globalBarChart = null;
 
         function togglePdfCustomDates(val) {
@@ -825,6 +861,7 @@
         function chartFilterComponent() {
             return {
                 chartPeriod: 'last30',
+                isMerged: true,
                 allDataSets: {},
                 
                 init: function() {
@@ -833,7 +870,7 @@
                         try {
                             this.allDataSets = JSON.parse(canvasLine.dataset.chartSets);
                             this.renderLineChart('last30');
-                            this.renderSlaLineChart('last30');
+                            this.renderSlaCharts('last30');
                         } catch (e) { console.error(e); }
                     }
                     this.renderPieChart();
@@ -843,7 +880,14 @@
                 switchChartPeriod: function(period) {
                     this.chartPeriod = period;
                     this.renderLineChart(period);
-                    this.renderSlaLineChart(period);
+                    this.renderSlaCharts(period);
+                },
+
+                toggleSlaMode: function(mergedStatus) {
+                    this.isMerged = mergedStatus;
+                    this.$nextTick(() => {
+                        this.renderSlaCharts(this.chartPeriod);
+                    });
                 },
 
                 renderLineChart: function(periodKey) {
@@ -867,49 +911,62 @@
                     });
                 },
 
-                renderSlaLineChart: function(periodKey) {
+                renderSlaCharts: function(periodKey) {
                     const dataSet = this.allDataSets[periodKey || this.chartPeriod] || this.allDataSets['last30'];
-                    const canvas = document.getElementById('slaTrendChart');
-                    if (!canvas || !dataSet) return;
+                    if (!dataSet) return;
 
-                    const ctx = canvas.getContext('2d');
-                    if (globalSlaChart) globalSlaChart.destroy();
+                    if (this.isMerged) {
+                        // MODE MERGED
+                        const canvas = document.getElementById('slaMergedChart');
+                        if (!canvas) return;
 
-                    globalSlaChart = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: dataSet.dates,
-                            datasets: [
-                                { 
-                                    label: 'Avg Waktu Tunggu (Menit)', 
-                                    data: dataSet.avg_tunggu || [], 
-                                    borderColor: '#3B82F6', 
-                                    backgroundColor: 'rgba(59, 130, 246, 0.1)', 
-                                    fill: true, 
-                                    tension: 0.3 
-                                },
-                                { 
-                                    label: 'Avg Durasi Konsul CS (Menit)', 
-                                    data: dataSet.avg_layanan || [], 
-                                    borderColor: '#10B981', 
-                                    backgroundColor: 'rgba(16, 185, 129, 0.1)', 
-                                    fill: true, 
-                                    tension: 0.3 
-                                }
-                            ]
-                        },
-                        options: { 
-                            responsive: true, 
-                            maintainAspectRatio: false, 
-                            plugins: { legend: { position: 'top' } },
-                            scales: {
-                                y: {
-                                    beginAtZero: true,
-                                    title: { display: true, text: 'Waktu (Menit)' }
-                                }
+                        if (globalSlaMergedChart) globalSlaMergedChart.destroy();
+
+                        globalSlaMergedChart = new Chart(canvas.getContext('2d'), {
+                            type: 'line',
+                            data: {
+                                labels: dataSet.dates,
+                                datasets: [
+                                    { label: 'Avg Waktu Tunggu (Menit)', data: dataSet.avg_tunggu || [], borderColor: '#3B82F6', backgroundColor: 'rgba(59, 130, 246, 0.1)', fill: true, tension: 0.3 },
+                                    { label: 'Avg Durasi Konsul CS (Menit)', data: dataSet.avg_layanan || [], borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3 }
+                                ]
+                            },
+                            options: { 
+                                responsive: true, 
+                                maintainAspectRatio: false, 
+                                plugins: { legend: { position: 'top' } },
+                                scales: { y: { beginAtZero: true, title: { display: true, text: 'Waktu (Menit)' } } }
                             }
+                        });
+                    } else {
+                        // MODE SEPARATE (UNMERGED)
+                        const canvasTunggu = document.getElementById('slaTungguSeparateChart');
+                        const canvasKonsul = document.getElementById('slaKonsulSeparateChart');
+
+                        if (canvasTunggu) {
+                            if (globalSlaTungguChart) globalSlaTungguChart.destroy();
+                            globalSlaTungguChart = new Chart(canvasTunggu.getContext('2d'), {
+                                type: 'line',
+                                data: {
+                                    labels: dataSet.dates,
+                                    datasets: [{ label: 'Waktu Tunggu', data: dataSet.avg_tunggu || [], borderColor: '#3B82F6', backgroundColor: 'rgba(59, 130, 246, 0.2)', fill: true, tension: 0.3 }]
+                                },
+                                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                            });
                         }
-                    });
+
+                        if (canvasKonsul) {
+                            if (globalSlaKonsulChart) globalSlaKonsulChart.destroy();
+                            globalSlaKonsulChart = new Chart(canvasKonsul.getContext('2d'), {
+                                type: 'line',
+                                data: {
+                                    labels: dataSet.dates,
+                                    datasets: [{ label: 'Durasi Konsul CS', data: dataSet.avg_layanan || [], borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.2)', fill: true, tension: 0.3 }]
+                                },
+                                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                            });
+                        }
+                    }
                 },
 
                 renderPieChart: function() {
