@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Laporan Antrean Indibiz</title>
-    <!-- Ganti CDN ke versi Unpkg yang lebih stabil untuk window.print -->
-    <script src="https://unpkg.com/chart.js@4.4.1/dist/chart.umd.js"></script>
     <style>
         body { font-family: Arial, sans-serif; font-size: 11px; color: #181C20; margin: 20px; line-height: 1.4; }
         .header { text-align: center; border-bottom: 2px solid #EE2E24; padding-bottom: 10px; margin-bottom: 15px; }
@@ -16,8 +14,10 @@
         .summary-title { font-weight: bold; font-size: 11px; color: #00509E; margin-bottom: 4px; text-transform: uppercase; }
         
         .charts-container { margin-bottom: 15px; page-break-inside: avoid; }
-        .chart-box { border: 1px solid #e0e3e8; border-radius: 6px; padding: 12px; margin-bottom: 12px; background: #fff; }
-        .chart-title { font-weight: bold; font-size: 11px; color: #181C20; margin-bottom: 8px; text-transform: uppercase; }
+        .chart-box { border: 1px solid #e0e3e8; border-radius: 6px; padding: 12px; margin-bottom: 12px; background: #fff; text-align: center; }
+        .chart-title { font-weight: bold; font-size: 11px; color: #181C20; margin-bottom: 8px; text-transform: uppercase; text-align: left; }
+        
+        .chart-image { max-width: 100%; height: auto; max-height: 250px; display: inline-block; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 10px; page-break-inside: auto; }
         tr { page-break-inside: avoid; page-break-after: auto; }
@@ -41,46 +41,38 @@
 </head>
 <body>
 
+    <!-- WADAH FLAG KONFIGURASI DARI CONTROLLER (HTML AMAN UNTUK LINTER) -->
+    <div id="pdf-config" 
+         data-summary="{{ request('inc_summary', 1) }}" 
+         data-charts="{{ request('inc_charts', 1) }}" 
+         style="display: none;"></div>
+
     <!-- HEADER LAPORAN -->
     <div class="header">
         <h2>INDIBIZ SERVICE DESK - LAPORAN ANTREAN & TRANSAKSI</h2>
         <p>Periode Waktu: {{ $startDate->format('d/m/Y') }} s/d {{ $endDate->format('d/m/Y') }}</p>
     </div>
 
-    <!-- OPSI 1: EXECUTIVE SUMMARY -->
-    @if(request('inc_summary', 1) && isset($analisisOtomatis['status_tiket']))
-    <div class="summary-box">
+    <!-- OPSI 1: WADAH EXECUTIVE SUMMARY -->
+    @if(request('inc_summary', 1))
+    <div id="pdf-summary-container" class="summary-box" style="display: none;">
         <div class="summary-title">Executive Summary / Analisis Otomatis Operasional</div>
-        <div>{!! preg_replace('/\*\*(.*?)\*\*/', '<strong>$1</strong>', $analisisOtomatis['status_tiket']) !!}</div>
+        <div id="pdf-summary-content"></div>
     </div>
     @endif
 
-    <!-- OPSI 2: VISUALISASI GRAFIK ANALITIK -->
+    <!-- OPSI 2: WADAH GRAFIK ANALITIK IMAGE -->
     @if(request('inc_charts', 1))
-    <div class="charts-container">
+    <div id="pdf-charts-container" class="charts-container" style="display: none;">
         <div class="chart-box">
             <div class="chart-title">1. Tren Pendaftaran vs Layanan Selesai</div>
-            <div style="height: 220px; width: 100%; position: relative;">
-                <canvas id="pdfLineChart"></canvas>
-            </div>
+            <img id="pdf-line-img" class="chart-image" alt="Grafik Line Tidak Tersedia" />
         </div>
-
         <div class="chart-box">
             <div class="chart-title">2. Proporsi Kepadatan Kategori Layanan</div>
-            <div style="height: 220px; width: 100%; position: relative;">
-                <canvas id="pdfPieChart"></canvas>
-            </div>
+            <img id="pdf-pie-img" class="chart-image" alt="Pie Chart Tidak Tersedia" />
         </div>
     </div>
-
-    <!-- WADAH DATA JSON (Agar VS Code Linter tidak error melihat sintaks Blade) -->
-    <script id="data-chart-sets" type="application/json">
-        {!! json_encode($chartDataSets ?? []) !!}
-    </script>
-    <script id="data-dist-layanan" type="application/json">
-        {!! json_encode($distribusiLayanan ?? []) !!}
-    </script>
-    <div id="data-period" data-value="{{ request('period', 'mtd') }}" style="display: none;"></div>
     @endif
 
     <!-- OPSI 3: TABEL DETAIL TIKET -->
@@ -138,99 +130,52 @@
         TOTAL OMSET DITERIMA: Rp {{ number_format($totalOmset, 0, ',', '.') }}
     </div>
 
-    <!-- SCRIPT RENDER CHART PURE JS (Bebas Error Linter) -->
+    <!-- SCRIPT TARIK DATA & PRINT (100% VANILLA JS BEBAS ERROR BLADE) -->
     <script>
         window.addEventListener('load', function() {
-            const chartDataNode = document.getElementById('data-chart-sets');
+            // Ambil flag konfigurasi dari HTML DOM
+            const configEl = document.getElementById('pdf-config');
+            const incSummary = configEl ? configEl.getAttribute('data-summary') : '1';
+            const incCharts = configEl ? configEl.getAttribute('data-charts') : '1';
             
-            // JIKA NODE CHART ADA (Artinya Checkbox Grafik Dicentang)
-            if (chartDataNode) {
-                try {
-                    // AMBIL DATA DARI DOM (Bukan via Blade Directives)
-                    const chartDataSets = JSON.parse(chartDataNode.textContent);
-                    
-                    const distNode = document.getElementById('data-dist-layanan');
-                    const rawDistData = distNode ? JSON.parse(distNode.textContent) : [];
-                    
-                    const periodNode = document.getElementById('data-period');
-                    const periodKey = periodNode ? periodNode.getAttribute('data-value') : 'mtd';
-                    
-                    // FALLBACK JIKA SET DATA TIDAK DITEMUKAN
-                    let dataSet = chartDataSets[periodKey] || chartDataSets['mtd'] || chartDataSets['last30'];
-                    if (!dataSet && Object.keys(chartDataSets).length > 0) {
-                        dataSet = chartDataSets[Object.keys(chartDataSets)[0]];
+            // 1. Ekstrak data teks Summary
+            if (incSummary === '1') {
+                const summaryHTML = localStorage.getItem('pdf_summary_data');
+                if (summaryHTML && summaryHTML.trim() !== '') {
+                    const containerEl = document.getElementById('pdf-summary-container');
+                    const contentEl = document.getElementById('pdf-summary-content');
+                    if (containerEl && contentEl) {
+                        contentEl.innerHTML = summaryHTML;
+                        containerEl.style.display = 'block';
                     }
-
-                    // 1. RENDER LINE CHART
-                    const lineCanvas = document.getElementById('pdfLineChart');
-                    if (lineCanvas && dataSet) {
-                        new Chart(lineCanvas.getContext('2d'), {
-                            type: 'line',
-                            data: {
-                                labels: dataSet.dates || [],
-                                datasets: [
-                                    { 
-                                        label: 'Total Tiket Masuk', 
-                                        data: dataSet.total || [], 
-                                        borderColor: '#00509E', 
-                                        backgroundColor: 'rgba(0, 80, 158, 0.1)', 
-                                        fill: true, 
-                                        tension: 0.3 
-                                    },
-                                    { 
-                                        label: 'Layanan Selesai', 
-                                        data: dataSet.selesai || [], 
-                                        borderColor: '#10B981', 
-                                        backgroundColor: 'rgba(16, 185, 129, 0.1)', 
-                                        fill: true, 
-                                        tension: 0.3 
-                                    }
-                                ]
-                            },
-                            options: { 
-                                responsive: true, 
-                                maintainAspectRatio: false, 
-                                animation: false,
-                                plugins: { legend: { position: 'top' } }
-                            }
-                        });
-                    }
-
-                    // 2. RENDER PIE CHART
-                    const pieCanvas = document.getElementById('pdfPieChart');
-                    if (pieCanvas) {
-                        let rawDist = rawDistData;
-                        if (!Array.isArray(rawDist)) rawDist = Object.values(rawDist);
-                        
-                        const labels = rawDist.map(i => i.nama || 'Lainnya');
-                        const data = rawDist.map(i => i.total || 0);
-
-                        new Chart(pieCanvas.getContext('2d'), {
-                            type: 'pie',
-                            data: {
-                                labels: labels.length ? labels : ['Tanpa Data'],
-                                datasets: [{
-                                    data: data.length ? data : [1],
-                                    backgroundColor: ['#00509E', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#64748B']
-                                }]
-                            },
-                            options: { 
-                                responsive: true, 
-                                maintainAspectRatio: false, 
-                                animation: false, 
-                                plugins: { legend: { position: 'right' } } 
-                            }
-                        });
-                    }
-                } catch (err) {
-                    console.error("Gagal merender chart PDF:", err);
                 }
             }
 
-            // MEMBERIKAN DELAY MEMASTIKAN RENDERING SELESAI SEBELUM DI-PRINT
+            // 2. Ekstrak gambar Grafik
+            if (incCharts === '1') {
+                const lineImgData = localStorage.getItem('pdf_line_data');
+                const pieImgData = localStorage.getItem('pdf_pie_data');
+                let hasCharts = false;
+
+                if (lineImgData && lineImgData.length > 50) {
+                    const imgEl = document.getElementById('pdf-line-img');
+                    if (imgEl) { imgEl.src = lineImgData; hasCharts = true; }
+                }
+                if (pieImgData && pieImgData.length > 50) {
+                    const imgEl = document.getElementById('pdf-pie-img');
+                    if (imgEl) { imgEl.src = pieImgData; hasCharts = true; }
+                }
+
+                if (hasCharts) {
+                    const containerEl = document.getElementById('pdf-charts-container');
+                    if (containerEl) { containerEl.style.display = 'block'; }
+                }
+            }
+
+            // Beri Jeda render layout HTML/Image, lalu Otomatis Print
             setTimeout(function() {
                 window.print();
-            }, 1000);
+            }, 600);
         });
     </script>
 </body>
