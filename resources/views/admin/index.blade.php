@@ -29,7 +29,7 @@
           selectedTiket: null,
           selectedPeriod: '{{ request('period', 'all') }}',
           selectedLayananId: '{{ $layanans->first()->id ?? '' }}',
-          selectedLayananNama: '{{ $layanans->first()->nama_layanan ?? '' }}'
+          selectedLayananNama: '{{ addslashes($layanans->first()->nama_layanan ?? '') }}'
       }">
 
     <!-- HEADER MOBILE -->
@@ -250,7 +250,6 @@
         <!-- TAB 1: OPERATIONS -->
         <div x-show="activeTab === 'operations'" class="space-y-6">
             
-            <!-- RINGKASAN ANALISIS OTOMATIS TREN OPERASIONAL -->
             <div class="bg-white p-4 rounded-2xl border border-[#E0E3E8] shadow-sm flex items-center gap-3">
                 <span class="material-symbols-outlined text-[#00509E] text-2xl">insights</span>
                 <div class="flex-1">
@@ -377,33 +376,20 @@
         </div>
 
         <!-- TAB 2: ANALITIK LAYANAN -->
-        <div x-show="activeTab === 'analytics'" x-data="chartFilterComponent()" class="space-y-6">
+        <div x-show="activeTab === 'analytics'" class="space-y-6">
             
-            <!-- LINE CHART 1: TREN PENDAFTARAN vs LAYANAN SELESAI -->
             <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 pb-3 border-b border-gray-100">
                     <h3 class="text-sm font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2">
                         <span class="material-symbols-outlined text-[#00509E]">show_chart</span>
                         1. Grafik Tren Pendaftaran vs Layanan Selesai
                     </h3>
-
-                    <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-xl text-xs font-bold">
-                        <button @click="switchChartPeriod('wtd')" :class="chartPeriod === 'wtd' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">WTD</button>
-                        <button @click="switchChartPeriod('mtd')" :class="chartPeriod === 'mtd' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">MTD</button>
-                        <button @click="switchChartPeriod('mtm')" :class="chartPeriod === 'mtm' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">MTM</button>
-                        <button @click="switchChartPeriod('last30')" :class="chartPeriod === 'last30' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">30 Hari</button>
-                    </div>
                 </div>
-
                 <div class="h-64 sm:h-80 relative">
                     <canvas id="queueChart" data-chart-sets='{{ json_encode($chartDataSets ?? []) }}'></canvas>
                 </div>
-                <p class="text-[11px] text-gray-500 italic mt-3 border-t pt-2">
-                    💡 **Penjelasan:** Menampilkan fluktuasi harian antara tiket yang masuk dibandingkan tiket yang berhasil diselesaikan oleh staf loket CS.
-                </p>
             </div>
 
-            <!-- CHART 2: PIE KEPADATAN KATEGORI -->
             <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
                 <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2 border-b pb-2">
                     <span class="material-symbols-outlined text-[#00509E]">pie_chart</span>
@@ -412,67 +398,16 @@
                 <div class="h-72 sm:h-80 relative flex justify-center items-center py-2">
                     <canvas id="categoryPieChart" data-dist='{{ json_encode($distribusiLayanan ?? []) }}'></canvas>
                 </div>
-                <p class="text-[10px] text-gray-500 italic border-t pt-2">
-                    💡 **Penjelasan:** Mengukur kategori mana yang paling mendominasi beban kerja loket pelayanan Indibiz.
-                </p>
             </div>
 
-            <!-- CHART 3: TREN WAKTU TUNGGU VS DURASI KONSUL -->
-            <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3 flex flex-col justify-between">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b pb-2">
-                    <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2">
-                        <span class="material-symbols-outlined text-blue-600">timeline</span>
-                        3. Tren Waktu Tunggu vs Durasi Konsul CS (Estimasi Rata-Rata)
-                    </h3>
-                    
-                    <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-xl text-[10px] font-bold">
-                        <button @click="toggleSlaMode(true)" :class="isMerged ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all duration-300 ease-in-out flex items-center gap-1 cursor-pointer">
-                            <span class="material-symbols-outlined text-xs">merge</span> Mode Gabung
-                        </button>
-                        <button @click="toggleSlaMode(false)" :class="!isMerged ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all duration-300 ease-in-out flex items-center gap-1 cursor-pointer">
-                            <span class="material-symbols-outlined text-xs">call_split</span> Mode Pisah
-                        </button>
-                    </div>
-                </div>
-
-                <div class="relative min-h-[260px] py-2">
-                    <div x-show="isMerged" x-transition:enter="transition ease-out duration-500 transform" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="h-64 sm:h-72 relative">
-                        <canvas id="slaMergedChart" data-chart-sets='{{ json_encode($chartDataSets ?? []) }}'></canvas>
-                    </div>
-
-                    <div x-show="!isMerged" x-cloak x-transition:enter="transition ease-out duration-500 transform" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="grid grid-cols-1 md:grid-cols-2 gap-4 h-64 sm:h-72">
-                        <div class="relative h-full border border-blue-100 p-3 rounded-xl bg-blue-50/30 flex flex-col justify-between">
-                            <span class="text-[10px] font-extrabold text-blue-700 block text-center uppercase tracking-wider">Rata-Rata Waktu Tunggu (Menit)</span>
-                            <div class="h-52 relative">
-                                <canvas id="slaTungguSeparateChart"></canvas>
-                            </div>
-                        </div>
-                        <div class="relative h-full border border-emerald-100 p-3 rounded-xl bg-emerald-50/30 flex flex-col justify-between">
-                            <span class="text-[10px] font-extrabold text-emerald-700 block text-center uppercase tracking-wider">Rata-Rata Durasi Konsul CS (Menit)</span>
-                            <div class="h-52 relative">
-                                <canvas id="slaKonsulSeparateChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <p class="text-[10px] text-gray-500 italic border-t pt-2">
-                    💡 **Penjelasan:** Mode Gabung menyatukan 2 kurva sekaligus, sedangkan Mode Pisah mengisolasi tren antrean dan konsul CS secara rinci.
-                </p>
-            </div>
-
-            <!-- CHART 4: BAR PERFORMA CS -->
             <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
                 <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2 border-b pb-2">
                     <span class="material-symbols-outlined text-purple-600">bar_chart</span>
-                    4. Performa Produktivitas Staf CS per Meja
+                    3. Performa Produktivitas Staf CS per Meja
                 </h3>
                 <div class="h-64 sm:h-72 relative">
                     <canvas id="csBarChart" data-cs='{{ json_encode($mejaCs ?? []) }}'></canvas>
                 </div>
-                <p class="text-[10px] text-gray-500 italic border-t pt-2">
-                    💡 **Penjelasan:** Menilai kontribusi jumlah tiket yang berhasil diselesaikan oleh masing-masing meja CS pada rentang waktu terpilih.
-                </p>
             </div>
         </div>
 
@@ -619,13 +554,16 @@
                     <div class="p-4 bg-[#F8F9FA] border-b flex justify-between items-center"><h4 class="font-black text-xs text-[#00509E] uppercase">Kategori Utama</h4></div>
                     <div class="p-3 space-y-2 max-h-[550px] overflow-y-auto custom-scrollbar">
                         @foreach($layanans as $lay)
-                            @php
-                                /** @var \App\Models\Layanan $lay */
-                                $subCount = optional($lay->getAttribute('subLayanans'))->count() ?? 0;
-                            @endphp
                             <div @click="selectedLayananId = '{{ $lay->id }}'; selectedLayananNama = '{{ addslashes($lay->nama_layanan) }}'" :class="selectedLayananId == '{{ $lay->id }}' ? 'border-[#00509E] bg-[#00509E]/5 ring-2 ring-[#00509E]/20' : 'border-[#E0E3E8]'" class="p-3 border rounded-xl flex items-center justify-between cursor-pointer">
-                                <div><h5 class="font-extrabold text-xs text-[#181C20]">{{ $lay->nama_layanan }}</h5><span class="text-[10px] text-gray-500 font-semibold mt-0.5 block">{{ $subCount }} Sub-Layanan</span></div>
-                                <form action="{{ route('admin.layanan.destroy', $lay->id) }}" method="POST" onsubmit="return confirm('Hapus kategori ini?')">@csrf @method('DELETE') <button type="submit" class="p-1.5 bg-rose-50 text-rose-600 rounded-lg"><span class="material-symbols-outlined text-sm">delete</span></button></form>
+                                <div>
+                                    <h5 class="font-extrabold text-xs text-[#181C20]">{{ $lay->nama_layanan }}</h5>
+                                    <span class="text-[10px] text-gray-500 font-semibold mt-0.5 block">{{ isset($lay->subLayanans) ? count($lay->subLayanans) : 0 }} Sub-Layanan</span>
+                                </div>
+                                <form action="{{ route('admin.layanan.destroy', $lay->id) }}" method="POST" onsubmit="return confirm('Hapus kategori ini?')">
+                                    @csrf 
+                                    @method('DELETE') 
+                                    <button type="submit" class="p-1.5 bg-rose-50 text-rose-600 rounded-lg"><span class="material-symbols-outlined text-sm">delete</span></button>
+                                </form>
                             </div>
                         @endforeach
                     </div>
@@ -638,27 +576,27 @@
                     </div>
                     <div class="p-4 min-h-[300px] max-h-[550px] overflow-y-auto custom-scrollbar">
                         @foreach($layanans as $lay)
-                            @php
-                                /** @var \App\Models\Layanan $lay */
-                                $subList = optional($lay->getAttribute('subLayanans'))->all() ?? [];
-                            @endphp
                             <div x-show="selectedLayananId == '{{ $lay->id }}'" class="space-y-2">
-                                @forelse($subList as $sub)
-                                    @php /** @var \App\Models\SubLayanan $sub */ @endphp
-                                    <div class="p-3 bg-[#F8F9FA] border border-[#E0E3E8] rounded-xl flex items-center justify-between">
-                                        <div class="flex items-center gap-2"><span class="material-symbols-outlined text-emerald-600 text-base">subdirectory_arrow_right</span><span class="font-extrabold text-xs text-gray-800">{{ $sub->nama_sub_layanan }}</span></div>
-                                        <form action="{{ route('admin.sub_layanan.destroy', $sub->id) }}" method="POST" onsubmit="return confirm('Hapus sub-layanan?')">@csrf @method('DELETE') <button type="submit" class="p-1.5 bg-rose-50 text-rose-600 rounded-lg"><span class="material-symbols-outlined text-sm">delete</span></button></form>
-                                    </div>
-                                @empty
+                                @if(isset($lay->subLayanans) && count($lay->subLayanans) > 0)
+                                    @foreach($lay->subLayanans as $sub)
+                                        <div class="p-3 bg-[#F8F9FA] border border-[#E0E3E8] rounded-xl flex items-center justify-between">
+                                            <div class="flex items-center gap-2"><span class="material-symbols-outlined text-emerald-600 text-base">subdirectory_arrow_right</span><span class="font-extrabold text-xs text-gray-800">{{ $sub->nama_sub_layanan }}</span></div>
+                                            <form action="{{ route('admin.sub_layanan.destroy', $sub->id) }}" method="POST" onsubmit="return confirm('Hapus sub-layanan?')">
+                                                @csrf 
+                                                @method('DELETE') 
+                                                <button type="submit" class="p-1.5 bg-rose-50 text-rose-600 rounded-lg"><span class="material-symbols-outlined text-sm">delete</span></button>
+                                            </form>
+                                        </div>
+                                    @endforeach
+                                @else
                                     <div class="p-8 text-center text-gray-400 font-bold text-xs">Belum ada sub-layanan.</div>
-                                @endforelse
+                                @endif
                             </div>
                         @endforeach
                     </div>
                 </div>
             </div>
         </div>
-
     </main>
 
     <!-- MODAL POPUP: DETAIL TIKET ANTREAN & PENANGANAN CS -->
@@ -760,7 +698,7 @@
                     </select>
                 </div>
 
-                <!-- OPSI PILIHAN KOMPONEN (SUMMARY, GRAFIK ANALITIK, TABEL) -->
+                <!-- OPSI PILIHAN KOMPONEN -->
                 <div class="space-y-2">
                     <label class="font-bold text-gray-700 block">3. Opsi Komponen Laporan</label>
                     <div class="space-y-2.5 bg-gray-50 p-3 rounded-xl border border-gray-200">
@@ -827,15 +765,7 @@
         </div>
     </div>
 
-    <!-- SCRIPTS ENGINES -->
     <script>
-        var globalQueueChart = null;
-        var globalPieChart = null;
-        var globalSlaMergedChart = null;
-        var globalSlaTungguChart = null;
-        var globalSlaKonsulChart = null;
-        var globalBarChart = null;
-
         function togglePdfCustomDates(val) {
             const container = document.getElementById('pdf_custom_dates_container');
             if (!container) return;
@@ -851,55 +781,16 @@
             }
         }
 
-        // SINKRONISASI STATUS DISABLED AWAL PADA MODAL LOAD
         document.addEventListener('DOMContentLoaded', function() {
             const pdfSelect = document.getElementById('pdf_period_select');
-            if (pdfSelect) {
-                togglePdfCustomDates(pdfSelect.value);
-            }
-        });
-
-        function chartFilterComponent() {
-            return {
-                chartPeriod: 'last30',
-                isMerged: true,
-                allDataSets: {},
-                
-                init: function() {
-                    const canvasLine = document.getElementById('queueChart');
-                    if (canvasLine && canvasLine.dataset.chartSets) {
-                        try {
-                            this.allDataSets = JSON.parse(canvasLine.dataset.chartSets);
-                            this.renderLineChart('last30');
-                            this.renderSlaCharts('last30');
-                        } catch (e) { console.error(e); }
-                    }
-                    this.renderPieChart();
-                    this.renderBarChart();
-                },
-
-                switchChartPeriod: function(period) {
-                    this.chartPeriod = period;
-                    this.renderLineChart(period);
-                    this.renderSlaCharts(period);
-                },
-
-                toggleSlaMode: function(mergedStatus) {
-                    this.isMerged = mergedStatus;
-                    this.$nextTick(() => {
-                        this.renderSlaCharts(this.chartPeriod);
-                    });
-                },
-
-                renderLineChart: function(periodKey) {
-                    const dataSet = this.allDataSets[periodKey] || this.allDataSets['last30'];
-                    const canvas = document.getElementById('queueChart');
-                    if (!canvas || !dataSet) return;
-
-                    const ctx = canvas.getContext('2d');
-                    if (globalQueueChart) globalQueueChart.destroy();
-
-                    globalQueueChart = new Chart(ctx, {
+            if (pdfSelect) togglePdfCustomDates(pdfSelect.value);
+            
+            const canvasLine = document.getElementById('queueChart');
+            if (canvasLine && canvasLine.dataset.chartSets) {
+                const allDataSets = JSON.parse(canvasLine.dataset.chartSets || '{}');
+                const dataSet = allDataSets['last30'] || Object.values(allDataSets)[0] || null;
+                if (dataSet) {
+                    new Chart(canvasLine.getContext('2d'), {
                         type: 'line',
                         data: {
                             labels: dataSet.dates,
@@ -910,118 +801,36 @@
                         },
                         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
                     });
-                },
-
-                renderSlaCharts: function(periodKey) {
-                    const dataSet = this.allDataSets[periodKey || this.chartPeriod] || this.allDataSets['last30'];
-                    if (!dataSet) return;
-
-                    if (this.isMerged) {
-                        const canvas = document.getElementById('slaMergedChart');
-                        if (!canvas) return;
-
-                        if (globalSlaMergedChart) globalSlaMergedChart.destroy();
-
-                        globalSlaMergedChart = new Chart(canvas.getContext('2d'), {
-                            type: 'line',
-                            data: {
-                                labels: dataSet.dates,
-                                datasets: [
-                                    { label: 'Avg Waktu Tunggu (Menit)', data: dataSet.avg_tunggu || [], borderColor: '#3B82F6', backgroundColor: 'rgba(59, 130, 246, 0.1)', fill: true, tension: 0.3 },
-                                    { label: 'Avg Durasi Konsul CS (Menit)', data: dataSet.avg_layanan || [], borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3 }
-                                ]
-                            },
-                            options: { 
-                                responsive: true, 
-                                maintainAspectRatio: false, 
-                                plugins: { legend: { position: 'top' } },
-                                scales: { y: { beginAtZero: true, title: { display: true, text: 'Waktu (Menit)' } } }
-                            }
-                        });
-                    } else {
-                        const canvasTunggu = document.getElementById('slaTungguSeparateChart');
-                        const canvasKonsul = document.getElementById('slaKonsulSeparateChart');
-
-                        if (canvasTunggu) {
-                            if (globalSlaTungguChart) globalSlaTungguChart.destroy();
-                            globalSlaTungguChart = new Chart(canvasTunggu.getContext('2d'), {
-                                type: 'line',
-                                data: {
-                                    labels: dataSet.dates,
-                                    datasets: [{ label: 'Waktu Tunggu', data: dataSet.avg_tunggu || [], borderColor: '#3B82F6', backgroundColor: 'rgba(59, 130, 246, 0.2)', fill: true, tension: 0.3 }]
-                                },
-                                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-                            });
-                        }
-
-                        if (canvasKonsul) {
-                            if (globalSlaKonsulChart) globalSlaKonsulChart.destroy();
-                            globalSlaKonsulChart = new Chart(canvasKonsul.getContext('2d'), {
-                                type: 'line',
-                                data: {
-                                    labels: dataSet.dates,
-                                    datasets: [{ label: 'Durasi Konsul CS', data: dataSet.avg_layanan || [], borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.2)', fill: true, tension: 0.3 }]
-                                },
-                                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-                            });
-                        }
-                    }
-                },
-
-                renderPieChart: function() {
-                    const canvas = document.getElementById('categoryPieChart');
-                    if (!canvas || !canvas.dataset.dist) return;
-
-                    try {
-                        let raw = JSON.parse(canvas.dataset.dist);
-                        if (!Array.isArray(raw)) raw = Object.values(raw);
-
-                        const labels = raw.map(i => i.nama);
-                        const data = raw.map(i => i.total);
-
-                        if (globalPieChart) globalPieChart.destroy();
-
-                        globalPieChart = new Chart(canvas.getContext('2d'), {
-                            type: 'pie',
-                            data: {
-                                labels: labels,
-                                datasets: [{
-                                    data: data,
-                                    backgroundColor: ['#00509E', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#64748B']
-                                }]
-                            },
-                            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
-                        });
-                    } catch (e) { console.error(e); }
-                },
-
-                renderBarChart: function() {
-                    const canvas = document.getElementById('csBarChart');
-                    if (!canvas || !canvas.dataset.cs) return;
-
-                    try {
-                        const raw = JSON.parse(canvas.dataset.cs);
-                        const labels = raw.map(i => i.nama + ' (M' + i.nomor_meja + ')');
-                        const data = raw.map(i => i.total_dilayani);
-
-                        if (globalBarChart) globalBarChart.destroy();
-
-                        globalBarChart = new Chart(canvas.getContext('2d'), {
-                            type: 'bar',
-                            data: {
-                                labels: labels,
-                                datasets: [{
-                                    label: 'Total Tiket Dilayani',
-                                    data: data,
-                                    backgroundColor: '#8B5CF6'
-                                }]
-                            },
-                            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-                        });
-                    } catch (e) { console.error(e); }
                 }
-            };
-        }
+            }
+
+            const pieCanvas = document.getElementById('categoryPieChart');
+            if (pieCanvas && pieCanvas.dataset.dist) {
+                let rawDist = JSON.parse(pieCanvas.dataset.dist || '[]');
+                if (!Array.isArray(rawDist)) rawDist = Object.values(rawDist);
+                new Chart(pieCanvas.getContext('2d'), {
+                    type: 'pie',
+                    data: {
+                        labels: rawDist.map(i => i.nama),
+                        datasets: [{ data: rawDist.map(i => i.total), backgroundColor: ['#00509E', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#64748B'] }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+                });
+            }
+
+            const barCanvas = document.getElementById('csBarChart');
+            if (barCanvas && barCanvas.dataset.cs) {
+                const rawCs = JSON.parse(barCanvas.dataset.cs || '[]');
+                new Chart(barCanvas.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: rawCs.map(i => i.nama + ' (M' + i.nomor_meja + ')'),
+                        datasets: [{ label: 'Tiket Dilayani', data: rawCs.map(i => i.total_dilayani), backgroundColor: '#8B5CF6' }]
+                    },
+                    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                });
+            }
+        });
 
         function historyFilterComponent() {
             return {
@@ -1030,19 +839,16 @@
                 sortField: 'raw_date',
                 sortOrder: 'desc',
                 rawHistory: [],
-                
                 init: function() {
                     const elem = document.getElementById('history-data-container');
                     if (elem && elem.dataset.history) {
                         try { this.rawHistory = JSON.parse(elem.dataset.history); } catch (e) { this.rawHistory = []; }
                     }
                 },
-                
                 get filteredHistory() {
                     let data = [...this.rawHistory];
                     if (this.daysLimit !== 'all') data = data.slice(0, parseInt(this.daysLimit));
                     if (this.hideEmpty) data = data.filter(i => i.tiket_masuk > 0);
-
                     var self = this;
                     data.sort((a, b) => {
                         let valA = a[self.sortField];

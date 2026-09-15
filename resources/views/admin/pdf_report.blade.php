@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Laporan Antrean Indibiz</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Ganti CDN ke versi Unpkg yang lebih stabil untuk window.print -->
+    <script src="https://unpkg.com/chart.js@4.4.1/dist/chart.umd.js"></script>
     <style>
         body { font-family: Arial, sans-serif; font-size: 11px; color: #181C20; margin: 20px; line-height: 1.4; }
         .header { text-align: center; border-bottom: 2px solid #EE2E24; padding-bottom: 10px; margin-bottom: 15px; }
@@ -15,7 +16,7 @@
         .summary-title { font-weight: bold; font-size: 11px; color: #00509E; margin-bottom: 4px; text-transform: uppercase; }
         
         .charts-container { margin-bottom: 15px; page-break-inside: avoid; }
-        .chart-box { border: 1px solid #e0e3e8; border-radius: 6px; padding: 10px; margin-bottom: 10px; background: #fff; }
+        .chart-box { border: 1px solid #e0e3e8; border-radius: 6px; padding: 12px; margin-bottom: 12px; background: #fff; }
         .chart-title { font-weight: bold; font-size: 11px; color: #181C20; margin-bottom: 8px; text-transform: uppercase; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 10px; page-break-inside: auto; }
@@ -40,13 +41,11 @@
 </head>
 <body>
 
-    <!-- HEADER LAPORAN -->
     <div class="header">
         <h2>INDIBIZ SERVICE DESK - LAPORAN ANTREAN & TRANSAKSI</h2>
         <p>Periode Waktu: {{ $startDate->format('d/m/Y') }} s/d {{ $endDate->format('d/m/Y') }}</p>
     </div>
 
-    <!-- OPSI 1: EXECUTIVE SUMMARY -->
     @if(request('inc_summary', 1) && isset($analisisOtomatis['status_tiket']))
     <div class="summary-box">
         <div class="summary-title">Executive Summary / Analisis Otomatis Operasional</div>
@@ -54,26 +53,23 @@
     </div>
     @endif
 
-    <!-- OPSI 2: VISUALISASI GRAFIK ANALITIK -->
     @if(request('inc_charts', 1))
     <div class="charts-container">
         <div class="chart-box">
             <div class="chart-title">1. Tren Pendaftaran vs Layanan Selesai</div>
-            <div style="height: 200px; position: relative;">
+            <div style="height: 220px; width: 100%; position: relative;">
                 <canvas id="pdfLineChart"></canvas>
             </div>
         </div>
-
         <div class="chart-box">
             <div class="chart-title">2. Proporsi Kepadatan Kategori Layanan</div>
-            <div style="height: 200px; position: relative;">
+            <div style="height: 220px; width: 100%; position: relative;">
                 <canvas id="pdfPieChart"></canvas>
             </div>
         </div>
     </div>
     @endif
 
-    <!-- OPSI 3: TABEL DETAIL TIKET -->
     @if(request('inc_table', 1))
     <table>
         <thead>
@@ -128,58 +124,77 @@
         TOTAL OMSET DITERIMA: Rp {{ number_format($totalOmset, 0, ',', '.') }}
     </div>
 
-    <!-- ENGINE RENDER GRAFIK & AUTOMATIC PRINT -->
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            @if(request('inc_charts', 1))
-            // RENDER LINE CHART
-            const lineCanvas = document.getElementById('pdfLineChart');
-            if (lineCanvas) {
-                const chartDataSets = @json($chartDataSets ?? []);
-                const periodKey = '{{ request("period", "mtd") }}';
-                const dataSet = chartDataSets[periodKey] || chartDataSets['mtd'] || chartDataSets['last30'] || Object.values(chartDataSets)[0];
+    <!-- WADAH DATA BLADE (MENCEGAH ERROR LINTER JS) -->
+    <div id="pdf-data-container" 
+         class="hidden no-print" 
+         style="display: none;"
+         data-inc-charts="{{ request('inc_charts', 1) ? 'true' : 'false' }}"
+         data-period="{{ request('period', 'mtd') }}"
+         data-chart-sets="{{ json_encode($chartDataSets ?? []) }}"
+         data-dist="{{ json_encode($distribusiLayanan ?? []) }}">
+    </div>
 
-                if (dataSet && dataSet.dates) {
-                    new Chart(lineCanvas.getContext('2d'), {
-                        type: 'line',
-                        data: {
-                            labels: dataSet.dates,
-                            datasets: [
-                                { label: 'Total Tiket Masuk', data: dataSet.total, borderColor: '#00509E', backgroundColor: 'rgba(0, 80, 158, 0.1)', fill: true, tension: 0.3 },
-                                { label: 'Layanan Selesai', data: dataSet.selesai, borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3 }
-                            ]
-                        },
-                        options: { responsive: true, maintainAspectRatio: false, animation: false }
-                    });
+    <!-- SCRIPT JS MURNI (BEBAS DARI ERROR DECORATOR VSCODE) -->
+    <script>
+        window.addEventListener('load', function() {
+            const dataContainer = document.getElementById('pdf-data-container');
+            
+            if (dataContainer && dataContainer.dataset.incCharts === 'true') {
+                try {
+                    const chartDataSets = JSON.parse(dataContainer.dataset.chartSets || '{}');
+                    const periodKey = dataContainer.dataset.period || 'mtd';
+                    
+                    let dataSet = chartDataSets[periodKey] || chartDataSets['mtd'] || chartDataSets['last30'];
+                    if (!dataSet && Object.keys(chartDataSets).length > 0) {
+                        dataSet = chartDataSets[Object.keys(chartDataSets)[0]];
+                    }
+
+                    // 1. RENDER LINE CHART
+                    const lineCanvas = document.getElementById('pdfLineChart');
+                    if (lineCanvas && dataSet) {
+                        new Chart(lineCanvas.getContext('2d'), {
+                            type: 'line',
+                            data: {
+                                labels: dataSet.dates || [],
+                                datasets: [
+                                    { label: 'Total Tiket Masuk', data: dataSet.total || [], borderColor: '#00509E', backgroundColor: 'rgba(0, 80, 158, 0.1)', fill: true, tension: 0.3 },
+                                    { label: 'Layanan Selesai', data: dataSet.selesai || [], borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3 }
+                                ]
+                            },
+                            options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'top' } } }
+                        });
+                    }
+
+                    // 2. RENDER PIE CHART
+                    const pieCanvas = document.getElementById('pdfPieChart');
+                    if (pieCanvas) {
+                        let rawDist = JSON.parse(dataContainer.dataset.dist || '[]');
+                        if (!Array.isArray(rawDist)) rawDist = Object.values(rawDist);
+                        
+                        const labels = rawDist.map(i => i.nama || 'Lainnya');
+                        const data = rawDist.map(i => i.total || 0);
+
+                        new Chart(pieCanvas.getContext('2d'), {
+                            type: 'pie',
+                            data: {
+                                labels: labels.length ? labels : ['Tanpa Data'],
+                                datasets: [{
+                                    data: data.length ? data : [1],
+                                    backgroundColor: ['#00509E', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#64748B']
+                                }]
+                            },
+                            options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'right' } } }
+                        });
+                    }
+                } catch (err) {
+                    console.error("Gagal merender chart PDF:", err);
                 }
             }
 
-            // RENDER PIE CHART
-            const pieCanvas = document.getElementById('pdfPieChart');
-            if (pieCanvas) {
-                let rawDist = @json($distribusiLayanan ?? []);
-                if (!Array.isArray(rawDist)) rawDist = Object.values(rawDist);
-                const labels = rawDist.map(i => i.nama);
-                const data = rawDist.map(i => i.total);
-
-                new Chart(pieCanvas.getContext('2d'), {
-                    type: 'pie',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            data: data,
-                            backgroundColor: ['#00509E', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#64748B']
-                        }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'right' } } }
-                });
-            }
-            @endif
-
-            // MEMBERIKAN JEDA WAKTU UNTUK CHART RENDER SEBELUM CETAK
+            // MEMBERIKAN DELAY MEMASTIKAN RENDERING SELESAI SEBELUM DI-PRINT
             setTimeout(function() {
                 window.print();
-            }, 750);
+            }, 1000);
         });
     </script>
 </body>
