@@ -70,7 +70,9 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:admin'])->group(function () {
         Route::get('/admin-dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
         Route::get('/admin-dashboard/export', [AdminController::class, 'exportCsv'])->name('admin.export');
-        Route::get('/admin-dashboard/pdf', [AdminController::class, 'cetakPdf'])->name('admin.pdf');
+        
+        // MENDUKUNG GET DAN POST AGAR TIDAK ERROR 414 REQUEST-URI TOO LARGE
+        Route::match(['get', 'post'], '/admin-dashboard/pdf', [AdminController::class, 'cetakPdf'])->name('admin.pdf');
 
         // CRUD Layanan & Sub-Layanan
         Route::post('/admin/layanan/store', [AdminController::class, 'storeLayanan'])->name('admin.layanan.store');

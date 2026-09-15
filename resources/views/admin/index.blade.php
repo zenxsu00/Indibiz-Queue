@@ -745,7 +745,10 @@
                 <button @click="showModalPdf = false" class="text-gray-400 hover:text-gray-600"><span class="material-symbols-outlined">close</span></button>
             </div>
 
-            <form action="{{ route('admin.pdf') }}" method="GET" target="_blank" class="space-y-4 text-xs">
+            <!-- PERUBAHAN METHOD GET MENJADI POST & PENAMBAHAN TOKEN CSRF -->
+            <form action="{{ route('admin.pdf') }}" method="POST" target="_blank" class="space-y-4 text-xs">
+                @csrf
+                
                 <!-- PRESET PERIODE TANGGAL -->
                 <div class="space-y-2">
                     <label class="font-bold text-gray-700 block">1. Pilih Periode Waktu Laporan</label>
