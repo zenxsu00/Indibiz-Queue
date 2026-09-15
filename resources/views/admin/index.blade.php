@@ -182,7 +182,7 @@
                 <h2 class="text-xl lg:text-2xl font-black text-[#181C20] tracking-tight" x-text="
                     activeTab === 'operations' ? 'Operations Dashboard' : 
                     (activeTab === 'analytics' ? 'Analitik Tren & Kepadatan Layanan' : 
-                    (activeTab === 'history' ? 'Riwayat & Rekap SLA / Omset Bulanan' : 
+                    (activeTab === 'history' ? 'Riwayat Operasional & Rekap Omset' : 
                     (activeTab === 'staff' ? 'Monitoring Staf CS & Slot Meja' : 'Kelola Master Layanan & Sub-Layanan')))
                 "></h2>
                 <p class="text-xs text-[#5D3F3B] mt-0.5">
@@ -403,7 +403,7 @@
                 </p>
             </div>
 
-            <!-- GRAFIK PIE & SLA DEKLARASI TERPISAH / MERGE DENGAN ANIMASI TRANSISI -->
+            <!-- GRAFIK PIE & SLA TOGGLE MERGE / UNMERGE ANIMATION -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- CHART 2: PIE KEPADATAN KATEGORI -->
                 <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
@@ -483,20 +483,21 @@
             </div>
         </div>
 
-        <!-- TAB 3: RIWAYAT BULANAN -->
+        <!-- TAB 3: RIWAYAT OPERASIONAL REAL-TIME -->
         <div x-show="activeTab === 'history'" id="history-data-container" data-history='{{ json_encode($historyBulanan) }}' x-data="historyFilterComponent()" class="bg-white border border-[#E0E3E8] rounded-2xl shadow-sm overflow-hidden flex flex-col space-y-4 p-6">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-[#E0E3E8] pb-4 gap-4">
                 <div>
-                    <h3 class="text-lg font-black text-[#181C20]">Riwayat Kinerja, SLA & Omset Harian</h3>
-                    <p class="text-xs text-gray-500">Rekapitulasi data transaksi dan performa layanan per hari.</p>
+                    <h3 class="text-lg font-black text-[#181C20]">Riwayat Operasional Antrean & Omset Harian</h3>
+                    <p class="text-xs text-gray-500">Pemantauan volume antrean masuk, tiket diproses/menunggu, tipe layanan, serta total omset.</p>
                 </div>
                 <span class="text-xs font-bold bg-[#00509E]/10 text-[#00509E] px-3 py-1 rounded-full" x-text="'Total ' + filteredHistory.length + ' Baris Tampil'"></span>
             </div>
 
+            <!-- OPSI FILTER & SORTING TABEL -->
             <div class="bg-[#F8F9FA] p-3.5 rounded-xl border border-[#E0E3E8] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                 <div>
                     <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Jangka Waktu Hari</label>
-                    <select x-model="daysLimit" class="w-full border border-gray-300 rounded-lg p-2 font-semibold bg-white">
+                    <select x-model="daysLimit" class="w-full border border-gray-300 rounded-lg p-2 font-semibold bg-white cursor-pointer">
                         <option value="7">7 Hari Terakhir</option>
                         <option value="14">14 Hari Terakhir</option>
                         <option value="30">30 Hari Terakhir</option>
@@ -505,19 +506,18 @@
                 </div>
                 <div>
                     <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Urutkan Berdasarkan</label>
-                    <select x-model="sortField" class="w-full border border-gray-300 rounded-lg p-2 font-semibold bg-white">
-                        <option value="tanggal">Tanggal</option>
-                        <option value="total_tiket">Total Tiket</option>
-                        <option value="selesai">Tiket Selesai</option>
-                        <option value="ditransfer">Tiket Ditransfer</option>
-                        <option value="no_show">Tiket No Show</option>
-                        <option value="batal">Tiket Batal</option>
-                        <option value="total_omset">Total Omset</option>
+                    <select x-model="sortField" class="w-full border border-gray-300 rounded-lg p-2 font-semibold bg-white cursor-pointer">
+                        <option value="raw_date">Tanggal</option>
+                        <option value="tiket_masuk">Tiket Masuk</option>
+                        <option value="tiket_dilayani">Tiket Dilayani</option>
+                        <option value="sudah_diproses">Sudah Diproses (Selesai)</option>
+                        <option value="belum_diproses">Belum Diproses (Menunggu)</option>
+                        <option value="total_omset">Jumlah Transaksi (Omset)</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Arah Urutan</label>
-                    <select x-model="sortOrder" class="w-full border border-gray-300 rounded-lg p-2 font-semibold bg-white">
+                    <select x-model="sortOrder" class="w-full border border-gray-300 rounded-lg p-2 font-semibold bg-white cursor-pointer">
                         <option value="desc">Terbanyak / Terbaru</option>
                         <option value="asc">Tersedikit / Terlama</option>
                     </select>
@@ -526,35 +526,64 @@
                     <label class="inline-flex items-center cursor-pointer select-none">
                         <input type="checkbox" x-model="hideEmpty" class="sr-only peer">
                         <div class="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-[#00509E] relative after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
-                        <span class="ml-2 text-xs font-bold text-[#181C20]">Sembunyikan Kosong</span>
+                        <span class="ml-2 text-xs font-bold text-[#181C20]">Sembunyikan Hari Kosong</span>
                     </label>
                 </div>
             </div>
 
+            <!-- TABEL DENGAN STRUKTUR KOLOM BARU -->
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs">
                     <thead class="bg-[#F8F9FA] border-b border-[#E0E3E8] text-gray-500 font-black uppercase text-[10px]">
                         <tr>
                             <th class="p-3.5">Tanggal</th>
-                            <th class="p-3.5 text-center">Total Tiket</th>
-                            <th class="p-3.5 text-center">Selesai</th>
-                            <th class="p-3.5 text-center">Ditransfer</th>
-                            <th class="p-3.5 text-center">No Show</th>
-                            <th class="p-3.5 text-center">Batal</th>
-                            <th class="p-3.5 text-center">Rata-Rata SLA</th>
-                            <th class="p-3.5 text-right">Total Omset Loket</th>
+                            <th class="p-3.5 text-center">Tiket Masuk</th>
+                            <th class="p-3.5 text-center">Tiket Dilayani</th>
+                            <th class="p-3.5 text-center">Sudah Diproses</th>
+                            <th class="p-3.5 text-center">Belum Diproses</th>
+                            <th class="p-3.5">Tipe Layanan (A-B-C-D)</th>
+                            <th class="p-3.5 text-right">Jumlah Transaksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-[#E0E3E8]">
                         <template x-for="(row, idx) in filteredHistory" :key="idx">
-                            <tr class="hover:bg-[#F8F9FA] transition-colors" :class="row.total_tiket === 0 ? 'bg-gray-50/50' : ''">
+                            <tr class="hover:bg-[#F8F9FA] transition-colors" :class="row.tiket_masuk === 0 ? 'bg-gray-50/50' : ''">
+                                <!-- TANGGAL -->
                                 <td class="p-3.5 font-bold text-[#181C20]" x-text="row.tanggal"></td>
-                                <td class="p-3.5 text-center font-bold" x-text="row.total_tiket"></td>
-                                <td class="p-3.5 text-center font-bold text-emerald-600" x-text="row.selesai"></td>
-                                <td class="p-3.5 text-center font-bold text-indigo-600" x-text="row.ditransfer || 0"></td>
-                                <td class="p-3.5 text-center font-bold text-purple-600" x-text="row.no_show || 0"></td>
-                                <td class="p-3.5 text-center font-bold text-rose-600" x-text="row.batal"></td>
-                                <td class="p-3.5 text-center font-mono font-extrabold text-[#00509E]" x-text="row.avg_sla"></td>
+                                
+                                <!-- TIKET MASUK -->
+                                <td class="p-3.5 text-center font-bold text-[#00509E]" x-text="row.tiket_masuk"></td>
+                                
+                                <!-- TIKET DILAYANI -->
+                                <td class="p-3.5 text-center font-bold text-indigo-600" x-text="row.tiket_dilayani"></td>
+                                
+                                <!-- SUDAH DIPROSES (SELESAI) -->
+                                <td class="p-3.5 text-center">
+                                    <span class="px-2.5 py-1 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800" x-text="row.sudah_diproses"></span>
+                                </td>
+
+                                <!-- BELUM DIPROSES (MENUNGGU) -->
+                                <td class="p-3.5 text-center">
+                                    <span class="px-2.5 py-1 rounded-full text-[11px] font-black bg-amber-100 text-amber-800" x-text="row.belum_diproses"></span>
+                                </td>
+
+                                <!-- RINCIAN TIPE LAYANAN (A-B-C-D) -->
+                                <td class="p-3.5">
+                                    <div class="flex flex-wrap gap-1 max-w-[280px]">
+                                        <template x-if="row.breakdown_layanan && row.breakdown_layanan.length > 0">
+                                            <template x-for="(item, bIdx) in row.breakdown_layanan" :key="bIdx">
+                                                <span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[10px] font-semibold border border-gray-200">
+                                                    <span x-text="item.nama"></span>: <strong x-text="item.jumlah"></strong>
+                                                </span>
+                                            </template>
+                                        </template>
+                                        <template x-if="!row.breakdown_layanan || row.breakdown_layanan.length === 0">
+                                            <span class="text-gray-400 italic text-[10px]">-</span>
+                                        </template>
+                                    </div>
+                                </td>
+
+                                <!-- TOTAL OMSET / TRANSAKSI -->
                                 <td class="p-3.5 text-right font-black text-[#181C20]" x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(row.total_omset)"></td>
                             </tr>
                         </template>
@@ -1028,7 +1057,7 @@
             return {
                 daysLimit: '30',
                 hideEmpty: false,
-                sortField: 'tanggal',
+                sortField: 'raw_date',
                 sortOrder: 'desc',
                 rawHistory: [],
                 
@@ -1042,7 +1071,7 @@
                 get filteredHistory() {
                     let data = [...this.rawHistory];
                     if (this.daysLimit !== 'all') data = data.slice(0, parseInt(this.daysLimit));
-                    if (this.hideEmpty) data = data.filter(i => i.total_tiket > 0);
+                    if (this.hideEmpty) data = data.filter(i => i.tiket_masuk > 0);
 
                     var self = this;
                     data.sort((a, b) => {
