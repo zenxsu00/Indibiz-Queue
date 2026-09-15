@@ -264,45 +264,57 @@
                 </span>
             </div>
 
-            <!-- METRIK CARDS -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+            <!-- METRIK CARDS (Diperbarui dengan Waktu Tunggu, Durasi CS, Rating, No Show & Ditransfer) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
                 <div class="bg-white border border-[#E0E3E8] rounded-2xl p-4 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1.5 bg-[#00509E]"></div>
-                    <span class="text-[10px] text-[#5D3F3B] font-extrabold uppercase tracking-wider block mb-1.5">Total Antrean</span>
-                    <span class="text-2xl lg:text-3xl font-black text-[#181C20]">{{ number_format($totalHariIni) }}</span>
+                    <span class="text-[10px] text-[#5D3F3B] font-extrabold uppercase tracking-wider block mb-1">Total Antrean</span>
+                    <span class="text-2xl font-black text-[#181C20]">{{ number_format($totalHariIni) }}</span>
                 </div>
 
                 <div class="bg-white border border-[#E0E3E8] rounded-2xl p-4 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1.5 bg-amber-500"></div>
-                    <span class="text-[10px] text-[#5D3F3B] font-extrabold uppercase tracking-wider block mb-1.5">Sedang Menunggu</span>
-                    <span class="text-2xl lg:text-3xl font-black text-[#181C20]">{{ number_format($menunggu) }}</span>
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[9px] text-[#5D3F3B] font-extrabold uppercase">Menunggu / Transfer</span>
+                    </div>
+                    <div class="flex items-baseline gap-1.5">
+                        <span class="text-2xl font-black text-[#181C20]">{{ number_format($menunggu) }}</span>
+                        <span class="text-xs text-indigo-600 font-bold">({{ $ditransfer }} Trf)</span>
+                    </div>
                 </div>
 
                 <div class="bg-white border border-[#E0E3E8] rounded-2xl p-4 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1.5 bg-blue-500"></div>
                     <div class="flex justify-between items-center mb-1">
-                        <span class="text-[9px] text-[#5D3F3B] font-extrabold uppercase tracking-wider">Avg Waktu Tunggu</span>
-                        <span class="text-[8px] bg-blue-100 text-blue-800 font-black px-1 py-0.5 rounded">TV Display</span>
+                        <span class="text-[9px] text-[#5D3F3B] font-extrabold uppercase">Avg Waktu Tunggu</span>
                     </div>
-                    <span class="text-2xl font-black text-blue-600">{{ $avgWaktuTungguText }}</span>
+                    <span class="text-xl font-black text-blue-600">{{ $avgWaktuTungguText }}</span>
                 </div>
 
                 <div class="bg-white border border-[#E0E3E8] rounded-2xl p-4 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1.5 bg-emerald-500"></div>
                     <div class="flex justify-between items-center mb-1">
-                        <span class="text-[9px] text-[#5D3F3B] font-extrabold uppercase tracking-wider">Avg Durasi CS</span>
-                        <span class="text-[8px] bg-emerald-100 text-emerald-800 font-black px-1 py-0.5 rounded">SLA CS</span>
+                        <span class="text-[9px] text-[#5D3F3B] font-extrabold uppercase">Avg Durasi CS</span>
                     </div>
-                    <span class="text-2xl font-black text-emerald-600">{{ $avgDurasiLayananText }}</span>
+                    <span class="text-xl font-black text-emerald-600">{{ $avgDurasiLayananText }}</span>
+                </div>
+
+                <div class="bg-white border border-[#E0E3E8] rounded-2xl p-4 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1.5 bg-amber-400"></div>
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[9px] text-[#5D3F3B] font-extrabold uppercase">Kepuasan Pelanggan</span>
+                    </div>
+                    <span class="text-xl font-black text-amber-500 flex items-center gap-1">
+                        ★ {{ $avgRating > 0 ? $avgRating : '-' }} <span class="text-[10px] text-gray-400 font-normal">/ 5</span>
+                    </span>
                 </div>
 
                 <div class="bg-white border border-[#E0E3E8] rounded-2xl p-4 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1.5 bg-purple-600"></div>
                     <div class="flex justify-between items-center mb-1">
-                        <span class="text-[9px] text-[#5D3F3B] font-extrabold uppercase tracking-wider">Total Omset</span>
-                        <span class="text-[8px] bg-purple-100 text-purple-800 font-black px-1 py-0.5 rounded">Omset</span>
+                        <span class="text-[9px] text-[#5D3F3B] font-extrabold uppercase">Total Omset</span>
                     </div>
-                    <span class="text-lg lg:text-xl font-black text-[#00509E]">Rp {{ number_format($totalOmset, 0, ',', '.') }}</span>
+                    <span class="text-base font-black text-[#00509E]">Rp {{ number_format($totalOmset, 0, ',', '.') }}</span>
                 </div>
             </div>
 
@@ -321,10 +333,10 @@
                                 <th class="p-3">Pelanggan</th>
                                 <th class="p-3">Kategori & Sub-Layanan</th>
                                 <th class="p-3">CS / Loket</th>
-                                <th class="p-3">Status Kurasi</th>
                                 <th class="p-3">Waktu Ambil</th>
                                 <th class="p-3">Status</th>
-                                <th class="p-3">Metode</th>
+                                <th class="p-3">Catatan CS & Solusi</th>
+                                <th class="p-3 text-center">Rating</th>
                                 <th class="p-3 text-right">Nominal</th>
                                 <th class="p-3 text-center">Aksi</th>
                             </tr>
@@ -342,18 +354,23 @@
                                         <span class="text-[10px] text-gray-500 italic">{{ $tiket->subLayanan->nama_sub_layanan ?? 'Tanpa Sub-Layanan' }}</span>
                                     </td>
                                     <td class="p-3 font-bold">{{ $tiket->cs ? $tiket->cs->nama_lengkap . ' (M'.$tiket->cs->nomor_meja.')' : '-' }}</td>
-                                    <td class="p-3">
-                                        <span class="text-[9px] px-2 py-0.5 rounded-full font-black {{ $tiket->is_curated ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
-                                            {{ $tiket->is_curated ? '✓ Selesai Loket' : '🛠 Lapangan' }}
-                                        </span>
-                                    </td>
                                     <td class="p-3 text-gray-500">{{ \Carbon\Carbon::parse($tiket->waktu_dibuat)->timezone('Asia/Jakarta')->format('d/m/Y H:i') }}</td>
                                     <td class="p-3">
-                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black {{ $tiket->status === 'Selesai' ? 'bg-emerald-100 text-emerald-700' : ($tiket->status === 'Batal' ? 'bg-red-100 text-red-700' : ($tiket->status === 'No Show' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700')) }}">
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black {{ 
+                                            $tiket->status === 'Selesai' ? 'bg-emerald-100 text-emerald-700' : 
+                                            ($tiket->status === 'Batal' ? 'bg-red-100 text-red-700' : 
+                                            ($tiket->status === 'No Show' ? 'bg-purple-100 text-purple-700' : 
+                                            ($tiket->status === 'Ditransfer' ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'))) 
+                                        }}">
                                             {{ $tiket->status }}
                                         </span>
                                     </td>
-                                    <td class="p-3 font-semibold">{{ $tiket->metode_pembayaran ?? 'Tanpa Transaksi' }}</td>
+                                    <td class="p-3 text-gray-600 max-w-[200px] truncate" title="{{ $tiket->catatan_cs ?? $tiket->ringkasan_solusi ?? '-' }}">
+                                        {{ $tiket->catatan_cs ?? $tiket->ringkasan_solusi ?? '-' }}
+                                    </td>
+                                    <td class="p-3 text-center font-bold text-amber-500">
+                                        {{ $tiket->rating ? "★ {$tiket->rating}" : '-' }}
+                                    </td>
                                     <td class="p-3 text-right font-black text-[#181C20]">Rp {{ number_format($tiket->nominal_pembayaran, 0, ',', '.') }}</td>
                                     <td class="p-3 text-center">
                                         <button @click="selectedTiket = {{ json_encode($tiket) }}; showModalDetail = true" class="px-2.5 py-1 bg-[#00509E]/10 text-[#00509E] hover:bg-[#00509E] hover:text-white rounded-lg font-bold text-[10px] transition-all cursor-pointer">
@@ -399,7 +416,7 @@
 
             <!-- GRID 2 KOLOM: PIE & DONUT CHART -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- CHART 2: PIE KEPADATAN KATEOGRI -->
+                <!-- CHART 2: PIE KEPADATAN KATEGORI -->
                 <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
                     <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2 border-b pb-2">
                         <span class="material-symbols-outlined text-[#00509E]">pie_chart</span>
@@ -423,7 +440,7 @@
                         <canvas id="statusDonutChart" data-ratio='{{ json_encode($statusRatioData ?? []) }}'></canvas>
                     </div>
                     <p class="text-[10px] text-gray-500 italic border-t pt-2">
-                        💡 **Penjelasan:** Mengidentifikasi tingkat keberhasilan (Selesai), beban menunggu, tidak hadir (No Show), serta pembatalan (Batal).
+                        💡 **Penjelasan:** Mengidentifikasi rasio tingkat keberhasilan, tiket menunggu, ditransfer, tidak hadir (No Show), dan dibatalkan.
                     </p>
                 </div>
             </div>
@@ -469,6 +486,7 @@
                         <option value="tanggal">Tanggal</option>
                         <option value="total_tiket">Total Tiket</option>
                         <option value="selesai">Tiket Selesai</option>
+                        <option value="ditransfer">Tiket Ditransfer</option>
                         <option value="no_show">Tiket No Show</option>
                         <option value="batal">Tiket Batal</option>
                         <option value="total_omset">Total Omset</option>
@@ -497,6 +515,7 @@
                             <th class="p-3.5">Tanggal</th>
                             <th class="p-3.5 text-center">Total Tiket</th>
                             <th class="p-3.5 text-center">Selesai</th>
+                            <th class="p-3.5 text-center">Ditransfer</th>
                             <th class="p-3.5 text-center">No Show</th>
                             <th class="p-3.5 text-center">Batal</th>
                             <th class="p-3.5 text-center">Rata-Rata SLA</th>
@@ -509,6 +528,7 @@
                                 <td class="p-3.5 font-bold text-[#181C20]" x-text="row.tanggal"></td>
                                 <td class="p-3.5 text-center font-bold" x-text="row.total_tiket"></td>
                                 <td class="p-3.5 text-center font-bold text-emerald-600" x-text="row.selesai"></td>
+                                <td class="p-3.5 text-center font-bold text-indigo-600" x-text="row.ditransfer || 0"></td>
                                 <td class="p-3.5 text-center font-bold text-purple-600" x-text="row.no_show || 0"></td>
                                 <td class="p-3.5 text-center font-bold text-rose-600" x-text="row.batal"></td>
                                 <td class="p-3.5 text-center font-mono font-extrabold text-[#00509E]" x-text="row.avg_sla"></td>
@@ -611,6 +631,70 @@
 
     </main>
 
+    <!-- MODAL POPUP: DETAIL TIKET ANTREAN & PENANGANAN CS -->
+    <div x-show="showModalDetail" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-gray-100" @click.away="showModalDetail = false">
+            <div class="flex justify-between items-center border-b pb-3 border-gray-100">
+                <h3 class="text-base font-black text-[#181C20] flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[#00509E]">confirmation_number</span>
+                    Detail Tiket & Evaluasi Layanan
+                </h3>
+                <button @click="showModalDetail = false" class="text-gray-400 hover:text-gray-600"><span class="material-symbols-outlined">close</span></button>
+            </div>
+
+            <template x-if="selectedTiket">
+                <div class="space-y-3 text-xs">
+                    <div class="grid grid-cols-2 gap-2 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                        <div>
+                            <span class="text-[10px] text-gray-400 font-bold uppercase block">Nomor Antrean</span>
+                            <span class="font-mono text-base font-black text-[#00509E]" x-text="selectedTiket.nomor_antrian"></span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-gray-400 font-bold uppercase block">Status Operasional</span>
+                            <span class="font-bold text-xs uppercase" x-text="selectedTiket.status"></span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-gray-400 font-bold uppercase block">Pelanggan</span>
+                            <span class="font-bold text-gray-800" x-text="selectedTiket.pelanggan ? selectedTiket.pelanggan.nama : '-'"></span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-gray-400 font-bold uppercase block">Petugas CS / Loket</span>
+                            <span class="font-bold text-gray-800" x-text="selectedTiket.cs ? selectedTiket.cs.nama_lengkap : '-'"></span>
+                        </div>
+                    </div>
+
+                    <!-- METRIK DURASI TUNGGU & LAYANAN -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="p-3 bg-blue-50 border border-blue-100 rounded-xl">
+                            <span class="text-[10px] text-blue-600 font-bold uppercase block">Waktu Tunggu Pelanggan</span>
+                            <span class="font-bold text-blue-900" x-text="selectedTiket.waktu_tunggu ? (Math.floor(selectedTiket.waktu_tunggu/60) + 'm ' + (selectedTiket.waktu_tunggu%60) + 's') : '-'"></span>
+                        </div>
+                        <div class="p-3 bg-emerald-50 border border-emerald-100 rounded-xl">
+                            <span class="text-[10px] text-emerald-600 font-bold uppercase block">Durasi Layanan CS</span>
+                            <span class="font-bold text-emerald-900" x-text="selectedTiket.waktu_layanan ? (Math.floor(selectedTiket.waktu_layanan/60) + 'm ' + (selectedTiket.waktu_layanan%60) + 's') : '-'"></span>
+                        </div>
+                    </div>
+
+                    <!-- CATATAN PENANGANAN CS & PENILAIAN PELANGGAN -->
+                    <div class="space-y-2">
+                        <div class="p-3 bg-amber-50/60 border border-amber-200 rounded-xl">
+                            <span class="text-[10px] text-amber-700 font-bold uppercase block mb-1">Catatan CS & Ringkasan Solusi</span>
+                            <p class="text-gray-800 italic" x-text="selectedTiket.catatan_cs || selectedTiket.ringkasan_solusi || 'Tidak ada catatan khusus.'"></p>
+                        </div>
+
+                        <div class="p-3 bg-purple-50/60 border border-purple-200 rounded-xl flex items-center justify-between">
+                            <div>
+                                <span class="text-[10px] text-purple-700 font-bold uppercase block">Rating Kepuasan Pelanggan</span>
+                                <p class="text-gray-800 italic" x-text="selectedTiket.feedback ? ('Ulasan: ' + selectedTiket.feedback) : 'Belum memberikan ulasan.'"></p>
+                            </div>
+                            <span class="text-lg font-black text-amber-500" x-text="selectedTiket.rating ? ('★ ' + selectedTiket.rating) : '-'"></span>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
     <!-- MODAL POPUP: KUSTOMISASI CETAK PDF INTERAKTIF -->
     <div x-show="showModalPdf" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-gray-100" @click.away="showModalPdf = false">
@@ -691,7 +775,7 @@
         </div>
     </div>
 
-    <!-- MODAL CS & MEJA & DETAIL TIKET -->
+    <!-- MODAL CS & MEJA -->
     <div x-show="showModalCS" x-cloak class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalCS = false">
             <h3 class="text-base font-black">Tambah Petugas CS Baru</h3>
@@ -808,7 +892,9 @@
                     if (!canvas || !canvas.dataset.dist) return;
 
                     try {
-                        const raw = JSON.parse(canvas.dataset.dist);
+                        let raw = JSON.parse(canvas.dataset.dist);
+                        if (!Array.isArray(raw)) raw = Object.values(raw);
+
                         const labels = raw.map(i => i.nama);
                         const data = raw.map(i => i.total);
 
@@ -842,7 +928,7 @@
                                 labels: Object.keys(raw),
                                 datasets: [{
                                     data: Object.values(raw),
-                                    backgroundColor: ['#10B981', '#F59E0B', '#3B82F6', '#8B5CF6', '#EF4444']
+                                    backgroundColor: ['#10B981', '#F59E0B', '#3B82F6', '#6366F1', '#8B5CF6', '#EF4444']
                                 }]
                             },
                             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
