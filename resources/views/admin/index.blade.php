@@ -376,10 +376,10 @@
             </div>
         </div>
 
-        <!-- TAB 2: ANALITIK LAYANAN -->
+        <!-- TAB 2: ANALITIK LAYANAN (STACKED VERTICAL LAYOUT FOR MAXIMUM VISIBILITY) -->
         <div x-show="activeTab === 'analytics'" x-data="chartFilterComponent()" class="space-y-6">
             
-            <!-- LINE CHART TREN -->
+            <!-- LINE CHART 1: TREN PENDAFTARAN vs LAYANAN SELESAI -->
             <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 pb-3 border-b border-gray-100">
                     <h3 class="text-sm font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2">
@@ -403,69 +403,66 @@
                 </p>
             </div>
 
-            <!-- GRAFIK PIE & SLA TOGGLE MERGE / UNMERGE ANIMATION -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- CHART 2: PIE KEPADATAN KATEGORI -->
-                <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
-                    <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2 border-b pb-2">
-                        <span class="material-symbols-outlined text-[#00509E]">pie_chart</span>
-                        2. Proporsi Kepadatan Kategori Layanan
+            <!-- CHART 2: PIE KEPADATAN KATEGORI (BERDIRI SENDIRI DI ATAS GRAFIK ESTIMASI) -->
+            <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
+                <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2 border-b pb-2">
+                    <span class="material-symbols-outlined text-[#00509E]">pie_chart</span>
+                    2. Proporsi Kepadatan Kategori Layanan
+                </h3>
+                <div class="h-72 sm:h-80 relative flex justify-center items-center py-2">
+                    <canvas id="categoryPieChart" data-dist='{{ json_encode($distribusiLayanan ?? []) }}'></canvas>
+                </div>
+                <p class="text-[10px] text-gray-500 italic border-t pt-2">
+                    💡 **Penjelasan:** Mengukur kategori mana yang paling mendominasi beban kerja loket pelayanan Indibiz.
+                </p>
+            </div>
+
+            <!-- CHART 3: DITEMPATKAN DI BAWAH PIE CHART (LEBAR FULL UNTUK VISIBILITAS MAKSIMAL) -->
+            <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3 flex flex-col justify-between">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b pb-2">
+                    <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2">
+                        <span class="material-symbols-outlined text-blue-600">timeline</span>
+                        3. Tren Waktu Tunggu vs Durasi Konsul CS (Estimasi Rata-Rata)
                     </h3>
-                    <div class="h-56 relative flex justify-center">
-                        <canvas id="categoryPieChart" data-dist='{{ json_encode($distribusiLayanan ?? []) }}'></canvas>
+                    
+                    <!-- SWITCH TOGGLE ANIMATION MERGE / UNMERGE -->
+                    <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-xl text-[10px] font-bold">
+                        <button @click="toggleSlaMode(true)" :class="isMerged ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all duration-300 ease-in-out flex items-center gap-1 cursor-pointer">
+                            <span class="material-symbols-outlined text-xs">merge</span> Mode Gabung
+                        </button>
+                        <button @click="toggleSlaMode(false)" :class="!isMerged ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all duration-300 ease-in-out flex items-center gap-1 cursor-pointer">
+                            <span class="material-symbols-outlined text-xs">call_split</span> Mode Pisah
+                        </button>
                     </div>
-                    <p class="text-[10px] text-gray-500 italic border-t pt-2">
-                        💡 **Penjelasan:** Mengukur kategori mana yang paling mendominasi beban kerja loket pelayanan Indibiz.
-                    </p>
                 </div>
 
-                <!-- CHART 3: DENGAN TOGGLE MERGE / UNMERGE DAN ANIMASI -->
-                <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3 flex flex-col justify-between">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b pb-2">
-                        <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2">
-                            <span class="material-symbols-outlined text-blue-600">timeline</span>
-                            3. Tren Waktu Tunggu vs Durasi Konsul CS
-                        </h3>
-                        
-                        <!-- SWITCH TOGGLE ANIMATION MERGE / UNMERGE -->
-                        <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-xl text-[10px] font-bold">
-                            <button @click="toggleSlaMode(true)" :class="isMerged ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-2.5 py-1 rounded-lg transition-all duration-300 ease-in-out flex items-center gap-1 cursor-pointer">
-                                <span class="material-symbols-outlined text-xs">merge</span> Mode Gabung
-                            </button>
-                            <button @click="toggleSlaMode(false)" :class="!isMerged ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-2.5 py-1 rounded-lg transition-all duration-300 ease-in-out flex items-center gap-1 cursor-pointer">
-                                <span class="material-symbols-outlined text-xs">call_split</span> Mode Pisah
-                            </button>
-                        </div>
+                <!-- CONTAINER ANIMATED SLIDE/FADE MODE -->
+                <div class="relative min-h-[260px] py-2">
+                    <!-- MODE COMBINED (1 BOX COMBINED FULL WIDTH) -->
+                    <div x-show="isMerged" x-transition:enter="transition ease-out duration-500 transform" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="h-64 sm:h-72 relative">
+                        <canvas id="slaMergedChart" data-chart-sets='{{ json_encode($chartDataSets ?? []) }}'></canvas>
                     </div>
 
-                    <!-- CONTAINER ANIMATED SLIDE/FADE MODE -->
-                    <div class="relative min-h-[220px]">
-                        <!-- MODE COMBINED (1 BOX COMBINED) -->
-                        <div x-show="isMerged" x-transition:enter="transition ease-out duration-500 transform" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="h-56 relative">
-                            <canvas id="slaMergedChart" data-chart-sets='{{ json_encode($chartDataSets ?? []) }}'></canvas>
-                        </div>
-
-                        <!-- MODE SEPARATE (2 SUB-CHARTS SIDE-BY-SIDE) -->
-                        <div x-show="!isMerged" x-cloak x-transition:enter="transition ease-out duration-500 transform" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="grid grid-cols-1 sm:grid-cols-2 gap-3 h-56">
-                            <div class="relative h-full border border-blue-100 p-2 rounded-xl bg-blue-50/30">
-                                <span class="text-[9px] font-extrabold text-blue-700 block text-center mb-1">Rata-Rata Waktu Tunggu (Menit)</span>
-                                <div class="h-44 relative">
-                                    <canvas id="slaTungguSeparateChart"></canvas>
-                                </div>
+                    <!-- MODE SEPARATE (2 SUB-CHARTS SIDE-BY-SIDE IN FULL WIDTH CONTAINER) -->
+                    <div x-show="!isMerged" x-cloak x-transition:enter="transition ease-out duration-500 transform" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="grid grid-cols-1 md:grid-cols-2 gap-4 h-64 sm:h-72">
+                        <div class="relative h-full border border-blue-100 p-3 rounded-xl bg-blue-50/30 flex flex-col justify-between">
+                            <span class="text-[10px] font-extrabold text-blue-700 block text-center uppercase tracking-wider">Rata-Rata Waktu Tunggu (Menit)</span>
+                            <div class="h-52 relative">
+                                <canvas id="slaTungguSeparateChart"></canvas>
                             </div>
-                            <div class="relative h-full border border-emerald-100 p-2 rounded-xl bg-emerald-50/30">
-                                <span class="text-[9px] font-extrabold text-emerald-700 block text-center mb-1">Rata-Rata Durasi Konsul CS (Menit)</span>
-                                <div class="h-44 relative">
-                                    <canvas id="slaKonsulSeparateChart"></canvas>
-                                </div>
+                        </div>
+                        <div class="relative h-full border border-emerald-100 p-3 rounded-xl bg-emerald-50/30 flex flex-col justify-between">
+                            <span class="text-[10px] font-extrabold text-emerald-700 block text-center uppercase tracking-wider">Rata-Rata Durasi Konsul CS (Menit)</span>
+                            <div class="h-52 relative">
+                                <canvas id="slaKonsulSeparateChart"></canvas>
                             </div>
                         </div>
                     </div>
-
-                    <p class="text-[10px] text-gray-500 italic border-t pt-2">
-                        💡 **Penjelasan:** Mode Gabung menyatukan 2 kurva sekaligus, sedangkan Mode Pisah mengisolasi tren antrean dan konsul CS secara rinci.
-                    </p>
                 </div>
+
+                <p class="text-[10px] text-gray-500 italic border-t pt-2">
+                    💡 **Penjelasan:** Mode Gabung menyatukan 2 kurva sekaligus, sedangkan Mode Pisah mengisolasi tren antrean dan konsul CS secara rinci.
+                </p>
             </div>
 
             <!-- CHART 4: BAR PERFORMA CS -->
@@ -474,7 +471,7 @@
                     <span class="material-symbols-outlined text-purple-600">bar_chart</span>
                     4. Performa Produktivitas Staf CS per Meja
                 </h3>
-                <div class="h-60 relative">
+                <div class="h-64 sm:h-72 relative">
                     <canvas id="csBarChart" data-cs='{{ json_encode($mejaCs ?? []) }}'></canvas>
                 </div>
                 <p class="text-[10px] text-gray-500 italic border-t pt-2">
