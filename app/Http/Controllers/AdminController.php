@@ -1,548 +1,1085 @@
-<?php
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Indibiz Queue</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #F1F4F9; border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #C4C7CC; border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #00509E; }
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="bg-[#F8F9FA] min-h-screen font-sans text-[#181C20] flex flex-col lg:flex-row antialiased overflow-x-hidden selection:bg-[#EE2E24] selection:text-white" 
+      x-data="{ 
+          activeTab: 'operations', 
+          mobileMenu: false, 
+          showModalCS: false, 
+          showModalMeja: false, 
+          showModalLayanan: false,
+          showModalSubLayanan: false,
+          showModalDetail: false,
+          showModalPdf: false,
+          selectedTiket: null,
+          selectedPeriod: '{{ request('period', 'all') }}',
+          selectedLayananId: '{{ $layanans->first()->id ?? '' }}',
+          selectedLayananNama: '{{ $layanans->first()->nama_layanan ?? '' }}'
+      }">
 
-namespace App\Http\Controllers;
+    <!-- HEADER MOBILE -->
+    <header class="lg:hidden bg-[#00509E] text-white p-4 flex justify-between items-center shadow-md sticky top-0 z-40">
+        <div class="flex items-center gap-2.5">
+            <img src="{{ asset('img/LogoIcon.png') }}" alt="Indibiz Icon" class="w-7 h-7 object-contain">
+            <span class="font-black text-sm tracking-wide">Super Admin</span>
+        </div>
+        <button @click="mobileMenu = !mobileMenu" class="p-1 rounded-lg bg-white/10 hover:bg-white/20 transition-all">
+            <span class="material-symbols-outlined text-2xl">menu</span>
+        </button>
+    </header>
 
-use App\Models\TiketAntrian;
-use App\Models\Layanan;
-use App\Models\SubLayanan;
-use App\Models\User;
-use App\Models\MasterMeja;
-use Carbon\Carbon;
-use Illuminate\Http\Request;
-use Illuminate\Contracts\View\View;
-use stdClass;
+    <!-- MOBILE DRAWER MENU -->
+    <div x-show="mobileMenu" x-cloak class="lg:hidden fixed inset-0 bg-black/60 z-50 backdrop-blur-sm flex flex-col justify-end" @click.away="mobileMenu = false">
+        <div class="bg-[#00509E] text-white rounded-t-3xl p-6 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-white/10 pb-3">
+                <h3 class="font-black text-base">Menu Navigasi</h3>
+                <button @click="mobileMenu = false" class="text-white/70 hover:text-white">
+                    <span class="material-symbols-outlined text-2xl">close</span>
+                </button>
+            </div>
+            <nav class="space-y-2">
+                <button @click="activeTab = 'operations'; mobileMenu = false" 
+                    :class="activeTab === 'operations' ? 'bg-white/20 text-white' : 'text-white/70'"
+                    class="w-full flex items-center p-3 font-bold rounded-xl text-xs gap-3">
+                    <span class="material-symbols-outlined">dashboard</span> Operations
+                </button>
+                <button @click="activeTab = 'analytics'; mobileMenu = false" 
+                    :class="activeTab === 'analytics' ? 'bg-white/20 text-white' : 'text-white/70'"
+                    class="w-full flex items-center p-3 font-bold rounded-xl text-xs gap-3">
+                    <span class="material-symbols-outlined">analytics</span> Analitik & Grafik
+                </button>
+                <button @click="activeTab = 'history'; mobileMenu = false" 
+                    :class="activeTab === 'history' ? 'bg-white/20 text-white' : 'text-white/70'"
+                    class="w-full flex items-center p-3 font-bold rounded-xl text-xs gap-3">
+                    <span class="material-symbols-outlined">history</span> Riwayat Bulanan
+                </button>
+                <button @click="activeTab = 'staff'; mobileMenu = false" 
+                    :class="activeTab === 'staff' ? 'bg-white/20 text-white' : 'text-white/70'"
+                    class="w-full flex items-center p-3 font-bold rounded-xl text-xs gap-3">
+                    <span class="material-symbols-outlined">badge</span> Staff & Meja Monitor
+                </button>
+                <button @click="activeTab = 'master_layanan'; mobileMenu = false" 
+                    :class="activeTab === 'master_layanan' ? 'bg-white/20 text-white' : 'text-white/70'"
+                    class="w-full flex items-center p-3 font-bold rounded-xl text-xs gap-3">
+                    <span class="material-symbols-outlined">category</span> Kelola Layanan
+                </button>
 
-class AdminController extends Controller
-{
-    /**
-     * Dashboard Utama Admin
-     */
-    public function index(Request $request): View
-    {
-        $period = $request->input('period', 'all');
-        $layananId = $request->input('layanan_id');
+                <a href="{{ route('cs.select-meja') }}" class="w-full flex items-center p-3 font-bold rounded-xl text-xs gap-3 bg-amber-500 text-white shadow-sm mt-4">
+                    <span class="material-symbols-outlined">swap_horiz</span> Switch ke CS Console
+                </a>
+            </nav>
+            <form action="{{ route('logout') }}" method="POST" class="pt-2 border-t border-white/10">
+                @csrf
+                <button type="submit" class="w-full py-2.5 bg-[#EE2E24] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5">
+                    <span class="material-symbols-outlined text-base">logout</span> Keluar Sistem
+                </button>
+            </form>
+        </div>
+    </div>
 
-        $startDate = null;
-        $endDate = null;
+    <!-- SIDEBAR DESKTOP -->
+    <aside class="hidden lg:flex flex-col w-[240px] xl:w-[260px] bg-[#00509E] text-white shrink-0 shadow-lg min-h-screen sticky top-0 justify-between z-30">
+        <div>
+            <div class="p-5 border-b border-white/10 flex items-center gap-3">
+                <img src="{{ asset('img/LogoIcon.png') }}" alt="Indibiz Icon" class="w-8 h-8 object-contain">
+                <div>
+                    <h2 class="text-base font-black leading-tight">Super Admin</h2>
+                    <p class="text-[10px] text-emerald-300 font-bold uppercase tracking-widest">Indibiz Queue</p>
+                </div>
+            </div>
 
-        switch ($period) {
-            case 'today':
-                $startDate = Carbon::today('Asia/Jakarta')->startOfDay();
-                $endDate   = Carbon::today('Asia/Jakarta')->endOfDay();
-                break;
-            case 'wtd':
-                $startDate = Carbon::now('Asia/Jakarta')->startOfWeek();
-                $endDate   = Carbon::now('Asia/Jakarta')->endOfDay();
-                break;
-            case 'mtd':
-                $startDate = Carbon::now('Asia/Jakarta')->startOfMonth();
-                $endDate   = Carbon::now('Asia/Jakarta')->endOfDay();
-                break;
-            case 'last_30':
-                $startDate = Carbon::now('Asia/Jakarta')->subDays(29)->startOfDay();
-                $endDate   = Carbon::now('Asia/Jakarta')->endOfDay();
-                break;
-            case 'ytd':
-                $startDate = Carbon::now('Asia/Jakarta')->startOfYear();
-                $endDate   = Carbon::now('Asia/Jakarta')->endOfDay();
-                break;
-            case 'custom':
-                if ($request->filled('start_date') && $request->filled('end_date')) {
-                    $startDate = Carbon::parse($request->input('start_date'), 'Asia/Jakarta')->startOfDay();
-                    $endDate   = Carbon::parse($request->input('end_date'), 'Asia/Jakarta')->endOfDay();
-                }
-                break;
-            case 'all':
-            default:
-                break;
-        }
+            <nav class="py-4 space-y-1.5 px-3">
+                <button @click="activeTab = 'operations'" 
+                    :class="activeTab === 'operations' ? 'bg-white/20 text-white shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'"
+                    class="w-full flex items-center px-3.5 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer">
+                    <span class="material-symbols-outlined mr-3 text-lg">dashboard</span> 
+                    <span>Operations</span>
+                </button>
 
-        $query = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan', 'cs']);
+                <button @click="activeTab = 'analytics'" 
+                    :class="activeTab === 'analytics' ? 'bg-white/20 text-white shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'"
+                    class="w-full flex items-center px-3.5 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer">
+                    <span class="material-symbols-outlined mr-3 text-lg">analytics</span> 
+                    <span>Analitik & Grafik</span>
+                </button>
 
-        if ($startDate && $endDate) {
-            $query->whereBetween('waktu_dibuat', [$startDate, $endDate]);
-        }
+                <button @click="activeTab = 'history'" 
+                    :class="activeTab === 'history' ? 'bg-white/20 text-white shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'"
+                    class="w-full flex items-center px-3.5 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer">
+                    <span class="material-symbols-outlined mr-3 text-lg">history</span> 
+                    <span>Riwayat Bulanan</span>
+                </button>
 
-        if ($request->filled('layanan_id')) {
-            $query->where('layanan_id', $layananId);
-        }
+                <button @click="activeTab = 'staff'" 
+                    :class="activeTab === 'staff' ? 'bg-white/20 text-white shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'"
+                    class="w-full flex items-center px-3.5 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer">
+                    <span class="material-symbols-outlined mr-3 text-lg">badge</span> 
+                    <span>Staff & Meja Monitor</span>
+                </button>
 
-        /** @var \Illuminate\Database\Eloquent\Collection $allFilteredTickets */
-        $allFilteredTickets = (clone $query)->orderBy('waktu_dibuat', 'desc')->get();
-        $totalHariIni  = $allFilteredTickets->count();
-        $menunggu      = $allFilteredTickets->where('status', 'Menunggu')->count();
-        $ditransfer    = $allFilteredTickets->where('status', 'Ditransfer')->count();
-        $noShowCount   = $allFilteredTickets->where('status', 'No Show')->count();
+                <button @click="activeTab = 'master_layanan'" 
+                    :class="activeTab === 'master_layanan' ? 'bg-white/20 text-white shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'"
+                    class="w-full flex items-center px-3.5 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer">
+                    <span class="material-symbols-outlined mr-3 text-lg">category</span> 
+                    <span>Kelola Layanan</span>
+                </button>
 
-        // -------------------------------------------------------------
-        // DURASI CS & WAKTU TUNGGU (Menggunakan Field waktu_layanan & waktu_tunggu atau fallback timestamp)
-        // -------------------------------------------------------------
-        $tiketSelesaiFilter = $allFilteredTickets->where('status', 'Selesai');
+                <div class="pt-4 border-t border-white/10 mt-3">
+                    <a href="{{ route('cs.select-meja') }}" class="w-full flex items-center px-3.5 py-2.5 text-xs font-bold rounded-xl bg-amber-500 hover:bg-amber-600 text-white transition-all shadow-sm">
+                        <span class="material-symbols-outlined mr-2.5 text-lg">swap_horiz</span>
+                        <span>Switch ke CS Console</span>
+                    </a>
+                </div>
+            </nav>
+        </div>
 
-        if ($tiketSelesaiFilter->count() > 0) {
-            $totalDetikLayanan = 0;
-            $countValid = 0;
-            foreach ($tiketSelesaiFilter as $t) {
-                if (isset($t->waktu_layanan) && $t->waktu_layanan > 0) {
-                    $totalDetikLayanan += $t->waktu_layanan;
-                    $countValid++;
-                } else {
-                    $mulai = $t->waktu_mulai_konsul ?? $t->waktu_diproses;
-                    $selesai = $t->waktu_selesai_konsul ?? $t->waktu_selesai;
-                    if ($mulai && $selesai) {
-                        $totalDetikLayanan += Carbon::parse($mulai, 'Asia/Jakarta')->diffInSeconds(Carbon::parse($selesai, 'Asia/Jakarta'));
-                        $countValid++;
-                    }
-                }
-            }
-            if ($countValid > 0) {
-                $avgDetikLayanan = round($totalDetikLayanan / $countValid);
-                $mLayanan = floor($avgDetikLayanan / 60);
-                $dLayanan = $avgDetikLayanan % 60;
-                $avgDurasiLayananText = "{$mLayanan}m {$dLayanan}s";
+        <div class="p-3.5 border-t border-white/10">
+            <form action="{{ route('logout') }}" method="POST">
+                @csrf
+                <button type="submit" class="w-full py-2.5 bg-[#EE2E24] hover:bg-[#CE1111] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer">
+                    <span class="material-symbols-outlined text-base">logout</span>
+                    <span>Keluar Sistem</span>
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 space-y-6 w-full">
+
+        <!-- NOTIFIKASI -->
+        @if(session('success'))
+            <div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-2xl text-xs font-bold flex items-center gap-2 shadow-sm">
+                <span class="material-symbols-outlined text-base">check_circle</span>
+                <span>{{ session('success') }}</span>
+            </div>
+        @endif
+        @if(session('error'))
+            <div class="p-4 bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl text-xs font-bold flex items-center gap-2 shadow-sm">
+                <span class="material-symbols-outlined text-base">error</span>
+                <span>{{ session('error') }}</span>
+            </div>
+        @endif
+        
+        <!-- HEADER UTAMA -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 lg:p-6 rounded-2xl border border-[#E0E3E8] shadow-sm">
+            <div>
+                <h2 class="text-xl lg:text-2xl font-black text-[#181C20] tracking-tight" x-text="
+                    activeTab === 'operations' ? 'Operations Dashboard' : 
+                    (activeTab === 'analytics' ? 'Analitik Tren & Kepadatan Layanan' : 
+                    (activeTab === 'history' ? 'Riwayat Operasional & Rekap Omset' : 
+                    (activeTab === 'staff' ? 'Monitoring Staf CS & Slot Meja' : 'Kelola Master Layanan & Sub-Layanan')))
+                "></h2>
+                <p class="text-xs text-[#5D3F3B] mt-0.5">
+                    Pemantauan metrik antrean, rekapitulasi data, serta konfigurasi layanan secara real-time.
+                </p>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+                <button @click="showModalPdf = true" class="inline-flex items-center justify-center gap-1.5 bg-[#EE2E24] hover:bg-[#CE1111] text-white font-black px-4 py-2.5 rounded-xl text-xs shadow-md transition-all cursor-pointer">
+                    <span class="material-symbols-outlined text-base">picture_as_pdf</span> Cetak PDF
+                </button>
+                <a href="{{ route('admin.export') }}" class="inline-flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-md transition-all">
+                    <span class="material-symbols-outlined text-base">download</span> Export CSV
+                </a>
+            </div>
+        </div>
+
+        <!-- FORM FILTER SIMPEL -->
+        <form x-show="activeTab === 'operations'" action="{{ route('admin.dashboard') }}" method="GET" class="bg-white p-4 rounded-2xl border border-[#E0E3E8] shadow-sm flex flex-wrap items-center gap-3 text-xs">
+            <div class="flex-1 min-w-[200px]">
+                <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Periode Waktu</label>
+                <select name="period" x-model="selectedPeriod" @change="$el.form.submit()" class="w-full border border-gray-300 bg-gray-50 rounded-xl p-2 font-bold text-gray-700 focus:border-[#00509E] focus:ring-0 cursor-pointer">
+                    <option value="all">Semua Waktu (All Time)</option>
+                    <option value="today">Hari Ini (Today)</option>
+                    <option value="wtd">Minggu Ini (WTD)</option>
+                    <option value="mtd">Bulan Ini (MTD)</option>
+                    <option value="last_30">30 Hari Terakhir</option>
+                    <option value="ytd">Tahun Ini (YTD)</option>
+                    <option value="custom">Kustom Tanggal...</option>
+                </select>
+            </div>
+
+            <template x-if="selectedPeriod === 'custom'">
+                <div class="flex flex-wrap items-center gap-2">
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Dari Tanggal</label>
+                        <input type="date" name="start_date" value="{{ request('start_date', $startDate->format('Y-m-d')) }}" class="border border-gray-300 rounded-xl p-2 font-semibold">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Sampai Tanggal</label>
+                        <input type="date" name="end_date" value="{{ request('end_date', $endDate->format('Y-m-d')) }}" class="border border-gray-300 rounded-xl p-2 font-semibold">
+                    </div>
+                </div>
+            </template>
+
+            <div class="flex-1 min-w-[180px]">
+                <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Filter Kategori</label>
+                <select name="layanan_id" @change="$el.form.submit()" class="w-full border border-gray-300 rounded-xl p-2 font-semibold focus:border-[#00509E] focus:ring-0">
+                    <option value="">Semua Kategori</option>
+                    @foreach($layanans as $lay)
+                        <option value="{{ $lay->id }}" {{ $layananId == $lay->id ? 'selected' : '' }}>{{ $lay->nama_layanan }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            @if(request('period') || request('layanan_id') || request('start_date'))
+                <div class="self-end pb-0.5">
+                    <a href="{{ route('admin.dashboard') }}" class="px-3 py-2 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl font-bold flex items-center gap-1 hover:bg-rose-100 transition-all">
+                        <span class="material-symbols-outlined text-sm">restart_alt</span> Reset
+                    </a>
+                </div>
+            @endif
+        </form>
+
+        <!-- TAB 1: OPERATIONS -->
+        <div x-show="activeTab === 'operations'" class="space-y-6">
+            
+            <!-- RINGKASAN ANALISIS OTOMATIS TREN OPERASIONAL -->
+            <div class="bg-white p-4 rounded-2xl border border-[#E0E3E8] shadow-sm flex items-center gap-3">
+                <span class="material-symbols-outlined text-[#00509E] text-2xl">insights</span>
+                <div class="flex-1">
+                    <span class="text-[10px] font-black text-gray-400 uppercase block">Ringkasan Eksekutif Analisis Otomatis</span>
+                    <p class="text-xs font-semibold text-gray-800">
+                        {!! preg_replace('/\*\*(.*?)\*\*/', '<strong>$1</strong>', $analisisOtomatis['status_tiket'] ?? '') !!}
+                    </p>
+                </div>
+                <span class="px-3 py-1 rounded-full text-[10px] font-black {{ $analisisOtomatis['badge_tiket'] ?? 'bg-gray-100' }}">
+                    Auto Insight
+                </span>
+            </div>
+
+            <!-- METRIK CARDS (5 KARTU UTAMA) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+                <div class="bg-white border border-[#E0E3E8] rounded-2xl p-4 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1.5 bg-[#00509E]"></div>
+                    <span class="text-[10px] text-[#5D3F3B] font-extrabold uppercase tracking-wider block mb-1">Total Antrean</span>
+                    <span class="text-2xl lg:text-3xl font-black text-[#181C20]">{{ number_format($totalHariIni) }}</span>
+                </div>
+
+                <div class="bg-white border border-[#E0E3E8] rounded-2xl p-4 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1.5 bg-amber-500"></div>
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[9px] text-[#5D3F3B] font-extrabold uppercase tracking-wider">Sedang Menunggu</span>
+                        @if(isset($ditransfer) && $ditransfer > 0)
+                            <span class="text-[8px] bg-indigo-100 text-indigo-800 font-black px-1.5 py-0.5 rounded">{{ $ditransfer }} Trf</span>
+                        @endif
+                    </div>
+                    <span class="text-2xl lg:text-3xl font-black text-[#181C20]">{{ number_format($menunggu) }}</span>
+                </div>
+
+                <div class="bg-white border border-[#E0E3E8] rounded-2xl p-4 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1.5 bg-blue-500"></div>
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[9px] text-[#5D3F3B] font-extrabold uppercase tracking-wider">Avg Waktu Tunggu</span>
+                        <span class="text-[8px] bg-blue-100 text-blue-800 font-black px-1 py-0.5 rounded">TV Display</span>
+                    </div>
+                    <span class="text-xl lg:text-2xl font-black text-blue-600">{{ $avgWaktuTungguText }}</span>
+                </div>
+
+                <div class="bg-white border border-[#E0E3E8] rounded-2xl p-4 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1.5 bg-emerald-500"></div>
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[9px] text-[#5D3F3B] font-extrabold uppercase tracking-wider">Avg Durasi CS</span>
+                        <span class="text-[8px] bg-emerald-100 text-emerald-800 font-black px-1 py-0.5 rounded">SLA CS</span>
+                    </div>
+                    <span class="text-xl lg:text-2xl font-black text-emerald-600">{{ $avgDurasiLayananText }}</span>
+                </div>
+
+                <div class="bg-white border border-[#E0E3E8] rounded-2xl p-4 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1.5 bg-purple-600"></div>
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[9px] text-[#5D3F3B] font-extrabold uppercase tracking-wider">Total Omset</span>
+                        <span class="text-[8px] bg-purple-100 text-purple-800 font-black px-1 py-0.5 rounded">Omset</span>
+                    </div>
+                    <span class="text-lg lg:text-xl font-black text-[#00509E]">Rp {{ number_format($totalOmset, 0, ',', '.') }}</span>
+                </div>
+            </div>
+
+            <!-- TABEL ANTREAN -->
+            <div class="bg-white rounded-2xl border border-[#E0E3E8] shadow-sm overflow-hidden">
+                <div class="p-4 border-b border-[#E0E3E8] flex justify-between items-center">
+                    <h3 class="text-xs font-black uppercase tracking-wider text-[#181C20]">Data Transaksi & Tiket Antrean</h3>
+                    <span class="text-xs text-gray-400 font-semibold">Total {{ $allFilteredTickets->count() }} Data</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-[#F8F9FA] border-b border-[#E0E3E8] text-gray-500 font-black uppercase text-[10px]">
+                            <tr>
+                                <th class="p-3">Kode Tiket</th>
+                                <th class="p-3">Pelanggan</th>
+                                <th class="p-3">Kategori & Sub-Layanan</th>
+                                <th class="p-3">CS / Loket</th>
+                                <th class="p-3">Waktu Ambil</th>
+                                <th class="p-3">Status</th>
+                                <th class="p-3">Catatan CS & Solusi</th>
+                                <th class="p-3 text-right">Nominal</th>
+                                <th class="p-3 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[#E0E3E8]">
+                            @forelse($allFilteredTickets as $tiket)
+                                <tr class="hover:bg-[#F8F9FA] transition-colors">
+                                    <td class="p-3 font-mono font-bold text-[#00509E]">{{ $tiket->nomor_antrian }}</td>
+                                    <td class="p-3 font-bold">
+                                        {{ $tiket->pelanggan->nama ?? '-' }} 
+                                        <br><span class="text-[10px] text-gray-400 font-normal">{{ $tiket->pelanggan->no_hp ?? '-' }}</span>
+                                    </td>
+                                    <td class="p-3">
+                                        <span class="bg-blue-50 text-[#00509E] px-2 py-0.5 rounded font-bold block mb-0.5">{{ $tiket->layanan->nama_layanan ?? '-' }}</span>
+                                        <span class="text-[10px] text-gray-500 italic">{{ $tiket->subLayanan->nama_sub_layanan ?? 'Tanpa Sub-Layanan' }}</span>
+                                    </td>
+                                    <td class="p-3 font-bold">{{ $tiket->cs ? $tiket->cs->nama_lengkap . ' (M'.$tiket->cs->nomor_meja.')' : '-' }}</td>
+                                    <td class="p-3 text-gray-500">{{ \Carbon\Carbon::parse($tiket->waktu_dibuat)->timezone('Asia/Jakarta')->format('d/m/Y H:i') }}</td>
+                                    <td class="p-3">
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black {{ 
+                                            $tiket->status === 'Selesai' ? 'bg-emerald-100 text-emerald-700' : 
+                                            ($tiket->status === 'Batal' ? 'bg-red-100 text-red-700' : 
+                                            ($tiket->status === 'No Show' ? 'bg-purple-100 text-purple-700' : 
+                                            ($tiket->status === 'Ditransfer' ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'))) 
+                                        }}">
+                                            {{ $tiket->status }}
+                                        </span>
+                                    </td>
+                                    <td class="p-3 text-gray-600 max-w-[200px] truncate" title="{{ $tiket->catatan_cs ?? $tiket->ringkasan_solusi ?? '-' }}">
+                                        {{ $tiket->catatan_cs ?? $tiket->ringkasan_solusi ?? '-' }}
+                                    </td>
+                                    <td class="p-3 text-right font-black text-[#181C20]">Rp {{ number_format($tiket->nominal_pembayaran, 0, ',', '.') }}</td>
+                                    <td class="p-3 text-center">
+                                        <button @click="selectedTiket = {{ json_encode($tiket) }}; showModalDetail = true" class="px-2.5 py-1 bg-[#00509E]/10 text-[#00509E] hover:bg-[#00509E] hover:text-white rounded-lg font-bold text-[10px] transition-all cursor-pointer">
+                                            Detail
+                                        </button>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="9" class="p-6 text-center text-gray-400 font-bold">Tidak ada data antrean pada rentang waktu ini.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: ANALITIK LAYANAN (STACKED VERTICAL LAYOUT FOR MAXIMUM VISIBILITY) -->
+        <div x-show="activeTab === 'analytics'" x-data="chartFilterComponent()" class="space-y-6">
+            
+            <!-- LINE CHART 1: TREN PENDAFTARAN vs LAYANAN SELESAI -->
+            <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 pb-3 border-b border-gray-100">
+                    <h3 class="text-sm font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[#00509E]">show_chart</span>
+                        1. Grafik Tren Pendaftaran vs Layanan Selesai
+                    </h3>
+
+                    <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-xl text-xs font-bold">
+                        <button @click="switchChartPeriod('wtd')" :class="chartPeriod === 'wtd' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">WTD</button>
+                        <button @click="switchChartPeriod('mtd')" :class="chartPeriod === 'mtd' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">MTD</button>
+                        <button @click="switchChartPeriod('mtm')" :class="chartPeriod === 'mtm' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">MTM</button>
+                        <button @click="switchChartPeriod('last30')" :class="chartPeriod === 'last30' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">30 Hari</button>
+                    </div>
+                </div>
+
+                <div class="h-64 sm:h-80 relative">
+                    <canvas id="queueChart" data-chart-sets='{{ json_encode($chartDataSets ?? []) }}'></canvas>
+                </div>
+                <p class="text-[11px] text-gray-500 italic mt-3 border-t pt-2">
+                    💡 **Penjelasan:** Menampilkan fluktuasi harian antara tiket yang masuk dibandingkan tiket yang berhasil diselesaikan oleh staf loket CS.
+                </p>
+            </div>
+
+            <!-- CHART 2: PIE KEPADATAN KATEGORI (BERDIRI SENDIRI DI ATAS GRAFIK ESTIMASI) -->
+            <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
+                <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2 border-b pb-2">
+                    <span class="material-symbols-outlined text-[#00509E]">pie_chart</span>
+                    2. Proporsi Kepadatan Kategori Layanan
+                </h3>
+                <div class="h-72 sm:h-80 relative flex justify-center items-center py-2">
+                    <canvas id="categoryPieChart" data-dist='{{ json_encode($distribusiLayanan ?? []) }}'></canvas>
+                </div>
+                <p class="text-[10px] text-gray-500 italic border-t pt-2">
+                    💡 **Penjelasan:** Mengukur kategori mana yang paling mendominasi beban kerja loket pelayanan Indibiz.
+                </p>
+            </div>
+
+            <!-- CHART 3: DITEMPATKAN DI BAWAH PIE CHART (LEBAR FULL UNTUK VISIBILITAS MAKSIMAL) -->
+            <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3 flex flex-col justify-between">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b pb-2">
+                    <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2">
+                        <span class="material-symbols-outlined text-blue-600">timeline</span>
+                        3. Tren Waktu Tunggu vs Durasi Konsul CS (Estimasi Rata-Rata)
+                    </h3>
+                    
+                    <!-- SWITCH TOGGLE ANIMATION MERGE / UNMERGE -->
+                    <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-xl text-[10px] font-bold">
+                        <button @click="toggleSlaMode(true)" :class="isMerged ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all duration-300 ease-in-out flex items-center gap-1 cursor-pointer">
+                            <span class="material-symbols-outlined text-xs">merge</span> Mode Gabung
+                        </button>
+                        <button @click="toggleSlaMode(false)" :class="!isMerged ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all duration-300 ease-in-out flex items-center gap-1 cursor-pointer">
+                            <span class="material-symbols-outlined text-xs">call_split</span> Mode Pisah
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CONTAINER ANIMATED SLIDE/FADE MODE -->
+                <div class="relative min-h-[260px] py-2">
+                    <!-- MODE COMBINED (1 BOX COMBINED FULL WIDTH) -->
+                    <div x-show="isMerged" x-transition:enter="transition ease-out duration-500 transform" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="h-64 sm:h-72 relative">
+                        <canvas id="slaMergedChart" data-chart-sets='{{ json_encode($chartDataSets ?? []) }}'></canvas>
+                    </div>
+
+                    <!-- MODE SEPARATE (2 SUB-CHARTS SIDE-BY-SIDE IN FULL WIDTH CONTAINER) -->
+                    <div x-show="!isMerged" x-cloak x-transition:enter="transition ease-out duration-500 transform" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="grid grid-cols-1 md:grid-cols-2 gap-4 h-64 sm:h-72">
+                        <div class="relative h-full border border-blue-100 p-3 rounded-xl bg-blue-50/30 flex flex-col justify-between">
+                            <span class="text-[10px] font-extrabold text-blue-700 block text-center uppercase tracking-wider">Rata-Rata Waktu Tunggu (Menit)</span>
+                            <div class="h-52 relative">
+                                <canvas id="slaTungguSeparateChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="relative h-full border border-emerald-100 p-3 rounded-xl bg-emerald-50/30 flex flex-col justify-between">
+                            <span class="text-[10px] font-extrabold text-emerald-700 block text-center uppercase tracking-wider">Rata-Rata Durasi Konsul CS (Menit)</span>
+                            <div class="h-52 relative">
+                                <canvas id="slaKonsulSeparateChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="text-[10px] text-gray-500 italic border-t pt-2">
+                    💡 **Penjelasan:** Mode Gabung menyatukan 2 kurva sekaligus, sedangkan Mode Pisah mengisolasi tren antrean dan konsul CS secara rinci.
+                </p>
+            </div>
+
+            <!-- CHART 4: BAR PERFORMA CS -->
+            <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
+                <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2 border-b pb-2">
+                    <span class="material-symbols-outlined text-purple-600">bar_chart</span>
+                    4. Performa Produktivitas Staf CS per Meja
+                </h3>
+                <div class="h-64 sm:h-72 relative">
+                    <canvas id="csBarChart" data-cs='{{ json_encode($mejaCs ?? []) }}'></canvas>
+                </div>
+                <p class="text-[10px] text-gray-500 italic border-t pt-2">
+                    💡 **Penjelasan:** Menilai kontribusi jumlah tiket yang berhasil diselesaikan oleh masing-masing meja CS pada rentang waktu terpilih.
+                </p>
+            </div>
+        </div>
+
+        <!-- TAB 3: RIWAYAT OPERASIONAL REAL-TIME -->
+        <div x-show="activeTab === 'history'" id="history-data-container" data-history='{{ json_encode($historyBulanan) }}' x-data="historyFilterComponent()" class="bg-white border border-[#E0E3E8] rounded-2xl shadow-sm overflow-hidden flex flex-col space-y-4 p-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-[#E0E3E8] pb-4 gap-4">
+                <div>
+                    <h3 class="text-lg font-black text-[#181C20]">Riwayat Operasional Antrean & Omset Harian</h3>
+                    <p class="text-xs text-gray-500">Pemantauan volume antrean masuk, tiket diproses/menunggu, tipe layanan, serta total omset.</p>
+                </div>
+                <span class="text-xs font-bold bg-[#00509E]/10 text-[#00509E] px-3 py-1 rounded-full" x-text="'Total ' + filteredHistory.length + ' Baris Tampil'"></span>
+            </div>
+
+            <!-- OPSI FILTER & SORTING TABEL -->
+            <div class="bg-[#F8F9FA] p-3.5 rounded-xl border border-[#E0E3E8] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                <div>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Jangka Waktu Hari</label>
+                    <select x-model="daysLimit" class="w-full border border-gray-300 rounded-lg p-2 font-semibold bg-white cursor-pointer">
+                        <option value="7">7 Hari Terakhir</option>
+                        <option value="14">14 Hari Terakhir</option>
+                        <option value="30">30 Hari Terakhir</option>
+                        <option value="all">Semua Data (30 Hari Full)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Urutkan Berdasarkan</label>
+                    <select x-model="sortField" class="w-full border border-gray-300 rounded-lg p-2 font-semibold bg-white cursor-pointer">
+                        <option value="raw_date">Tanggal</option>
+                        <option value="tiket_masuk">Tiket Masuk</option>
+                        <option value="tiket_dilayani">Tiket Dilayani</option>
+                        <option value="sudah_diproses">Sudah Diproses (Selesai)</option>
+                        <option value="belum_diproses">Belum Diproses (Menunggu)</option>
+                        <option value="total_omset">Jumlah Transaksi (Omset)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Arah Urutan</label>
+                    <select x-model="sortOrder" class="w-full border border-gray-300 rounded-lg p-2 font-semibold bg-white cursor-pointer">
+                        <option value="desc">Terbanyak / Terbaru</option>
+                        <option value="asc">Tersedikit / Terlama</option>
+                    </select>
+                </div>
+                <div class="flex items-end pb-1">
+                    <label class="inline-flex items-center cursor-pointer select-none">
+                        <input type="checkbox" x-model="hideEmpty" class="sr-only peer">
+                        <div class="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-[#00509E] relative after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                        <span class="ml-2 text-xs font-bold text-[#181C20]">Sembunyikan Hari Kosong</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- TABEL DENGAN STRUKTUR KOLOM BARU -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-[#F8F9FA] border-b border-[#E0E3E8] text-gray-500 font-black uppercase text-[10px]">
+                        <tr>
+                            <th class="p-3.5">Tanggal</th>
+                            <th class="p-3.5 text-center">Tiket Masuk</th>
+                            <th class="p-3.5 text-center">Tiket Dilayani</th>
+                            <th class="p-3.5 text-center">Sudah Diproses</th>
+                            <th class="p-3.5 text-center">Belum Diproses</th>
+                            <th class="p-3.5">Tipe Layanan (A-B-C-D)</th>
+                            <th class="p-3.5 text-right">Jumlah Transaksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[#E0E3E8]">
+                        <template x-for="(row, idx) in filteredHistory" :key="idx">
+                            <tr class="hover:bg-[#F8F9FA] transition-colors" :class="row.tiket_masuk === 0 ? 'bg-gray-50/50' : ''">
+                                <!-- TANGGAL -->
+                                <td class="p-3.5 font-bold text-[#181C20]" x-text="row.tanggal"></td>
+                                
+                                <!-- TIKET MASUK -->
+                                <td class="p-3.5 text-center font-bold text-[#00509E]" x-text="row.tiket_masuk"></td>
+                                
+                                <!-- TIKET DILAYANI -->
+                                <td class="p-3.5 text-center font-bold text-indigo-600" x-text="row.tiket_dilayani"></td>
+                                
+                                <!-- SUDAH DIPROSES (SELESAI) -->
+                                <td class="p-3.5 text-center">
+                                    <span class="px-2.5 py-1 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800" x-text="row.sudah_diproses"></span>
+                                </td>
+
+                                <!-- BELUM DIPROSES (MENUNGGU) -->
+                                <td class="p-3.5 text-center">
+                                    <span class="px-2.5 py-1 rounded-full text-[11px] font-black bg-amber-100 text-amber-800" x-text="row.belum_diproses"></span>
+                                </td>
+
+                                <!-- RINCIAN TIPE LAYANAN (A-B-C-D) -->
+                                <td class="p-3.5">
+                                    <div class="flex flex-wrap gap-1 max-w-[280px]">
+                                        <template x-if="row.breakdown_layanan && row.breakdown_layanan.length > 0">
+                                            <template x-for="(item, bIdx) in row.breakdown_layanan" :key="bIdx">
+                                                <span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[10px] font-semibold border border-gray-200">
+                                                    <span x-text="item.nama"></span>: <strong x-text="item.jumlah"></strong>
+                                                </span>
+                                            </template>
+                                        </template>
+                                        <template x-if="!row.breakdown_layanan || row.breakdown_layanan.length === 0">
+                                            <span class="text-gray-400 italic text-[10px]">-</span>
+                                        </template>
+                                    </div>
+                                </td>
+
+                                <!-- TOTAL OMSET / TRANSAKSI -->
+                                <td class="p-3.5 text-right font-black text-[#181C20]" x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(row.total_omset)"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 4: STAFF MONITORING -->
+        <div x-show="activeTab === 'staff'" class="space-y-6">
+            <div class="bg-white p-4 rounded-2xl border border-[#E0E3E8] shadow-sm flex flex-wrap items-center justify-between gap-3">
+                <h4 class="font-extrabold text-xs text-[#181C20]">Aksi Pengelolaan Staf & Loket:</h4>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button @click="showModalCS = true" class="px-3.5 py-2 bg-[#00509E] text-white font-bold text-xs rounded-xl flex items-center gap-1"><span class="material-symbols-outlined text-base">person_add</span> Tambah CS Baru</button>
+                    <button @click="showModalMeja = true" class="px-3.5 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl flex items-center gap-1"><span class="material-symbols-outlined text-base">add_box</span> Tambah Slot Meja</button>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
+                <h3 class="text-xs font-black uppercase text-[#181C20]">Katalog Ketersediaan Meja Loket</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    @forelse($masterMejas ?? [] as $meja)
+                        <div class="p-3.5 border rounded-xl flex items-center justify-between bg-[#F8F9FA] border-[#E0E3E8]">
+                            <div>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="w-6 h-6 rounded-full bg-[#00509E]/10 text-[#00509E] font-black text-[10px] flex items-center justify-center">M{{ $meja->nomor_meja }}</span>
+                                    <span class="font-extrabold text-xs text-[#181C20]">{{ $meja->nama_meja }}</span>
+                                </div>
+                                <span class="text-[9px] font-black uppercase mt-1 inline-block {{ $meja->is_available ? 'text-emerald-600' : 'text-rose-600' }}">{{ $meja->is_available ? 'Tersedia' : 'Nonaktif' }}</span>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <form action="{{ route('admin.meja.toggle', $meja->id) }}" method="POST">@csrf <button type="submit" class="p-1.5 {{ $meja->is_available ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600' }} rounded-lg text-xs"><span class="material-symbols-outlined text-sm">power_settings_new</span></button></form>
+                                <form action="{{ route('admin.meja.delete', $meja->id) }}" method="POST" onsubmit="return confirm('Hapus slot meja ini?')">@csrf @method('DELETE') <button type="submit" class="p-1.5 bg-rose-100 text-rose-600 rounded-lg"><span class="material-symbols-outlined text-sm">delete</span></button></form>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="col-span-full p-4 text-center text-gray-400 font-bold text-xs">Belum ada slot meja fisik.</div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: KELOLA LAYANAN -->
+        <div x-show="activeTab === 'master_layanan'" class="space-y-6">
+            <div class="bg-white p-4 rounded-2xl border border-[#E0E3E8] shadow-sm flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h3 class="font-black text-sm text-[#181C20]">Pengaturan Parent-Child Layanan & Sub-Layanan</h3>
+                    <p class="text-xs text-gray-500">Klik salah satu Kategori Utama di sebelah kiri untuk mengelola Sub-Layanan terkait.</p>
+                </div>
+                <button @click="showModalLayanan = true" class="px-3.5 py-2 bg-[#00509E] text-white font-bold text-xs rounded-xl flex items-center gap-1">+ Kategori Utama</button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <div class="lg:col-span-5 bg-white rounded-2xl border border-[#E0E3E8] shadow-sm overflow-hidden flex flex-col">
+                    <div class="p-4 bg-[#F8F9FA] border-b flex justify-between items-center"><h4 class="font-black text-xs text-[#00509E] uppercase">Kategori Utama</h4></div>
+                    <div class="p-3 space-y-2 max-h-[550px] overflow-y-auto custom-scrollbar">
+                        @foreach($layanans as $lay)
+                            @php
+                                /** @var \App\Models\Layanan $lay */
+                                $subCount = optional($lay->getAttribute('subLayanans'))->count() ?? 0;
+                            @endphp
+                            <div @click="selectedLayananId = '{{ $lay->id }}'; selectedLayananNama = '{{ addslashes($lay->nama_layanan) }}'" :class="selectedLayananId == '{{ $lay->id }}' ? 'border-[#00509E] bg-[#00509E]/5 ring-2 ring-[#00509E]/20' : 'border-[#E0E3E8]'" class="p-3 border rounded-xl flex items-center justify-between cursor-pointer">
+                                <div><h5 class="font-extrabold text-xs text-[#181C20]">{{ $lay->nama_layanan }}</h5><span class="text-[10px] text-gray-500 font-semibold mt-0.5 block">{{ $subCount }} Sub-Layanan</span></div>
+                                <form action="{{ route('admin.layanan.destroy', $lay->id) }}" method="POST" onsubmit="return confirm('Hapus kategori ini?')">@csrf @method('DELETE') <button type="submit" class="p-1.5 bg-rose-50 text-rose-600 rounded-lg"><span class="material-symbols-outlined text-sm">delete</span></button></form>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div class="lg:col-span-7 bg-white rounded-2xl border border-[#E0E3E8] shadow-sm overflow-hidden flex flex-col">
+                    <div class="p-4 bg-emerald-50/60 border-b flex items-center justify-between">
+                        <div><span class="text-[9px] font-black text-emerald-700 uppercase">SUB-LAYANAN UNTUK:</span><h4 class="font-black text-sm text-[#181C20]" x-text="selectedLayananNama || 'Pilih Kategori'"></h4></div>
+                        <button x-show="selectedLayananId" @click="showModalSubLayanan = true" class="px-3 py-1.5 bg-emerald-600 text-white font-bold text-xs rounded-xl">+ Tambah Sub-Layanan</button>
+                    </div>
+                    <div class="p-4 min-h-[300px] max-h-[550px] overflow-y-auto custom-scrollbar">
+                        @foreach($layanans as $lay)
+                            @php
+                                /** @var \App\Models\Layanan $lay */
+                                $subList = optional($lay->getAttribute('subLayanans'))->all() ?? [];
+                            @endphp
+                            <div x-show="selectedLayananId == '{{ $lay->id }}'" class="space-y-2">
+                                @forelse($subList as $sub)
+                                    @php /** @var \App\Models\SubLayanan $sub */ @endphp
+                                    <div class="p-3 bg-[#F8F9FA] border border-[#E0E3E8] rounded-xl flex items-center justify-between">
+                                        <div class="flex items-center gap-2"><span class="material-symbols-outlined text-emerald-600 text-base">subdirectory_arrow_right</span><span class="font-extrabold text-xs text-gray-800">{{ $sub->nama_sub_layanan }}</span></div>
+                                        <form action="{{ route('admin.sub_layanan.destroy', $sub->id) }}" method="POST" onsubmit="return confirm('Hapus sub-layanan?')">@csrf @method('DELETE') <button type="submit" class="p-1.5 bg-rose-50 text-rose-600 rounded-lg"><span class="material-symbols-outlined text-sm">delete</span></button></form>
+                                    </div>
+                                @empty
+                                    <div class="p-8 text-center text-gray-400 font-bold text-xs">Belum ada sub-layanan.</div>
+                                @endforelse
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MODAL POPUP: DETAIL TIKET ANTREAN & PENANGANAN CS -->
+    <div x-show="showModalDetail" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-gray-100" @click.away="showModalDetail = false">
+            <div class="flex justify-between items-center border-b pb-3 border-gray-100">
+                <h3 class="text-base font-black text-[#181C20] flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[#00509E]">confirmation_number</span>
+                    Detail Tiket & Evaluasi Layanan
+                </h3>
+                <button @click="showModalDetail = false" class="text-gray-400 hover:text-gray-600"><span class="material-symbols-outlined">close</span></button>
+            </div>
+
+            <template x-if="selectedTiket">
+                <div class="space-y-3 text-xs">
+                    <div class="grid grid-cols-2 gap-2 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                        <div>
+                            <span class="text-[10px] text-gray-400 font-bold uppercase block">Nomor Antrean</span>
+                            <span class="font-mono text-base font-black text-[#00509E]" x-text="selectedTiket.nomor_antrian"></span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-gray-400 font-bold uppercase block">Status Operasional</span>
+                            <span class="font-bold text-xs uppercase" x-text="selectedTiket.status"></span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-gray-400 font-bold uppercase block">Pelanggan</span>
+                            <span class="font-bold text-gray-800" x-text="selectedTiket.pelanggan ? selectedTiket.pelanggan.nama : '-'"></span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-gray-400 font-bold uppercase block">Petugas CS / Loket</span>
+                            <span class="font-bold text-gray-800" x-text="selectedTiket.cs ? selectedTiket.cs.nama_lengkap : '-'"></span>
+                        </div>
+                    </div>
+
+                    <!-- METRIK DURASI TUNGGU & LAYANAN -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="p-3 bg-blue-50 border border-blue-100 rounded-xl">
+                            <span class="text-[10px] text-blue-600 font-bold uppercase block">Waktu Tunggu Pelanggan</span>
+                            <span class="font-bold text-blue-900" x-text="selectedTiket.waktu_tunggu ? (Math.floor(selectedTiket.waktu_tunggu/60) + 'm ' + (selectedTiket.waktu_tunggu%60) + 's') : '-'"></span>
+                        </div>
+                        <div class="p-3 bg-emerald-50 border border-emerald-100 rounded-xl">
+                            <span class="text-[10px] text-emerald-600 font-bold uppercase block">Durasi Layanan CS</span>
+                            <span class="font-bold text-emerald-900" x-text="selectedTiket.waktu_layanan ? (Math.floor(selectedTiket.waktu_layanan/60) + 'm ' + (selectedTiket.waktu_layanan%60) + 's') : '-'"></span>
+                        </div>
+                    </div>
+
+                    <!-- CATATAN PENANGANAN CS -->
+                    <div class="p-3 bg-amber-50/60 border border-amber-200 rounded-xl">
+                        <span class="text-[10px] text-amber-700 font-bold uppercase block mb-1">Catatan CS & Ringkasan Solusi</span>
+                        <p class="text-gray-800 italic" x-text="selectedTiket.catatan_cs || selectedTiket.ringkasan_solusi || 'Tidak ada catatan khusus.'"></p>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- MODAL POPUP: KUSTOMISASI CETAK PDF INTERAKTIF -->
+    <div x-show="showModalPdf" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-gray-100" @click.away="showModalPdf = false">
+            <div class="flex justify-between items-center border-b pb-3 border-gray-100">
+                <h3 class="text-base font-black text-[#181C20] flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[#EE2E24]">picture_as_pdf</span>
+                    Kustomisasi Laporan PDF
+                </h3>
+                <button @click="showModalPdf = false" class="text-gray-400 hover:text-gray-600"><span class="material-symbols-outlined">close</span></button>
+            </div>
+
+            <form action="{{ route('admin.pdf') }}" method="GET" target="_blank" class="space-y-4 text-xs">
+                <!-- PRESET PERIODE TANGGAL -->
+                <div class="space-y-2">
+                    <label class="font-bold text-gray-700 block">1. Pilih Periode Waktu Laporan</label>
+                    <select name="period" id="pdf_period_select" onchange="togglePdfCustomDates(this.value)" class="w-full p-2.5 border border-gray-300 rounded-xl font-bold text-gray-700">
+                        <option value="today">Hari Ini (Today)</option>
+                        <option value="wtd">Minggu Ini (WTD)</option>
+                        <option value="mtd" selected>Bulan Ini (MTD)</option>
+                        <option value="last_30">30 Hari Terakhir</option>
+                        <option value="ytd">Tahun Ini (YTD)</option>
+                        <option value="custom">Kustom Tanggal Spesifik...</option>
+                    </select>
+
+                    <div id="pdf_custom_dates_container" class="hidden grid-cols-2 gap-2 pt-1">
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-400 uppercase">Dari Tanggal</label>
+                            <input type="date" name="start_date" value="{{ $startDate->format('Y-m-d') }}" class="w-full p-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-400 uppercase">Sampai Tanggal</label>
+                            <input type="date" name="end_date" value="{{ $endDate->format('Y-m-d') }}" class="w-full p-2 border border-gray-300 rounded-lg">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FILTER KATEGORI -->
+                <div>
+                    <label class="font-bold text-gray-700 block mb-1">2. Filter Kategori Layanan</label>
+                    <select name="layanan_id" class="w-full p-2.5 border border-gray-300 rounded-xl font-semibold">
+                        <option value="">Semua Kategori Layanan</option>
+                        @foreach($layanans as $lay)
+                            <option value="{{ $lay->id }}">{{ $lay->nama_layanan }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- KOMPONEN YANG INGIN DICETAK -->
+                <div class="space-y-2">
+                    <label class="font-bold text-gray-700 block">3. Komponen Dokumen PDF</label>
+                    <div class="space-y-2 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="inc_summary" value="1" checked class="rounded text-[#00509E]">
+                            <span class="font-bold text-gray-800">Sertakan Executive Summary & Analisis Otomatis</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="inc_charts" value="1" checked class="rounded text-[#00509E]">
+                            <span class="font-bold text-gray-800">Sertakan Visualisasi Grafik Analitik (Line & Pie)</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="inc_table" value="1" checked class="rounded text-[#00509E]">
+                            <span class="font-bold text-gray-800">Sertakan Tabel Detail Rincian Tiket</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- HIDDEN BASE64 CHART IMAGE DATA -->
+                <input type="hidden" name="chart_line_base64" id="chart_line_base64">
+                <input type="hidden" name="chart_pie_base64" id="chart_pie_base64">
+
+                <div class="pt-3 border-t flex justify-end gap-2">
+                    <button type="button" @click="showModalPdf = false" class="px-4 py-2 bg-gray-100 font-bold rounded-xl">Batal</button>
+                    <button type="submit" onclick="preparePdfCharts()" class="px-5 py-2 bg-[#EE2E24] hover:bg-[#CE1111] text-white font-bold rounded-xl shadow-md flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-base">print</span> Generate & Cetak PDF
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL CS & MEJA -->
+    <div x-show="showModalCS" x-cloak class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalCS = false">
+            <h3 class="text-base font-black">Tambah Petugas CS Baru</h3>
+            <form action="{{ route('admin.staff.store') }}" method="POST" class="space-y-3 text-xs">
+                @csrf
+                <div><label class="font-bold block mb-1">Nama Lengkap</label><input type="text" name="nama_lengkap" required class="w-full p-2.5 border rounded-xl"></div>
+                <div><label class="font-bold block mb-1">Username</label><input type="text" name="username" required class="w-full p-2.5 border rounded-xl"></div>
+                <div><label class="font-bold block mb-1">Password</label><input type="password" name="password" required class="w-full p-2.5 border rounded-xl"></div>
+                <div class="flex justify-end gap-2"><button type="button" @click="showModalCS = false" class="px-4 py-2 bg-gray-100 rounded-xl font-bold">Batal</button><button type="submit" class="px-5 py-2 bg-[#00509E] text-white font-bold rounded-xl">Simpan</button></div>
+            </form>
+        </div>
+    </div>
+
+    <div x-show="showModalLayanan" x-cloak class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalLayanan = false">
+            <h3 class="text-base font-black">Tambah Kategori Layanan Utama</h3>
+            <form action="{{ route('admin.layanan.store') }}" method="POST" class="space-y-3 text-xs">
+                @csrf
+                <div><label class="font-bold block mb-1">Nama Kategori</label><input type="text" name="nama_layanan" required class="w-full p-2.5 border rounded-xl"></div>
+                <div class="flex justify-end gap-2"><button type="button" @click="showModalLayanan = false" class="px-4 py-2 bg-gray-100 rounded-xl font-bold">Batal</button><button type="submit" class="px-5 py-2 bg-[#00509E] text-white font-bold rounded-xl">Simpan</button></div>
+            </form>
+        </div>
+    </div>
+
+    <div x-show="showModalSubLayanan" x-cloak class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalSubLayanan = false">
+            <h3 class="text-base font-black">Tambah Sub-Layanan</h3>
+            <form action="{{ route('admin.sub_layanan.store') }}" method="POST" class="space-y-3 text-xs">
+                @csrf
+                <input type="hidden" name="layanan_id" :value="selectedLayananId">
+                <div><label class="font-bold block mb-1">Kategori Utama</label><input type="text" readonly :value="selectedLayananNama" class="w-full p-2.5 bg-gray-100 border rounded-xl font-bold text-[#00509E]"></div>
+                <div><label class="font-bold block mb-1">Nama Sub-Layanan</label><input type="text" name="nama_sub_layanan" required class="w-full p-2.5 border rounded-xl"></div>
+                <div class="flex justify-end gap-2"><button type="button" @click="showModalSubLayanan = false" class="px-4 py-2 bg-gray-100 rounded-xl font-bold">Batal</button><button type="submit" class="px-5 py-2 bg-emerald-600 text-white font-bold rounded-xl">Simpan Sub-Layanan</button></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SCRIPTS ENGINES -->
+    <script>
+        var globalQueueChart = null;
+        var globalPieChart = null;
+        var globalSlaMergedChart = null;
+        var globalSlaTungguChart = null;
+        var globalSlaKonsulChart = null;
+        var globalBarChart = null;
+
+        function togglePdfCustomDates(val) {
+            const container = document.getElementById('pdf_custom_dates_container');
+            if (val === 'custom') {
+                container.classList.remove('hidden');
+                container.classList.add('grid');
             } else {
-                $avgDurasiLayananText = "0m 0s";
+                container.classList.add('hidden');
+                container.classList.remove('grid');
             }
-        } else {
-            $avgDurasiLayananText = "0m 0s";
         }
 
-        $tiketDipanggilFilter = $allFilteredTickets->whereIn('status', ['Diproses', 'Selesai', 'No Show', 'Ditransfer']);
+        function preparePdfCharts() {
+            const lineCanvas = document.getElementById('queueChart');
+            const pieCanvas = document.getElementById('categoryPieChart');
 
-        if ($tiketDipanggilFilter->count() > 0) {
-            $totalDetikTunggu = 0;
-            $countValidTunggu = 0;
-            foreach ($tiketDipanggilFilter as $td) {
-                if (isset($td->waktu_tunggu) && $td->waktu_tunggu > 0) {
-                    $totalDetikTunggu += $td->waktu_tunggu;
-                    $countValidTunggu++;
-                } else {
-                    $dibuat = $td->waktu_dibuat;
-                    $dipanggil = $td->waktu_dipanggil ?? $td->waktu_diproses;
-                    if ($dibuat && $dipanggil) {
-                        $totalDetikTunggu += Carbon::parse($dibuat, 'Asia/Jakarta')->diffInSeconds(Carbon::parse($dipanggil, 'Asia/Jakarta'));
-                        $countValidTunggu++;
+            if (lineCanvas) {
+                document.getElementById('chart_line_base64').value = lineCanvas.toDataURL('image/png');
+            }
+            if (pieCanvas) {
+                document.getElementById('chart_pie_base64').value = pieCanvas.toDataURL('image/png');
+            }
+        }
+
+        function chartFilterComponent() {
+            return {
+                chartPeriod: 'last30',
+                isMerged: true,
+                allDataSets: {},
+                
+                init: function() {
+                    const canvasLine = document.getElementById('queueChart');
+                    if (canvasLine && canvasLine.dataset.chartSets) {
+                        try {
+                            this.allDataSets = JSON.parse(canvasLine.dataset.chartSets);
+                            this.renderLineChart('last30');
+                            this.renderSlaCharts('last30');
+                        } catch (e) { console.error(e); }
                     }
-                }
-            }
-            if ($countValidTunggu > 0) {
-                $avgDetikTunggu = round($totalDetikTunggu / $countValidTunggu);
-                $mTunggu = floor($avgDetikTunggu / 60);
-                $dTunggu = $avgDetikTunggu % 60;
-                $avgWaktuTungguText = "{$mTunggu}m {$dTunggu}s";
-            } else {
-                $avgWaktuTungguText = "0m 0s";
-            }
-        } else {
-            $avgWaktuTungguText = "0m 0s";
-        }
+                    this.renderPieChart();
+                    this.renderBarChart();
+                },
 
-        $avgSla = $avgDurasiLayananText;
+                switchChartPeriod: function(period) {
+                    this.chartPeriod = period;
+                    this.renderLineChart(period);
+                    this.renderSlaCharts(period);
+                },
 
-        // Rating
-        $ratedTickets = $allFilteredTickets->filter(fn($t) => !empty($t->rating) && $t->rating > 0);
-        $avgRating = $ratedTickets->count() > 0 ? round($ratedTickets->avg('rating'), 1) : 0;
+                toggleSlaMode: function(mergedStatus) {
+                    this.isMerged = mergedStatus;
+                    this.$nextTick(() => {
+                        this.renderSlaCharts(this.chartPeriod);
+                    });
+                },
 
-        // -------------------------------------------------------------
-        // ANALISIS TREN OTOMATIS
-        // -------------------------------------------------------------
-        $prevStartDate = null;
-        $prevEndDate = null;
-        $labelKomparasi = "Periode Sebelumnya";
+                renderLineChart: function(periodKey) {
+                    const dataSet = this.allDataSets[periodKey] || this.allDataSets['last30'];
+                    const canvas = document.getElementById('queueChart');
+                    if (!canvas || !dataSet) return;
 
-        if ($startDate && $endDate) {
-            $diffInDays = $startDate->diffInDays($endDate) + 1;
-            $prevStartDate = (clone $startDate)->subDays($diffInDays);
-            $prevEndDate = (clone $startDate)->subSecond();
+                    const ctx = canvas.getContext('2d');
+                    if (globalQueueChart) globalQueueChart.destroy();
 
-            if ($period === 'today') $labelKomparasi = "Kemarin";
-            elseif ($period === 'wtd') $labelKomparasi = "Minggu Lalu";
-            elseif ($period === 'mtd') $labelKomparasi = "Bulan Lalu";
-            elseif ($period === 'last_30') $labelKomparasi = "30 Hari Sebelumnya";
-            elseif ($period === 'ytd') $labelKomparasi = "Tahun Lalu";
-        }
+                    globalQueueChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: dataSet.dates,
+                            datasets: [
+                                { label: 'Total Tiket Masuk', data: dataSet.total, borderColor: '#00509E', backgroundColor: 'rgba(0, 80, 158, 0.1)', fill: true, tension: 0.3 },
+                                { label: 'Layanan Selesai', data: dataSet.selesai, borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3 }
+                            ]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
+                    });
+                },
 
-        $totalLalu = 0;
-        if ($prevStartDate && $prevEndDate) {
-            $queryLalu = TiketAntrian::whereBetween('waktu_dibuat', [$prevStartDate, $prevEndDate]);
-            if ($request->filled('layanan_id')) $queryLalu->where('layanan_id', $layananId);
-            $totalLalu = $queryLalu->count();
-        }
+                renderSlaCharts: function(periodKey) {
+                    const dataSet = this.allDataSets[periodKey || this.chartPeriod] || this.allDataSets['last30'];
+                    if (!dataSet) return;
 
-        $analisisOtomatis = [];
-        if ($totalLalu == 0) {
-            $analisisOtomatis['status_tiket'] = "Belum ada baseline data komparasi untuk {$labelKomparasi}. Total tiket saat ini adalah {$totalHariIni} tiket.";
-            $analisisOtomatis['badge_tiket'] = "bg-gray-100 text-gray-700";
-        } else {
-            $selisih = $totalHariIni - $totalLalu;
-            $persenDelta = round(($selisih / $totalLalu) * 100, 1);
+                    if (this.isMerged) {
+                        // MODE MERGED
+                        const canvas = document.getElementById('slaMergedChart');
+                        if (!canvas) return;
 
-            if (abs($persenDelta) <= 3) {
-                $analisisOtomatis['status_tiket'] = "Volume antrean cenderung **STABIL** (fluktuasi {$persenDelta}% dibanding {$labelKomparasi}). Operasional berjalan konsisten.";
-                $analisisOtomatis['badge_tiket'] = "bg-blue-100 text-blue-800";
-            } elseif ($persenDelta > 3 && $persenDelta <= 20) {
-                $analisisOtomatis['status_tiket'] = "Terjadi **PENINGKATAN MODERAT** sebesar **+{$persenDelta}%** ({$totalHariIni} vs {$totalLalu} tiket) dibanding {$labelKomparasi}.";
-                $analisisOtomatis['badge_tiket'] = "bg-emerald-100 text-emerald-800";
-            } elseif ($persenDelta > 20) {
-                $analisisOtomatis['status_tiket'] = "Terjadi **LONJAKAN TINGGI** antrean sebesar **+{$persenDelta}%** dibanding {$labelKomparasi}. Disarankan penambahan petugas loket.";
-                $analisisOtomatis['badge_tiket'] = "bg-emerald-200 text-emerald-900";
-            } elseif ($persenDelta < -3 && $persenDelta >= -20) {
-                $analisisOtomatis['status_tiket'] = "Terjadi **PENURUNAN MODERAT** sebesar **{$persenDelta}%** ({$totalHariIni} vs {$totalLalu} tiket) dibanding {$labelKomparasi}.";
-                $analisisOtomatis['badge_tiket'] = "bg-amber-100 text-amber-800";
-            } else {
-                $analisisOtomatis['status_tiket'] = "Terjadi **PENURUNAN SIGNIFIKAN** sebesar **{$persenDelta}%** dibanding {$labelKomparasi}. Perlu peninjauan arus kedatangan pelanggan.";
-                $analisisOtomatis['badge_tiket'] = "bg-rose-100 text-rose-800";
-            }
-        }
+                        if (globalSlaMergedChart) globalSlaMergedChart.destroy();
 
-        // -------------------------------------------------------------
-        // GRAFIK ANALITIK DATASET (Termasuk Avg Tunggu & Avg Konsul dalam Menit)
-        // -------------------------------------------------------------
-        $allTickets = TiketAntrian::with('layanan')->get();
+                        globalSlaMergedChart = new Chart(canvas.getContext('2d'), {
+                            type: 'line',
+                            data: {
+                                labels: dataSet.dates,
+                                datasets: [
+                                    { label: 'Avg Waktu Tunggu (Menit)', data: dataSet.avg_tunggu || [], borderColor: '#3B82F6', backgroundColor: 'rgba(59, 130, 246, 0.1)', fill: true, tension: 0.3 },
+                                    { label: 'Avg Durasi Konsul CS (Menit)', data: dataSet.avg_layanan || [], borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3 }
+                                ]
+                            },
+                            options: { 
+                                responsive: true, 
+                                maintainAspectRatio: false, 
+                                plugins: { legend: { position: 'top' } },
+                                scales: { y: { beginAtZero: true, title: { display: true, text: 'Waktu (Menit)' } } }
+                            }
+                        });
+                    } else {
+                        // MODE SEPARATE (UNMERGED)
+                        const canvasTunggu = document.getElementById('slaTungguSeparateChart');
+                        const canvasKonsul = document.getElementById('slaKonsulSeparateChart');
 
-        // Helper untuk hitung avg waktu tunggu & durasi konsul CS dalam menit per subset tiket
-        $calcSlaMetrics = function($tickets) {
-            // Avg Waktu Tunggu (menit)
-            $dipanggil = $tickets->whereIn('status', ['Diproses', 'Selesai', 'No Show', 'Ditransfer']);
-            $totalDetikTunggu = 0; $countTunggu = 0;
-            foreach ($dipanggil as $t) {
-                if (isset($t->waktu_tunggu) && $t->waktu_tunggu > 0) {
-                    $totalDetikTunggu += $t->waktu_tunggu; $countTunggu++;
-                } else {
-                    $m = $t->waktu_dibuat; $s = $t->waktu_dipanggil ?? $t->waktu_diproses;
-                    if ($m && $s) {
-                        $totalDetikTunggu += Carbon::parse($m, 'Asia/Jakarta')->diffInSeconds(Carbon::parse($s, 'Asia/Jakarta'));
-                        $countTunggu++;
+                        if (canvasTunggu) {
+                            if (globalSlaTungguChart) globalSlaTungguChart.destroy();
+                            globalSlaTungguChart = new Chart(canvasTunggu.getContext('2d'), {
+                                type: 'line',
+                                data: {
+                                    labels: dataSet.dates,
+                                    datasets: [{ label: 'Waktu Tunggu', data: dataSet.avg_tunggu || [], borderColor: '#3B82F6', backgroundColor: 'rgba(59, 130, 246, 0.2)', fill: true, tension: 0.3 }]
+                                },
+                                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                            });
+                        }
+
+                        if (canvasKonsul) {
+                            if (globalSlaKonsulChart) globalSlaKonsulChart.destroy();
+                            globalSlaKonsulChart = new Chart(canvasKonsul.getContext('2d'), {
+                                type: 'line',
+                                data: {
+                                    labels: dataSet.dates,
+                                    datasets: [{ label: 'Durasi Konsul CS', data: dataSet.avg_layanan || [], borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.2)', fill: true, tension: 0.3 }]
+                                },
+                                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                            });
+                        }
                     }
-                }
-            }
-            $avgTungguMenit = $countTunggu > 0 ? round(($totalDetikTunggu / $countTunggu) / 60, 1) : 0;
+                },
 
-            // Avg Durasi Konsul CS (menit)
-            $selesai = $tickets->where('status', 'Selesai');
-            $totalDetikLayanan = 0; $countLayanan = 0;
-            foreach ($selesai as $t) {
-                if (isset($t->waktu_layanan) && $t->waktu_layanan > 0) {
-                    $totalDetikLayanan += $t->waktu_layanan; $countLayanan++;
-                } else {
-                    $m = $t->waktu_mulai_konsul ?? $t->waktu_diproses; $s = $t->waktu_selesai_konsul ?? $t->waktu_selesai;
-                    if ($m && $s) {
-                        $totalDetikLayanan += Carbon::parse($m, 'Asia/Jakarta')->diffInSeconds(Carbon::parse($s, 'Asia/Jakarta'));
-                        $countLayanan++;
+                renderPieChart: function() {
+                    const canvas = document.getElementById('categoryPieChart');
+                    if (!canvas || !canvas.dataset.dist) return;
+
+                    try {
+                        let raw = JSON.parse(canvas.dataset.dist);
+                        if (!Array.isArray(raw)) raw = Object.values(raw);
+
+                        const labels = raw.map(i => i.nama);
+                        const data = raw.map(i => i.total);
+
+                        if (globalPieChart) globalPieChart.destroy();
+
+                        globalPieChart = new Chart(canvas.getContext('2d'), {
+                            type: 'pie',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    data: data,
+                                    backgroundColor: ['#00509E', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#64748B']
+                                }]
+                            },
+                            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+                        });
+                    } catch (e) { console.error(e); }
+                },
+
+                renderBarChart: function() {
+                    const canvas = document.getElementById('csBarChart');
+                    if (!canvas || !canvas.dataset.cs) return;
+
+                    try {
+                        const raw = JSON.parse(canvas.dataset.cs);
+                        const labels = raw.map(i => i.nama + ' (M' + i.nomor_meja + ')');
+                        const data = raw.map(i => i.total_dilayani);
+
+                        if (globalBarChart) globalBarChart.destroy();
+
+                        globalBarChart = new Chart(canvas.getContext('2d'), {
+                            type: 'bar',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    label: 'Total Tiket Dilayani',
+                                    data: data,
+                                    backgroundColor: '#8B5CF6'
+                                }]
+                            },
+                            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                        });
+                    } catch (e) { console.error(e); }
+                }
+            };
+        }
+
+        function historyFilterComponent() {
+            return {
+                daysLimit: '30',
+                hideEmpty: false,
+                sortField: 'raw_date',
+                sortOrder: 'desc',
+                rawHistory: [],
+                
+                init: function() {
+                    const elem = document.getElementById('history-data-container');
+                    if (elem && elem.dataset.history) {
+                        try { this.rawHistory = JSON.parse(elem.dataset.history); } catch (e) { this.rawHistory = []; }
                     }
+                },
+                
+                get filteredHistory() {
+                    let data = [...this.rawHistory];
+                    if (this.daysLimit !== 'all') data = data.slice(0, parseInt(this.daysLimit));
+                    if (this.hideEmpty) data = data.filter(i => i.tiket_masuk > 0);
+
+                    var self = this;
+                    data.sort((a, b) => {
+                        let valA = a[self.sortField];
+                        let valB = b[self.sortField];
+                        return self.sortOrder === 'asc' ? (valA > valB ? 1 : -1) : (valA < valB ? 1 : -1);
+                    });
+                    return data;
                 }
-            }
-            $avgLayananMenit = $countLayanan > 0 ? round(($totalDetikLayanan / $countLayanan) / 60, 1) : 0;
-
-            return [$avgTungguMenit, $avgLayananMenit];
-        };
-
-        // 30 Hari Terakhir
-        $dates30 = []; $total30 = []; $selesai30 = []; $avgTunggu30 = []; $avgLayanan30 = [];
-        $p30 = Carbon::now('Asia/Jakarta')->subDays(29)->daysUntil(Carbon::now('Asia/Jakarta'));
-        foreach ($p30 as $d) {
-            $tgl = $d->format('Y-m-d');
-            $dates30[] = $d->format('d M');
-            $tks = $allTickets->filter(fn($t) => Carbon::parse($t->waktu_dibuat)->timezone('Asia/Jakarta')->format('Y-m-d') === $tgl);
-            $total30[] = $tks->count();
-            $selesai30[] = $tks->where('status', 'Selesai')->count();
-            [$tunggu, $layanan] = $calcSlaMetrics($tks);
-            $avgTunggu30[] = $tunggu;
-            $avgLayanan30[] = $layanan;
+            };
         }
-
-        // WTD
-        $datesWtd = []; $totalWtd = []; $selesaiWtd = []; $avgTungguWtd = []; $avgLayananWtd = [];
-        $pWtd = Carbon::now('Asia/Jakarta')->startOfWeek()->daysUntil(Carbon::now('Asia/Jakarta'));
-        foreach ($pWtd as $d) {
-            $tgl = $d->format('Y-m-d');
-            $datesWtd[] = $d->translatedFormat('D, d M');
-            $tks = $allTickets->filter(fn($t) => Carbon::parse($t->waktu_dibuat)->timezone('Asia/Jakarta')->format('Y-m-d') === $tgl);
-            $totalWtd[] = $tks->count();
-            $selesaiWtd[] = $tks->where('status', 'Selesai')->count();
-            [$tunggu, $layanan] = $calcSlaMetrics($tks);
-            $avgTungguWtd[] = $tunggu;
-            $avgLayananWtd[] = $layanan;
-        }
-
-        // MTD
-        $datesMtd = []; $totalMtd = []; $selesaiMtd = []; $avgTungguMtd = []; $avgLayananMtd = [];
-        $pMtd = Carbon::now('Asia/Jakarta')->startOfMonth()->daysUntil(Carbon::now('Asia/Jakarta'));
-        foreach ($pMtd as $d) {
-            $tgl = $d->format('Y-m-d');
-            $datesMtd[] = $d->format('d M');
-            $tks = $allTickets->filter(fn($t) => Carbon::parse($t->waktu_dibuat)->timezone('Asia/Jakarta')->format('Y-m-d') === $tgl);
-            $totalMtd[] = $tks->count();
-            $selesaiMtd[] = $tks->where('status', 'Selesai')->count();
-            [$tunggu, $layanan] = $calcSlaMetrics($tks);
-            $avgTungguMtd[] = $tunggu;
-            $avgLayananMtd[] = $layanan;
-        }
-
-        // MTM (12 Bulan)
-        $datesMtm = []; $totalMtm = []; $selesaiMtm = []; $avgTungguMtm = []; $avgLayananMtm = [];
-        for ($i = 11; $i >= 0; $i--) {
-            $m = Carbon::now('Asia/Jakarta')->subMonths($i);
-            $monthKey = $m->format('Y-m');
-            $datesMtm[] = $m->translatedFormat('M Y');
-            $tks = $allTickets->filter(fn($t) => Carbon::parse($t->waktu_dibuat)->timezone('Asia/Jakarta')->format('Y-m') === $monthKey);
-            $totalMtm[] = $tks->count();
-            $selesaiMtm[] = $tks->where('status', 'Selesai')->count();
-            [$tunggu, $layanan] = $calcSlaMetrics($tks);
-            $avgTungguMtm[] = $tunggu;
-            $avgLayananMtm[] = $layanan;
-        }
-
-        $chartDataSets = [
-            'wtd'    => ['dates' => $datesWtd, 'total' => $totalWtd, 'selesai' => $selesaiWtd, 'avg_tunggu' => $avgTungguWtd, 'avg_layanan' => $avgLayananWtd],
-            'mtd'    => ['dates' => $datesMtd, 'total' => $totalMtd, 'selesai' => $selesaiMtd, 'avg_tunggu' => $avgTungguMtd, 'avg_layanan' => $avgLayananMtd],
-            'mtm'    => ['dates' => $datesMtm, 'total' => $totalMtm, 'selesai' => $selesaiMtm, 'avg_tunggu' => $avgTungguMtm, 'avg_layanan' => $avgLayananMtm],
-            'last30' => ['dates' => $dates30, 'total' => $total30, 'selesai' => $selesai30, 'avg_tunggu' => $avgTunggu30, 'avg_layanan' => $avgLayanan30],
-        ];
-
-        // Status Ratio
-        $statusRatioData = [
-            'Selesai'    => $allFilteredTickets->where('status', 'Selesai')->count(),
-            'Menunggu'   => $allFilteredTickets->where('status', 'Menunggu')->count(),
-            'Diproses'   => $allFilteredTickets->where('status', 'Diproses')->count(),
-            'Ditransfer' => $allFilteredTickets->where('status', 'Ditransfer')->count(),
-            'No Show'    => $allFilteredTickets->where('status', 'No Show')->count(),
-            'Batal'      => $allFilteredTickets->where('status', 'Batal')->count(),
-        ];
-
-        // -------------------------------------------------------------
-        // REKAP RIWAYAT OPERASIONAL REAL-TIME CS (30 HARI TERAKHIR)
-        // -------------------------------------------------------------
-        $historyBulanan = [];
-        for ($i = 0; $i < 30; $i++) {
-            $date = Carbon::now('Asia/Jakarta')->subDays($i);
-            $tglStr = $date->format('Y-m-d');
-
-            $tks = $allTickets->filter(fn($t) => Carbon::parse($t->waktu_dibuat)->timezone('Asia/Jakarta')->format('Y-m-d') === $tglStr);
-
-            $tiketMasuk      = $tks->count();
-            $tiketDilayani   = $tks->whereIn('status', ['Diproses', 'Selesai', 'Ditransfer'])->count();
-            $sudahDiproses   = $tks->where('status', 'Selesai')->count();
-            $belumDiproses   = $tks->where('status', 'Menunggu')->count();
-            $totalOmsetHari  = $tks->where('status', 'Selesai')->sum('nominal_pembayaran');
-
-            // Breakdown Tipe Layanan (A-B-C-D)
-            $breakdownLayanan = [];
-            foreach ($tks->groupBy('layanan_id') as $layId => $items) {
-                $namaLayanan = $items->first()->layanan->nama_layanan ?? 'Layanan Umum';
-                $breakdownLayanan[] = [
-                    'nama'   => $namaLayanan,
-                    'jumlah' => $items->count()
-                ];
-            }
-
-            $historyBulanan[] = [
-                'tanggal'           => $date->translatedFormat('d F Y'),
-                'raw_date'          => $tglStr,
-                'tiket_masuk'       => $tiketMasuk,
-                'tiket_dilayani'    => $tiketDilayani,
-                'sudah_diproses'    => $sudahDiproses,
-                'belum_diproses'    => $belumDiproses,
-                'breakdown_layanan' => $breakdownLayanan,
-                'total_omset'       => $totalOmsetHari
-            ];
-        }
-
-        // Distribusi Kategori Layanan untuk Pie Chart
-        $distribusiLayanan = Layanan::all()->map(function($layanan) use ($allFilteredTickets) {
-            $item = new stdClass();
-            $item->nama  = $layanan->nama_layanan;
-            $item->total = $allFilteredTickets->where('layanan_id', $layanan->id)->count();
-            return $item;
-        })->sortByDesc('total')->values();
-
-        // Staf CS & Meja
-        $usersCS = User::where('role', 'cs')->get();
-        $mejaCs  = [];
-
-        foreach ($usersCS as $cs) {
-            $tiketAktif = TiketAntrian::with(['layanan', 'subLayanan'])
-                ->where('user_id', $cs->id)
-                ->where('status', 'Diproses')
-                ->whereDate('waktu_dibuat', Carbon::today('Asia/Jakarta'))
-                ->first();
-
-            $querySelesai = TiketAntrian::where('user_id', $cs->id)->where('status', 'Selesai');
-            if ($startDate && $endDate) {
-                $querySelesai->whereBetween('waktu_dibuat', [$startDate, $endDate]);
-            }
-            $totalSelesai = $querySelesai->count();
-
-            $statusText = 'Offline';
-            if ($cs->is_active) {
-                $statusText = $tiketAktif ? 'Melayani Pelanggan' : 'Aktif';
-            }
-
-            $stafObj = new stdClass();
-            $stafObj->id             = $cs->id;
-            $stafObj->inisial        = strtoupper(substr($cs->nama_lengkap, 0, 2));
-            $stafObj->nama           = $cs->nama_lengkap;
-            $stafObj->nomor_meja     = str_pad((string)($cs->nomor_meja ?? 0), 2, '0', STR_PAD_LEFT);
-            $stafObj->is_active      = (bool) $cs->is_active;
-            $stafObj->status         = $statusText;
-            $stafObj->tiket_aktif    = $tiketAktif ? $tiketAktif->nomor_antrian : '-';
-            $stafObj->layanan_aktif  = $tiketAktif ? $tiketAktif->layanan->nama_layanan : '-';
-            $stafObj->total_dilayani = $totalSelesai;
-
-            $mejaCs[] = $stafObj;
-        }
-
-        $masterMejas = MasterMeja::orderBy('nomor_meja', 'asc')->get();
-        $layanans   = Layanan::with('subLayanans')->get();
-        $totalOmset = $allFilteredTickets->where('status', 'Selesai')->sum('nominal_pembayaran');
-
-        $startDateOut = $startDate ? $startDate : Carbon::today('Asia/Jakarta')->startOfDay();
-        $endDateOut   = $endDate ? $endDate : Carbon::today('Asia/Jakarta')->endOfDay();
-
-        return view('admin.index', compact(
-            'totalHariIni', 'menunggu', 'ditransfer', 'noShowCount', 'avgSla', 'avgDurasiLayananText', 
-            'avgWaktuTungguText', 'avgRating', 'totalOmset', 'distribusiLayanan', 
-            'statusRatioData', 'analisisOtomatis', 'mejaCs', 'usersCS', 
-            'masterMejas', 'allFilteredTickets', 'chartDataSets', 
-            'layananId', 'layanans', 'historyBulanan'
-        ))->with([
-            'startDate' => $startDateOut,
-            'endDate'   => $endDateOut
-        ]);
-    }
-
-    public function storeLayanan(Request $request)
-    {
-        $request->validate(['nama_layanan' => 'required|string|max:255']);
-        Layanan::create(['nama_layanan' => $request->input('nama_layanan'), 'is_active' => true]);
-        return back()->with('success', 'Kategori Layanan Utama berhasil ditambahkan.');
-    }
-
-    public function destroyLayanan(int $id)
-    {
-        $layanan = Layanan::findOrFail($id);
-        $layanan->delete();
-        return back()->with('success', 'Kategori Layanan beserta seluruh sub-layanannya berhasil dihapus.');
-    }
-
-    public function storeSubLayanan(Request $request)
-    {
-        $request->validate([
-            'layanan_id'       => 'required|exists:layanans,id',
-            'nama_sub_layanan' => 'required|string|max:255'
-        ]);
-        SubLayanan::create([
-            'layanan_id'       => $request->input('layanan_id'),
-            'nama_sub_layanan' => $request->input('nama_sub_layanan'),
-            'is_active'        => true
-        ]);
-        return back()->with('success', 'Sub-Layanan Sektoral berhasil ditambahkan.');
-    }
-
-    public function destroySubLayanan(int $id)
-    {
-        $sub = SubLayanan::findOrFail($id);
-        $sub->delete();
-        return back()->with('success', 'Sub-Layanan Sektoral berhasil dihapus.');
-    }
-
-    public function cetakPdf(Request $request): View
-    {
-        $period = $request->input('period', 'all');
-        $layananId = $request->input('layanan_id');
-
-        $query = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan', 'cs']);
-
-        if ($period !== 'all' && $request->filled('start_date') && $request->filled('end_date')) {
-            $startDate = Carbon::parse($request->input('start_date'), 'Asia/Jakarta')->startOfDay();
-            $endDate   = Carbon::parse($request->input('end_date'), 'Asia/Jakarta')->endOfDay();
-            $query->whereBetween('waktu_dibuat', [$startDate, $endDate]);
-        } else {
-            $startDate = Carbon::today('Asia/Jakarta')->startOfDay();
-            $endDate   = Carbon::today('Asia/Jakarta')->endOfDay();
-        }
-
-        if ($request->filled('layanan_id')) {
-            $query->where('layanan_id', $layananId);
-        }
-
-        $tickets    = $query->orderBy('waktu_dibuat', 'asc')->get();
-        $totalOmset = $tickets->where('status', 'Selesai')->sum('nominal_pembayaran');
-
-        $includeSummary = $request->has('inc_summary');
-        $includeCharts  = $request->has('inc_charts');
-        $includeTable   = $request->has('inc_table');
-
-        $chartLineBase64 = $request->input('chart_line_base64');
-        $chartPieBase64  = $request->input('chart_pie_base64');
-
-        return view('admin.pdf_report', compact(
-            'tickets', 'startDate', 'endDate', 'totalOmset', 
-            'includeSummary', 'includeCharts', 'includeTable', 
-            'chartLineBase64', 'chartPieBase64'
-        ));
-    }
-
-    public function exportCsv()
-    {
-        $fileName = 'rekap_antrean_indibiz_' . date('Y-m-d_H-i-s') . '.csv';
-        $tickets  = TiketAntrian::with(['pelanggan', 'layanan', 'subLayanan', 'cs'])->get();
-
-        $headers = [
-            "Content-type"        => "text/csv; charset=UTF-8",
-            "Content-Disposition" => "attachment; filename=$fileName",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
-        ];
-
-        $columns = [
-            'ID', 'Kode Tiket', 'Nomor Display', 'Nama Pelanggan', 'No HP', 'Email', 'No Indibiz', 
-            'Layanan Utama', 'Sub Layanan', 'CS Melayani', 'Status', 'Metode Bayar', 'Nominal (Rp)', 
-            'Catatan CS', 'Rating Pelanggan', 'Feedback', 'Waktu Ambil Tiket', 'Waktu Dipanggil', 'Waktu Selesai', 
-            'Waktu Tunggu (detik)', 'Waktu Layanan (detik)'
-        ];
-
-        $callback = function() use($tickets, $columns) {
-            $file = fopen('php://output', 'w');
-            fputcsv($file, $columns);
-
-            foreach ($tickets as $ticket) {
-                $waktuAmbil     = $ticket->waktu_dibuat ? Carbon::parse($ticket->waktu_dibuat) : null;
-                $waktuDipanggil = ($ticket->waktu_dipanggil ?? $ticket->waktu_diproses) ? Carbon::parse($ticket->waktu_dipanggil ?? $ticket->waktu_diproses) : null;
-                $waktuSelesai   = ($ticket->waktu_selesai_konsul ?? $ticket->waktu_selesai) ? Carbon::parse($ticket->waktu_selesai_konsul ?? $ticket->waktu_selesai) : null;
-
-                $durasiTungguDetik  = $ticket->waktu_tunggu ?? (($waktuAmbil && $waktuDipanggil) ? $waktuAmbil->diffInSeconds($waktuDipanggil) : 0);
-                $durasiLayananDetik = $ticket->waktu_layanan ?? (($waktuDipanggil && $waktuSelesai) ? $waktuDipanggil->diffInSeconds($waktuSelesai) : 0);
-
-                fputcsv($file, [
-                    $ticket->id,
-                    $ticket->kode_tiket ?? '-',
-                    $ticket->nomor_antrian,
-                    $ticket->pelanggan->nama ?? '-',
-                    $ticket->pelanggan->no_hp ?? '-',
-                    $ticket->pelanggan->email ?? '-',
-                    $ticket->pelanggan->no_indibiz ?? '-',
-                    $ticket->layanan->nama_layanan ?? '-',
-                    $ticket->subLayanan->nama_sub_layanan ?? '-',
-                    $ticket->cs->nama_lengkap ?? '-',
-                    $ticket->status,
-                    $ticket->metode_pembayaran ?? 'Tanpa Transaksi',
-                    $ticket->nominal_pembayaran ?? 0,
-                    $ticket->catatan_cs ?? $ticket->ringkasan_solusi ?? '-',
-                    $ticket->rating ?? '-',
-                    $ticket->feedback ?? '-',
-                    $ticket->waktu_dibuat ? Carbon::parse($ticket->waktu_dibuat)->format('d/m/Y H:i:s') : '-',
-                    $waktuDipanggil ? $waktuDipanggil->format('d/m/Y H:i:s') : '-',
-                    $waktuSelesai ? $waktuSelesai->format('d/m/Y H:i:s') : '-',
-                    $durasiTungguDetik,
-                    $durasiLayananDetik
-                ]);
-            }
-
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
-    }
-}
+    </script>
+</body>
+</html>
