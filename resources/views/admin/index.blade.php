@@ -255,7 +255,7 @@
                 <span class="material-symbols-outlined text-[#00509E] text-2xl">insights</span>
                 <div class="flex-1">
                     <span class="text-[10px] font-black text-gray-400 uppercase block">Ringkasan Eksekutif Analisis Otomatis</span>
-                    <!-- TAMBAHAN ID PELACAK: summary-content-source -->
+                    <!-- ID PELACAK: summary-content-source -->
                     <p id="summary-content-source" class="text-xs font-semibold text-gray-800">
                         {!! preg_replace('/\*\*(.*?)\*\*/', '<strong>$1</strong>', $analisisOtomatis['status_tiket'] ?? '') !!}
                     </p>
@@ -725,7 +725,7 @@
                 <button @click="showModalPdf = false" class="text-gray-400 hover:text-gray-600"><span class="material-symbols-outlined">close</span></button>
             </div>
 
-            <!-- TAMBAHAN: FUNGSI ONSUBMIT JS UNTUK HITUNG TANGGAL OTOMATIS & BACKUP GRAFIK -->
+            <!-- FUNGSI ONSUBMIT JS UNTUK MENG-CAPTURE SEMUA GRAFIK -->
             <form action="{{ route('admin.pdf') }}" method="GET" target="_blank" class="space-y-4 text-xs" onsubmit="return preparePdfSubmit(event)">
                 
                 <div class="space-y-2">
@@ -742,12 +742,10 @@
                     <div id="pdf_custom_dates_container" class="hidden grid-cols-2 gap-2 pt-1">
                         <div>
                             <label class="text-[10px] font-bold text-gray-400 uppercase">Dari Tanggal</label>
-                            <!-- ATTRIBUTE DISABLED DIHAPUS AGAR BISA DISUBMIT -->
                             <input type="date" name="start_date" value="{{ request('start_date', $startDate->format('Y-m-d')) }}" class="w-full p-2 border border-gray-300 rounded-lg">
                         </div>
                         <div>
                             <label class="text-[10px] font-bold text-gray-400 uppercase">Sampai Tanggal</label>
-                            <!-- ATTRIBUTE DISABLED DIHAPUS AGAR BISA DISUBMIT -->
                             <input type="date" name="end_date" value="{{ request('end_date', $endDate->format('Y-m-d')) }}" class="w-full p-2 border border-gray-300 rounded-lg">
                         </div>
                     </div>
@@ -774,6 +772,16 @@
                             <input type="checkbox" name="inc_charts" value="1" checked class="rounded text-[#00509E] w-4 h-4">
                             <span class="font-bold text-gray-800">Sertakan Visualisasi Grafik Analitik (Line & Pie Chart)</span>
                         </label>
+                        <!-- OPSI TAMBAHAN SLA & CS BAR -->
+                        <label class="flex items-center gap-2.5 cursor-pointer">
+                            <input type="checkbox" name="inc_sla_charts" value="1" checked class="rounded text-[#00509E] w-4 h-4">
+                            <span class="font-bold text-gray-800">Sertakan Tren Waktu Tunggu vs Durasi Konsul CS</span>
+                        </label>
+                        <label class="flex items-center gap-2.5 cursor-pointer">
+                            <input type="checkbox" name="inc_cs_chart" value="1" checked class="rounded text-[#00509E] w-4 h-4">
+                            <span class="font-bold text-gray-800">Sertakan Performa Produktivitas Staf CS</span>
+                        </label>
+                        <!-- BATAS OPSI -->
                         <label class="flex items-center gap-2.5 cursor-pointer">
                             <input type="checkbox" name="inc_table" value="1" checked class="rounded text-[#00509E] w-4 h-4">
                             <span class="font-bold text-gray-800">Sertakan Tabel Detail Rincian Tiket Antrean</span>
@@ -841,7 +849,6 @@
         function togglePdfCustomDates(val) {
             const container = document.getElementById('pdf_custom_dates_container');
             if (!container) return;
-            // Hanya sembunyikan kotak dari penglihatan, atribut disabled DIBUANG agar data terkirim
             if (val === 'custom') {
                 container.classList.remove('hidden');
                 container.classList.add('grid');
@@ -851,13 +858,12 @@
             }
         }
 
-        // FUNGSI PENTING BARU: HITUNG TANGGAL OTOMATIS & BACKUP IMAGE CHART
+        // FUNGSI PENTING: HITUNG TANGGAL OTOMATIS & BACKUP IMAGE CHART
         function preparePdfSubmit(event) {
             const period = document.getElementById('pdf_period_select').value;
             const startInput = document.querySelector('input[name="start_date"]');
             const endInput = document.querySelector('input[name="end_date"]');
             
-            // JIKA BUKAN CUSTOM, KITA PAKSA MENGHITUNG TANGGAL SECARA MATEMATIS DI FRONTEND
             if (period !== 'custom') {
                 const today = new Date();
                 let startDate = new Date();
@@ -873,7 +879,6 @@
                     startDate = new Date(today.getFullYear(), 0, 1);
                 }
 
-                // Masukkan hasil tanggal kedalam form input
                 const formatDate = (date) => {
                     const y = date.getFullYear();
                     const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -889,11 +894,25 @@
             const summarySrc = document.getElementById('summary-content-source');
             localStorage.setItem('pdf_summary_data', summarySrc ? summarySrc.innerHTML : '');
 
-            // FOTO DATA GRAFIK (Base64 Transfer bypass)
+            // FOTO SEMUA DATA GRAFIK
             const lineCanvas = document.getElementById('queueChart');
             const pieCanvas = document.getElementById('categoryPieChart');
+            const slaMerged = document.getElementById('slaMergedChart');
+            const slaTunggu = document.getElementById('slaTungguSeparateChart');
+            const slaKonsul = document.getElementById('slaKonsulSeparateChart');
+            const csBar = document.getElementById('csBarChart');
+
             localStorage.setItem('pdf_line_data', lineCanvas ? lineCanvas.toDataURL('image/png') : '');
             localStorage.setItem('pdf_pie_data', pieCanvas ? pieCanvas.toDataURL('image/png') : '');
+            
+            localStorage.setItem('pdf_sla_merged_data', slaMerged ? slaMerged.toDataURL('image/png') : '');
+            localStorage.setItem('pdf_sla_tunggu_data', slaTunggu ? slaTunggu.toDataURL('image/png') : '');
+            localStorage.setItem('pdf_sla_konsul_data', slaKonsul ? slaKonsul.toDataURL('image/png') : '');
+            localStorage.setItem('pdf_cs_bar_data', csBar ? csBar.toDataURL('image/png') : '');
+
+            // Cek apakah Mode SLA yang sedang aktif (terlihat) adalah Mode Gabung atau Pisah
+            const isMergedVisible = slaMerged && slaMerged.offsetParent !== null;
+            localStorage.setItem('pdf_sla_is_merged', isMergedVisible ? '1' : '0');
 
             return true;
         }
@@ -903,7 +922,6 @@
             if (pdfSelect) togglePdfCustomDates(pdfSelect.value);
         });
 
-        // ... Sisa fungsi chartFilterComponent & historyFilterComponent sama persis ...
         function chartFilterComponent() {
             return {
                 chartPeriod: 'last30',

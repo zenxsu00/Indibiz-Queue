@@ -41,10 +41,12 @@
 </head>
 <body>
 
-    <!-- WADAH FLAG KONFIGURASI DARI CONTROLLER (HTML AMAN UNTUK LINTER) -->
+    <!-- WADAH FLAG KONFIGURASI DARI CONTROLLER -->
     <div id="pdf-config" 
          data-summary="{{ request('inc_summary', 1) }}" 
          data-charts="{{ request('inc_charts', 1) }}" 
+         data-sla-charts="{{ request('inc_sla_charts', 1) }}"
+         data-cs-chart="{{ request('inc_cs_chart', 1) }}"
          style="display: none;"></div>
 
     <!-- HEADER LAPORAN -->
@@ -53,7 +55,7 @@
         <p>Periode Waktu: {{ $startDate->format('d/m/Y') }} s/d {{ $endDate->format('d/m/Y') }}</p>
     </div>
 
-    <!-- OPSI 1: WADAH EXECUTIVE SUMMARY -->
+    <!-- OPSI 1: EXECUTIVE SUMMARY -->
     @if(request('inc_summary', 1))
     <div id="pdf-summary-container" class="summary-box" style="display: none;">
         <div class="summary-title">Executive Summary / Analisis Otomatis Operasional</div>
@@ -61,7 +63,7 @@
     </div>
     @endif
 
-    <!-- OPSI 2: WADAH GRAFIK ANALITIK IMAGE -->
+    <!-- OPSI 2: GRAFIK ANALITIK DASAR (LINE & PIE) -->
     @if(request('inc_charts', 1))
     <div id="pdf-charts-container" class="charts-container" style="display: none;">
         <div class="chart-box">
@@ -75,7 +77,41 @@
     </div>
     @endif
 
-    <!-- OPSI 3: TABEL DETAIL TIKET -->
+    <!-- OPSI 3: GRAFIK TREN WAKTU TUNGGU VS DURASI KONSUL -->
+    @if(request('inc_sla_charts', 1))
+    <div id="pdf-sla-container" class="charts-container" style="display: none;">
+        <div class="chart-box">
+            <div class="chart-title">3. Tren Waktu Tunggu vs Durasi Konsul CS</div>
+            <!-- Wadah Mode Gabung -->
+            <div id="sla-merged-wrapper" style="display: none;">
+                <img id="pdf-sla-merged-img" class="chart-image" alt="SLA Merged Chart" />
+            </div>
+            <!-- Wadah Mode Pisah (Berdampingan Kiri Kanan) -->
+            <div id="sla-separate-wrapper" style="display: none; justify-content: space-between; gap: 10px;">
+                <div style="flex: 1; border: 1px solid #e0e3e8; border-radius: 6px; padding: 10px; background: #eff6ff;">
+                    <div style="font-size: 9px; font-weight: bold; margin-bottom: 5px; color: #1d4ed8; text-transform: uppercase;">Rata-Rata Waktu Tunggu (Menit)</div>
+                    <img id="pdf-sla-tunggu-img" class="chart-image" style="width: 100%; height: auto;" alt="SLA Tunggu" />
+                </div>
+                <div style="flex: 1; border: 1px solid #e0e3e8; border-radius: 6px; padding: 10px; background: #ecfdf5;">
+                    <div style="font-size: 9px; font-weight: bold; margin-bottom: 5px; color: #047857; text-transform: uppercase;">Rata-Rata Durasi Konsul (Menit)</div>
+                    <img id="pdf-sla-konsul-img" class="chart-image" style="width: 100%; height: auto;" alt="SLA Konsul" />
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- OPSI 4: GRAFIK PERFORMA STAF CS -->
+    @if(request('inc_cs_chart', 1))
+    <div id="pdf-cs-container" class="charts-container" style="display: none;">
+        <div class="chart-box">
+            <div class="chart-title">4. Performa Produktivitas Staf CS per Meja</div>
+            <img id="pdf-cs-img" class="chart-image" style="max-height: 280px;" alt="CS Bar Chart Tidak Tersedia" />
+        </div>
+    </div>
+    @endif
+
+    <!-- OPSI 5: TABEL DETAIL TIKET -->
     @if(request('inc_table', 1))
     <table>
         <thead>
@@ -130,13 +166,14 @@
         TOTAL OMSET DITERIMA: Rp {{ number_format($totalOmset, 0, ',', '.') }}
     </div>
 
-    <!-- SCRIPT TARIK DATA & PRINT (100% VANILLA JS BEBAS ERROR BLADE) -->
+    <!-- SCRIPT TARIK DATA FOTO MEMORI BROWSER LALU PRINT (100% MURNI JS) -->
     <script>
         window.addEventListener('load', function() {
-            // Ambil flag konfigurasi dari HTML DOM
             const configEl = document.getElementById('pdf-config');
             const incSummary = configEl ? configEl.getAttribute('data-summary') : '1';
             const incCharts = configEl ? configEl.getAttribute('data-charts') : '1';
+            const incSlaCharts = configEl ? configEl.getAttribute('data-sla-charts') : '1';
+            const incCsChart = configEl ? configEl.getAttribute('data-cs-chart') : '1';
             
             // 1. Ekstrak data teks Summary
             if (incSummary === '1') {
@@ -151,7 +188,7 @@
                 }
             }
 
-            // 2. Ekstrak gambar Grafik
+            // 2. Ekstrak Gambar Grafik Dasar (Line & Pie)
             if (incCharts === '1') {
                 const lineImgData = localStorage.getItem('pdf_line_data');
                 const pieImgData = localStorage.getItem('pdf_pie_data');
@@ -165,14 +202,50 @@
                     const imgEl = document.getElementById('pdf-pie-img');
                     if (imgEl) { imgEl.src = pieImgData; hasCharts = true; }
                 }
-
                 if (hasCharts) {
                     const containerEl = document.getElementById('pdf-charts-container');
                     if (containerEl) { containerEl.style.display = 'block'; }
                 }
             }
 
-            // Beri Jeda render layout HTML/Image, lalu Otomatis Print
+            // 3. Ekstrak Gambar Grafik SLA (Waktu Tunggu & Durasi)
+            if (incSlaCharts === '1') {
+                const isMerged = localStorage.getItem('pdf_sla_is_merged') === '1';
+                const mergedData = localStorage.getItem('pdf_sla_merged_data');
+                const tungguData = localStorage.getItem('pdf_sla_tunggu_data');
+                const konsulData = localStorage.getItem('pdf_sla_konsul_data');
+                const containerEl = document.getElementById('pdf-sla-container');
+
+                if (containerEl) {
+                    // Cek jika sedang memakai Mode Gabung
+                    if (isMerged && mergedData && mergedData.length > 50) {
+                        document.getElementById('pdf-sla-merged-img').src = mergedData;
+                        document.getElementById('sla-merged-wrapper').style.display = 'block';
+                        containerEl.style.display = 'block';
+                    } 
+                    // Cek jika sedang memakai Mode Pisah (Berdampingan)
+                    else if (!isMerged && tungguData && konsulData && tungguData.length > 50) {
+                        document.getElementById('pdf-sla-tunggu-img').src = tungguData;
+                        document.getElementById('pdf-sla-konsul-img').src = konsulData;
+                        document.getElementById('sla-separate-wrapper').style.display = 'flex';
+                        containerEl.style.display = 'block';
+                    }
+                }
+            }
+
+            // 4. Ekstrak Gambar Grafik Performa Staf CS (Bar Chart)
+            if (incCsChart === '1') {
+                const csData = localStorage.getItem('pdf_cs_bar_data');
+                if (csData && csData.length > 50) {
+                    const imgEl = document.getElementById('pdf-cs-img');
+                    if (imgEl) {
+                        imgEl.src = csData;
+                        document.getElementById('pdf-cs-container').style.display = 'block';
+                    }
+                }
+            }
+
+            // Beri Jeda 0.6 detik render layout HTML/Image ke PDF, lalu Otomatis Print
             setTimeout(function() {
                 window.print();
             }, 600);
