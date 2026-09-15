@@ -376,7 +376,7 @@
             </div>
         </div>
 
-        <!-- TAB 2: ANALITIK LAYANAN (STACKED VERTICAL LAYOUT FOR MAXIMUM VISIBILITY) -->
+        <!-- TAB 2: ANALITIK LAYANAN -->
         <div x-show="activeTab === 'analytics'" x-data="chartFilterComponent()" class="space-y-6">
             
             <!-- LINE CHART 1: TREN PENDAFTARAN vs LAYANAN SELESAI -->
@@ -403,7 +403,7 @@
                 </p>
             </div>
 
-            <!-- CHART 2: PIE KEPADATAN KATEGORI (BERDIRI SENDIRI DI ATAS GRAFIK ESTIMASI) -->
+            <!-- CHART 2: PIE KEPADATAN KATEGORI -->
             <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
                 <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2 border-b pb-2">
                     <span class="material-symbols-outlined text-[#00509E]">pie_chart</span>
@@ -417,7 +417,7 @@
                 </p>
             </div>
 
-            <!-- CHART 3: DITEMPATKAN DI BAWAH PIE CHART (LEBAR FULL UNTUK VISIBILITAS MAKSIMAL) -->
+            <!-- CHART 3: TREN WAKTU TUNGGU VS DURASI KONSUL -->
             <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3 flex flex-col justify-between">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b pb-2">
                     <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2">
@@ -425,7 +425,6 @@
                         3. Tren Waktu Tunggu vs Durasi Konsul CS (Estimasi Rata-Rata)
                     </h3>
                     
-                    <!-- SWITCH TOGGLE ANIMATION MERGE / UNMERGE -->
                     <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-xl text-[10px] font-bold">
                         <button @click="toggleSlaMode(true)" :class="isMerged ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all duration-300 ease-in-out flex items-center gap-1 cursor-pointer">
                             <span class="material-symbols-outlined text-xs">merge</span> Mode Gabung
@@ -436,14 +435,11 @@
                     </div>
                 </div>
 
-                <!-- CONTAINER ANIMATED SLIDE/FADE MODE -->
                 <div class="relative min-h-[260px] py-2">
-                    <!-- MODE COMBINED (1 BOX COMBINED FULL WIDTH) -->
                     <div x-show="isMerged" x-transition:enter="transition ease-out duration-500 transform" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="h-64 sm:h-72 relative">
                         <canvas id="slaMergedChart" data-chart-sets='{{ json_encode($chartDataSets ?? []) }}'></canvas>
                     </div>
 
-                    <!-- MODE SEPARATE (2 SUB-CHARTS SIDE-BY-SIDE IN FULL WIDTH CONTAINER) -->
                     <div x-show="!isMerged" x-cloak x-transition:enter="transition ease-out duration-500 transform" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="grid grid-cols-1 md:grid-cols-2 gap-4 h-64 sm:h-72">
                         <div class="relative h-full border border-blue-100 p-3 rounded-xl bg-blue-50/30 flex flex-col justify-between">
                             <span class="text-[10px] font-extrabold text-blue-700 block text-center uppercase tracking-wider">Rata-Rata Waktu Tunggu (Menit)</span>
@@ -490,7 +486,6 @@
                 <span class="text-xs font-bold bg-[#00509E]/10 text-[#00509E] px-3 py-1 rounded-full" x-text="'Total ' + filteredHistory.length + ' Baris Tampil'"></span>
             </div>
 
-            <!-- OPSI FILTER & SORTING TABEL -->
             <div class="bg-[#F8F9FA] p-3.5 rounded-xl border border-[#E0E3E8] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                 <div>
                     <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Jangka Waktu Hari</label>
@@ -528,7 +523,6 @@
                 </div>
             </div>
 
-            <!-- TABEL DENGAN STRUKTUR KOLOM BARU -->
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs">
                     <thead class="bg-[#F8F9FA] border-b border-[#E0E3E8] text-gray-500 font-black uppercase text-[10px]">
@@ -545,26 +539,15 @@
                     <tbody class="divide-y divide-[#E0E3E8]">
                         <template x-for="(row, idx) in filteredHistory" :key="idx">
                             <tr class="hover:bg-[#F8F9FA] transition-colors" :class="row.tiket_masuk === 0 ? 'bg-gray-50/50' : ''">
-                                <!-- TANGGAL -->
                                 <td class="p-3.5 font-bold text-[#181C20]" x-text="row.tanggal"></td>
-                                
-                                <!-- TIKET MASUK -->
                                 <td class="p-3.5 text-center font-bold text-[#00509E]" x-text="row.tiket_masuk"></td>
-                                
-                                <!-- TIKET DILAYANI -->
                                 <td class="p-3.5 text-center font-bold text-indigo-600" x-text="row.tiket_dilayani"></td>
-                                
-                                <!-- SUDAH DIPROSES (SELESAI) -->
                                 <td class="p-3.5 text-center">
                                     <span class="px-2.5 py-1 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800" x-text="row.sudah_diproses"></span>
                                 </td>
-
-                                <!-- BELUM DIPROSES (MENUNGGU) -->
                                 <td class="p-3.5 text-center">
                                     <span class="px-2.5 py-1 rounded-full text-[11px] font-black bg-amber-100 text-amber-800" x-text="row.belum_diproses"></span>
                                 </td>
-
-                                <!-- RINCIAN TIPE LAYANAN (A-B-C-D) -->
                                 <td class="p-3.5">
                                     <div class="flex flex-wrap gap-1 max-w-[280px]">
                                         <template x-if="row.breakdown_layanan && row.breakdown_layanan.length > 0">
@@ -579,8 +562,6 @@
                                         </template>
                                     </div>
                                 </td>
-
-                                <!-- TOTAL OMSET / TRANSAKSI -->
                                 <td class="p-3.5 text-right font-black text-[#181C20]" x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(row.total_omset)"></td>
                             </tr>
                         </template>
@@ -712,7 +693,6 @@
                         </div>
                     </div>
 
-                    <!-- METRIK DURASI TUNGGU & LAYANAN -->
                     <div class="grid grid-cols-2 gap-2">
                         <div class="p-3 bg-blue-50 border border-blue-100 rounded-xl">
                             <span class="text-[10px] text-blue-600 font-bold uppercase block">Waktu Tunggu Pelanggan</span>
@@ -724,7 +704,6 @@
                         </div>
                     </div>
 
-                    <!-- CATATAN PENANGANAN CS -->
                     <div class="p-3 bg-amber-50/60 border border-amber-200 rounded-xl">
                         <span class="text-[10px] text-amber-700 font-bold uppercase block mb-1">Catatan CS & Ringkasan Solusi</span>
                         <p class="text-gray-800 italic" x-text="selectedTiket.catatan_cs || selectedTiket.ringkasan_solusi || 'Tidak ada catatan khusus.'"></p>
@@ -734,7 +713,7 @@
         </div>
     </div>
 
-    <!-- MODAL POPUP: KUSTOMISASI CETAK PDF INTERAKTIF -->
+    <!-- MODAL POPUP: KUSTOMISASI CETAK PDF INTERAKTIF (DIPERBAIKI UNTUK SERVERS LIMIT) -->
     <div x-show="showModalPdf" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-gray-100" @click.away="showModalPdf = false">
             <div class="flex justify-between items-center border-b pb-3 border-gray-100">
@@ -745,10 +724,7 @@
                 <button @click="showModalPdf = false" class="text-gray-400 hover:text-gray-600"><span class="material-symbols-outlined">close</span></button>
             </div>
 
-            <!-- PERUBAHAN METHOD GET MENJADI POST & PENAMBAHAN TOKEN CSRF -->
-            <form action="{{ route('admin.pdf') }}" method="POST" target="_blank" class="space-y-4 text-xs">
-                @csrf
-                
+            <form action="{{ route('admin.pdf') }}" method="GET" target="_blank" class="space-y-4 text-xs">
                 <!-- PRESET PERIODE TANGGAL -->
                 <div class="space-y-2">
                     <label class="font-bold text-gray-700 block">1. Pilih Periode Waktu Laporan</label>
@@ -793,24 +769,16 @@
                             <span class="font-bold text-gray-800">Sertakan Executive Summary & Analisis Otomatis</span>
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="inc_charts" value="1" checked class="rounded text-[#00509E]">
-                            <span class="font-bold text-gray-800">Sertakan Visualisasi Grafik Analitik (Line & Pie)</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" name="inc_table" value="1" checked class="rounded text-[#00509E]">
                             <span class="font-bold text-gray-800">Sertakan Tabel Detail Rincian Tiket</span>
                         </label>
                     </div>
                 </div>
 
-                <!-- HIDDEN BASE64 CHART IMAGE DATA -->
-                <input type="hidden" name="chart_line_base64" id="chart_line_base64">
-                <input type="hidden" name="chart_pie_base64" id="chart_pie_base64">
-
                 <div class="pt-3 border-t flex justify-end gap-2">
                     <button type="button" @click="showModalPdf = false" class="px-4 py-2 bg-gray-100 font-bold rounded-xl">Batal</button>
-                    <button type="submit" onclick="preparePdfCharts()" class="px-5 py-2 bg-[#EE2E24] hover:bg-[#CE1111] text-white font-bold rounded-xl shadow-md flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-base">print</span> Generate & Cetak PDF
+                    <button type="submit" class="px-5 py-2 bg-[#EE2E24] hover:bg-[#CE1111] text-white font-bold rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer">
+                        <span class="material-symbols-outlined text-base">print</span> Buka & Cetak PDF
                     </button>
                 </div>
             </form>
@@ -875,18 +843,6 @@
             }
         }
 
-        function preparePdfCharts() {
-            const lineCanvas = document.getElementById('queueChart');
-            const pieCanvas = document.getElementById('categoryPieChart');
-
-            if (lineCanvas) {
-                document.getElementById('chart_line_base64').value = lineCanvas.toDataURL('image/png');
-            }
-            if (pieCanvas) {
-                document.getElementById('chart_pie_base64').value = pieCanvas.toDataURL('image/png');
-            }
-        }
-
         function chartFilterComponent() {
             return {
                 chartPeriod: 'last30',
@@ -945,7 +901,6 @@
                     if (!dataSet) return;
 
                     if (this.isMerged) {
-                        // MODE MERGED
                         const canvas = document.getElementById('slaMergedChart');
                         if (!canvas) return;
 
@@ -968,7 +923,6 @@
                             }
                         });
                     } else {
-                        // MODE SEPARATE (UNMERGED)
                         const canvasTunggu = document.getElementById('slaTungguSeparateChart');
                         const canvasKonsul = document.getElementById('slaKonsulSeparateChart');
 
