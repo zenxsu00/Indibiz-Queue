@@ -349,7 +349,7 @@
                                     </td>
                                     <td class="p-3 text-gray-500">{{ \Carbon\Carbon::parse($tiket->waktu_dibuat)->timezone('Asia/Jakarta')->format('d/m/Y H:i') }}</td>
                                     <td class="p-3">
-                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black {{ $tiket->status === 'Selesai' ? 'bg-emerald-100 text-emerald-700' : ($tiket->status === 'Batal' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700') }}">
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black {{ $tiket->status === 'Selesai' ? 'bg-emerald-100 text-emerald-700' : ($tiket->status === 'Batal' ? 'bg-red-100 text-red-700' : ($tiket->status === 'No Show' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700')) }}">
                                             {{ $tiket->status }}
                                         </span>
                                     </td>
@@ -423,7 +423,7 @@
                         <canvas id="statusDonutChart" data-ratio='{{ json_encode($statusRatioData ?? []) }}'></canvas>
                     </div>
                     <p class="text-[10px] text-gray-500 italic border-t pt-2">
-                        💡 **Penjelasan:** Mengidentifikasi tingkat keberhasilan (Selesai), beban menunggu, serta persentase pembatalan (*drop-out*).
+                        💡 **Penjelasan:** Mengidentifikasi tingkat keberhasilan (Selesai), beban menunggu, tidak hadir (No Show), serta pembatalan (Batal).
                     </p>
                 </div>
             </div>
@@ -469,6 +469,7 @@
                         <option value="tanggal">Tanggal</option>
                         <option value="total_tiket">Total Tiket</option>
                         <option value="selesai">Tiket Selesai</option>
+                        <option value="no_show">Tiket No Show</option>
                         <option value="batal">Tiket Batal</option>
                         <option value="total_omset">Total Omset</option>
                     </select>
@@ -496,6 +497,7 @@
                             <th class="p-3.5">Tanggal</th>
                             <th class="p-3.5 text-center">Total Tiket</th>
                             <th class="p-3.5 text-center">Selesai</th>
+                            <th class="p-3.5 text-center">No Show</th>
                             <th class="p-3.5 text-center">Batal</th>
                             <th class="p-3.5 text-center">Rata-Rata SLA</th>
                             <th class="p-3.5 text-right">Total Omset Loket</th>
@@ -507,6 +509,7 @@
                                 <td class="p-3.5 font-bold text-[#181C20]" x-text="row.tanggal"></td>
                                 <td class="p-3.5 text-center font-bold" x-text="row.total_tiket"></td>
                                 <td class="p-3.5 text-center font-bold text-emerald-600" x-text="row.selesai"></td>
+                                <td class="p-3.5 text-center font-bold text-purple-600" x-text="row.no_show || 0"></td>
                                 <td class="p-3.5 text-center font-bold text-rose-600" x-text="row.batal"></td>
                                 <td class="p-3.5 text-center font-mono font-extrabold text-[#00509E]" x-text="row.avg_sla"></td>
                                 <td class="p-3.5 text-right font-black text-[#181C20]" x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(row.total_omset)"></td>
@@ -566,8 +569,12 @@
                     <div class="p-4 bg-[#F8F9FA] border-b flex justify-between items-center"><h4 class="font-black text-xs text-[#00509E] uppercase">Kategori Utama</h4></div>
                     <div class="p-3 space-y-2 max-h-[550px] overflow-y-auto custom-scrollbar">
                         @foreach($layanans as $lay)
+                            @php
+                                /** @var \App\Models\Layanan $lay */
+                                $subCount = optional($lay->getAttribute('subLayanans'))->count() ?? 0;
+                            @endphp
                             <div @click="selectedLayananId = '{{ $lay->id }}'; selectedLayananNama = '{{ addslashes($lay->nama_layanan) }}'" :class="selectedLayananId == '{{ $lay->id }}' ? 'border-[#00509E] bg-[#00509E]/5 ring-2 ring-[#00509E]/20' : 'border-[#E0E3E8]'" class="p-3 border rounded-xl flex items-center justify-between cursor-pointer">
-                                <div><h5 class="font-extrabold text-xs text-[#181C20]">{{ $lay->nama_layanan }}</h5><span class="text-[10px] text-gray-500 font-semibold mt-0.5 block">{{ $lay->subLayanans->count() }} Sub-Layanan</span></div>
+                                <div><h5 class="font-extrabold text-xs text-[#181C20]">{{ $lay->nama_layanan }}</h5><span class="text-[10px] text-gray-500 font-semibold mt-0.5 block">{{ $subCount }} Sub-Layanan</span></div>
                                 <form action="{{ route('admin.layanan.destroy', $lay->id) }}" method="POST" onsubmit="return confirm('Hapus kategori ini?')">@csrf @method('DELETE') <button type="submit" class="p-1.5 bg-rose-50 text-rose-600 rounded-lg"><span class="material-symbols-outlined text-sm">delete</span></button></form>
                             </div>
                         @endforeach
@@ -581,8 +588,13 @@
                     </div>
                     <div class="p-4 min-h-[300px] max-h-[550px] overflow-y-auto custom-scrollbar">
                         @foreach($layanans as $lay)
+                            @php
+                                /** @var \App\Models\Layanan $lay */
+                                $subList = optional($lay->getAttribute('subLayanans'))->all() ?? [];
+                            @endphp
                             <div x-show="selectedLayananId == '{{ $lay->id }}'" class="space-y-2">
-                                @forelse($lay->subLayanans as $sub)
+                                @forelse($subList as $sub)
+                                    @php /** @var \App\Models\SubLayanan $sub */ @endphp
                                     <div class="p-3 bg-[#F8F9FA] border border-[#E0E3E8] rounded-xl flex items-center justify-between">
                                         <div class="flex items-center gap-2"><span class="material-symbols-outlined text-emerald-600 text-base">subdirectory_arrow_right</span><span class="font-extrabold text-xs text-gray-800">{{ $sub->nama_sub_layanan }}</span></div>
                                         <form action="{{ route('admin.sub_layanan.destroy', $sub->id) }}" method="POST" onsubmit="return confirm('Hapus sub-layanan?')">@csrf @method('DELETE') <button type="submit" class="p-1.5 bg-rose-50 text-rose-600 rounded-lg"><span class="material-symbols-outlined text-sm">delete</span></button></form>
@@ -830,7 +842,7 @@
                                 labels: Object.keys(raw),
                                 datasets: [{
                                     data: Object.values(raw),
-                                    backgroundColor: ['#10B981', '#F59E0B', '#3B82F6', '#EF4444']
+                                    backgroundColor: ['#10B981', '#F59E0B', '#3B82F6', '#8B5CF6', '#EF4444']
                                 }]
                             },
                             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }

@@ -13,6 +13,14 @@
         th { background-color: #f1f4f9; font-size: 10px; text-transform: uppercase; }
         .sub-text { font-size: 9px; color: #666; font-style: italic; }
         .total-box { margin-top: 15px; text-align: right; font-size: 12px; font-weight: bold; }
+        .text-right { text-align: right; }
+        
+        /* CSS Badge Murni - Bebas dari CSS Error Linter */
+        .badge { font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 9px; display: inline-block; }
+        .badge-selesai { background-color: #d1fae5; color: #065f46; }
+        .badge-batal { background-color: #fee2e2; color: #991b1b; }
+        .badge-noshow { background-color: #f3e8ff; color: #6b21a8; }
+        .badge-default { background-color: #fef3c7; color: #92400e; }
     </style>
 </head>
 <body onload="window.print()">
@@ -32,23 +40,35 @@
                 <th>Waktu Masuk</th>
                 <th>Status</th>
                 <th>Metode</th>
-                <th style="text-align: right;">Nominal</th>
+                <th class="text-right">Nominal</th>
             </tr>
         </thead>
         <tbody>
             @foreach($tickets as $index => $t)
+            @php
+                $badgeClass = match($t->status) {
+                    'Selesai' => 'badge-selesai',
+                    'Batal'   => 'badge-batal',
+                    'No Show' => 'badge-noshow',
+                    default   => 'badge-default',
+                };
+            @endphp
             <tr>
                 <td>{{ $index + 1 }}</td>
                 <td><strong>{{ $t->nomor_antrian }}</strong></td>
-                <td>{{ $t->pelanggan->nama }} ({{ $t->pelanggan->no_hp }})</td>
+                <td>{{ $t->pelanggan->nama ?? '-' }} ({{ $t->pelanggan->no_hp ?? '-' }})</td>
                 <td>
-                    <div>{{ $t->layanan->nama_layanan }}</div>
+                    <div>{{ $t->layanan->nama_layanan ?? '-' }}</div>
                     <div class="sub-text">{{ $t->subLayanan->nama_sub_layanan ?? '-' }}</div>
                 </td>
                 <td>{{ \Carbon\Carbon::parse($t->waktu_dibuat)->timezone('Asia/Jakarta')->format('d/m/Y H:i') }}</td>
-                <td>{{ $t->status }}</td>
+                <td>
+                    <span class="badge {{ $badgeClass }}">
+                        {{ $t->status }}
+                    </span>
+                </td>
                 <td>{{ $t->metode_pembayaran ?? 'Tanpa Transaksi' }}</td>
-                <td style="text-align: right;">Rp {{ number_format($t->nominal_pembayaran, 0, ',', '.') }}</td>
+                <td class="text-right">Rp {{ number_format($t->nominal_pembayaran, 0, ',', '.') }}</td>
             </tr>
             @endforeach
         </tbody>
