@@ -713,7 +713,7 @@
         </div>
     </div>
 
-    <!-- MODAL POPUP: KUSTOMISASI CETAK PDF INTERAKTIF (DIPERBAIKI UNTUK SERVERS LIMIT) -->
+    <!-- MODAL POPUP: KUSTOMISASI CETAK PDF INTERAKTIF LENGKAP -->
     <div x-show="showModalPdf" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-gray-100" @click.away="showModalPdf = false">
             <div class="flex justify-between items-center border-b pb-3 border-gray-100">
@@ -740,11 +740,11 @@
                     <div id="pdf_custom_dates_container" class="hidden grid-cols-2 gap-2 pt-1">
                         <div>
                             <label class="text-[10px] font-bold text-gray-400 uppercase">Dari Tanggal</label>
-                            <input type="date" name="start_date" value="{{ $startDate->format('Y-m-d') }}" class="w-full p-2 border border-gray-300 rounded-lg">
+                            <input type="date" name="start_date" value="{{ $startDate->format('Y-m-d') }}" disabled class="w-full p-2 border border-gray-300 rounded-lg">
                         </div>
                         <div>
                             <label class="text-[10px] font-bold text-gray-400 uppercase">Sampai Tanggal</label>
-                            <input type="date" name="end_date" value="{{ $endDate->format('Y-m-d') }}" class="w-full p-2 border border-gray-300 rounded-lg">
+                            <input type="date" name="end_date" value="{{ $endDate->format('Y-m-d') }}" disabled class="w-full p-2 border border-gray-300 rounded-lg">
                         </div>
                     </div>
                 </div>
@@ -760,17 +760,21 @@
                     </select>
                 </div>
 
-                <!-- KOMPONEN YANG INGIN DICETAK -->
+                <!-- OPSI PILIHAN KOMPONEN (SUMMARY, GRAFIK ANALITIK, TABEL) -->
                 <div class="space-y-2">
-                    <label class="font-bold text-gray-700 block">3. Komponen Dokumen PDF</label>
-                    <div class="space-y-2 bg-gray-50 p-3 rounded-xl border border-gray-200">
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="inc_summary" value="1" checked class="rounded text-[#00509E]">
+                    <label class="font-bold text-gray-700 block">3. Opsi Komponen Laporan</label>
+                    <div class="space-y-2.5 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                        <label class="flex items-center gap-2.5 cursor-pointer">
+                            <input type="checkbox" name="inc_summary" value="1" checked class="rounded text-[#00509E] w-4 h-4">
                             <span class="font-bold text-gray-800">Sertakan Executive Summary & Analisis Otomatis</span>
                         </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="inc_table" value="1" checked class="rounded text-[#00509E]">
-                            <span class="font-bold text-gray-800">Sertakan Tabel Detail Rincian Tiket</span>
+                        <label class="flex items-center gap-2.5 cursor-pointer">
+                            <input type="checkbox" name="inc_charts" value="1" checked class="rounded text-[#00509E] w-4 h-4">
+                            <span class="font-bold text-gray-800">Sertakan Visualisasi Grafik Analitik (Line & Pie Chart)</span>
+                        </label>
+                        <label class="flex items-center gap-2.5 cursor-pointer">
+                            <input type="checkbox" name="inc_table" value="1" checked class="rounded text-[#00509E] w-4 h-4">
+                            <span class="font-bold text-gray-800">Sertakan Tabel Detail Rincian Tiket Antrean</span>
                         </label>
                     </div>
                 </div>
@@ -834,14 +838,26 @@
 
         function togglePdfCustomDates(val) {
             const container = document.getElementById('pdf_custom_dates_container');
+            if (!container) return;
+            const inputs = container.querySelectorAll('input');
             if (val === 'custom') {
                 container.classList.remove('hidden');
                 container.classList.add('grid');
+                inputs.forEach(i => i.removeAttribute('disabled'));
             } else {
                 container.classList.add('hidden');
                 container.classList.remove('grid');
+                inputs.forEach(i => i.setAttribute('disabled', 'disabled'));
             }
         }
+
+        // SINKRONISASI STATUS DISABLED AWAL PADA MODAL LOAD
+        document.addEventListener('DOMContentLoaded', function() {
+            const pdfSelect = document.getElementById('pdf_period_select');
+            if (pdfSelect) {
+                togglePdfCustomDates(pdfSelect.value);
+            }
+        });
 
         function chartFilterComponent() {
             return {

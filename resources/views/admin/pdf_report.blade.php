@@ -4,21 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Laporan Antrean Indibiz</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; font-size: 11px; color: #181C20; margin: 20px; }
+        body { font-family: Arial, sans-serif; font-size: 11px; color: #181C20; margin: 20px; line-height: 1.4; }
         .header { text-align: center; border-bottom: 2px solid #EE2E24; padding-bottom: 10px; margin-bottom: 15px; }
         .header h2 { margin: 0; color: #00509E; font-size: 16px; font-weight: bold; }
         .header p { margin: 3px 0; color: #555; font-size: 11px; }
+        
         .summary-box { background-color: #f8f9fa; border: 1px solid #e0e3e8; border-radius: 6px; padding: 10px; margin-bottom: 15px; }
         .summary-title { font-weight: bold; font-size: 11px; color: #00509E; margin-bottom: 4px; text-transform: uppercase; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        
+        .charts-container { margin-bottom: 15px; page-break-inside: avoid; }
+        .chart-box { border: 1px solid #e0e3e8; border-radius: 6px; padding: 10px; margin-bottom: 10px; background: #fff; }
+        .chart-title { font-weight: bold; font-size: 11px; color: #181C20; margin-bottom: 8px; text-transform: uppercase; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; page-break-inside: auto; }
+        tr { page-break-inside: avoid; page-break-after: auto; }
         th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
         th { background-color: #f1f4f9; font-size: 10px; text-transform: uppercase; font-weight: bold; }
         .sub-text { font-size: 9px; color: #666; font-style: italic; }
         .total-box { margin-top: 15px; text-align: right; font-size: 12px; font-weight: bold; }
         .text-right { text-align: right; }
         
-        /* CSS Badge Murni */
         .badge { font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 9px; display: inline-block; }
         .badge-selesai { background-color: #d1fae5; color: #065f46; }
         .badge-batal { background-color: #fee2e2; color: #991b1b; }
@@ -33,29 +40,52 @@
 </head>
 <body>
 
+    <!-- HEADER LAPORAN -->
     <div class="header">
         <h2>INDIBIZ SERVICE DESK - LAPORAN ANTREAN & TRANSAKSI</h2>
         <p>Periode Waktu: {{ $startDate->format('d/m/Y') }} s/d {{ $endDate->format('d/m/Y') }}</p>
     </div>
 
-    @if(request('inc_summary') && isset($analisisOtomatis['status_tiket']))
+    <!-- OPSI 1: EXECUTIVE SUMMARY -->
+    @if(request('inc_summary', 1) && isset($analisisOtomatis['status_tiket']))
     <div class="summary-box">
         <div class="summary-title">Executive Summary / Analisis Otomatis Operasional</div>
         <div>{!! preg_replace('/\*\*(.*?)\*\*/', '<strong>$1</strong>', $analisisOtomatis['status_tiket']) !!}</div>
     </div>
     @endif
 
+    <!-- OPSI 2: VISUALISASI GRAFIK ANALITIK -->
+    @if(request('inc_charts', 1))
+    <div class="charts-container">
+        <div class="chart-box">
+            <div class="chart-title">1. Tren Pendaftaran vs Layanan Selesai</div>
+            <div style="height: 200px; position: relative;">
+                <canvas id="pdfLineChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-box">
+            <div class="chart-title">2. Proporsi Kepadatan Kategori Layanan</div>
+            <div style="height: 200px; position: relative;">
+                <canvas id="pdfPieChart"></canvas>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- OPSI 3: TABEL DETAIL TIKET -->
+    @if(request('inc_table', 1))
     <table>
         <thead>
             <tr>
-                <th style="width: 30px;">No</th>
-                <th style="width: 80px;">Nomor Tiket</th>
+                <th style="width: 25px;">No</th>
+                <th style="width: 75px;">Nomor Tiket</th>
                 <th>Nama Pelanggan</th>
                 <th>Kategori & Sub-Layanan</th>
-                <th style="width: 110px;">Waktu Masuk</th>
-                <th style="width: 70px;">Status</th>
-                <th style="width: 90px;">Metode</th>
-                <th class="text-right" style="width: 100px;">Nominal</th>
+                <th style="width: 105px;">Waktu Masuk</th>
+                <th style="width: 65px;">Status</th>
+                <th style="width: 85px;">Metode</th>
+                <th class="text-right" style="width: 95px;">Nominal</th>
             </tr>
         </thead>
         <tbody>
@@ -92,17 +122,65 @@
             @endforelse
         </tbody>
     </table>
+    @endif
 
     <div class="total-box">
         TOTAL OMSET DITERIMA: Rp {{ number_format($totalOmset, 0, ',', '.') }}
     </div>
 
+    <!-- ENGINE RENDER GRAFIK & AUTOMATIC PRINT -->
     <script>
-        window.onload = function() {
+        document.addEventListener("DOMContentLoaded", function() {
+            @if(request('inc_charts', 1))
+            // RENDER LINE CHART
+            const lineCanvas = document.getElementById('pdfLineChart');
+            if (lineCanvas) {
+                const chartDataSets = @json($chartDataSets ?? []);
+                const periodKey = '{{ request("period", "mtd") }}';
+                const dataSet = chartDataSets[periodKey] || chartDataSets['mtd'] || chartDataSets['last30'] || Object.values(chartDataSets)[0];
+
+                if (dataSet && dataSet.dates) {
+                    new Chart(lineCanvas.getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels: dataSet.dates,
+                            datasets: [
+                                { label: 'Total Tiket Masuk', data: dataSet.total, borderColor: '#00509E', backgroundColor: 'rgba(0, 80, 158, 0.1)', fill: true, tension: 0.3 },
+                                { label: 'Layanan Selesai', data: dataSet.selesai, borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3 }
+                            ]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, animation: false }
+                    });
+                }
+            }
+
+            // RENDER PIE CHART
+            const pieCanvas = document.getElementById('pdfPieChart');
+            if (pieCanvas) {
+                let rawDist = @json($distribusiLayanan ?? []);
+                if (!Array.isArray(rawDist)) rawDist = Object.values(rawDist);
+                const labels = rawDist.map(i => i.nama);
+                const data = rawDist.map(i => i.total);
+
+                new Chart(pieCanvas.getContext('2d'), {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: ['#00509E', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#64748B']
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'right' } } }
+                });
+            }
+            @endif
+
+            // MEMBERIKAN JEDA WAKTU UNTUK CHART RENDER SEBELUM CETAK
             setTimeout(function() {
                 window.print();
-            }, 500);
-        };
+            }, 750);
+        });
     </script>
 </body>
 </html>
