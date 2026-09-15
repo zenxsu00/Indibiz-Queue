@@ -264,57 +264,50 @@
                 </span>
             </div>
 
-            <!-- METRIK CARDS (Diperbarui dengan Waktu Tunggu, Durasi CS, Rating, No Show & Ditransfer) -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+            <!-- METRIK CARDS (5 KARTU UTAMA) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
                 <div class="bg-white border border-[#E0E3E8] rounded-2xl p-4 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1.5 bg-[#00509E]"></div>
                     <span class="text-[10px] text-[#5D3F3B] font-extrabold uppercase tracking-wider block mb-1">Total Antrean</span>
-                    <span class="text-2xl font-black text-[#181C20]">{{ number_format($totalHariIni) }}</span>
+                    <span class="text-2xl lg:text-3xl font-black text-[#181C20]">{{ number_format($totalHariIni) }}</span>
                 </div>
 
                 <div class="bg-white border border-[#E0E3E8] rounded-2xl p-4 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1.5 bg-amber-500"></div>
                     <div class="flex justify-between items-center mb-1">
-                        <span class="text-[9px] text-[#5D3F3B] font-extrabold uppercase">Menunggu / Transfer</span>
+                        <span class="text-[9px] text-[#5D3F3B] font-extrabold uppercase tracking-wider">Sedang Menunggu</span>
+                        @if(isset($ditransfer) && $ditransfer > 0)
+                            <span class="text-[8px] bg-indigo-100 text-indigo-800 font-black px-1.5 py-0.5 rounded">{{ $ditransfer }} Trf</span>
+                        @endif
                     </div>
-                    <div class="flex items-baseline gap-1.5">
-                        <span class="text-2xl font-black text-[#181C20]">{{ number_format($menunggu) }}</span>
-                        <span class="text-xs text-indigo-600 font-bold">({{ $ditransfer }} Trf)</span>
-                    </div>
+                    <span class="text-2xl lg:text-3xl font-black text-[#181C20]">{{ number_format($menunggu) }}</span>
                 </div>
 
                 <div class="bg-white border border-[#E0E3E8] rounded-2xl p-4 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1.5 bg-blue-500"></div>
                     <div class="flex justify-between items-center mb-1">
-                        <span class="text-[9px] text-[#5D3F3B] font-extrabold uppercase">Avg Waktu Tunggu</span>
+                        <span class="text-[9px] text-[#5D3F3B] font-extrabold uppercase tracking-wider">Avg Waktu Tunggu</span>
+                        <span class="text-[8px] bg-blue-100 text-blue-800 font-black px-1 py-0.5 rounded">TV Display</span>
                     </div>
-                    <span class="text-xl font-black text-blue-600">{{ $avgWaktuTungguText }}</span>
+                    <span class="text-xl lg:text-2xl font-black text-blue-600">{{ $avgWaktuTungguText }}</span>
                 </div>
 
                 <div class="bg-white border border-[#E0E3E8] rounded-2xl p-4 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1.5 bg-emerald-500"></div>
                     <div class="flex justify-between items-center mb-1">
-                        <span class="text-[9px] text-[#5D3F3B] font-extrabold uppercase">Avg Durasi CS</span>
+                        <span class="text-[9px] text-[#5D3F3B] font-extrabold uppercase tracking-wider">Avg Durasi CS</span>
+                        <span class="text-[8px] bg-emerald-100 text-emerald-800 font-black px-1 py-0.5 rounded">SLA CS</span>
                     </div>
-                    <span class="text-xl font-black text-emerald-600">{{ $avgDurasiLayananText }}</span>
-                </div>
-
-                <div class="bg-white border border-[#E0E3E8] rounded-2xl p-4 shadow-sm relative overflow-hidden">
-                    <div class="absolute top-0 left-0 w-full h-1.5 bg-amber-400"></div>
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="text-[9px] text-[#5D3F3B] font-extrabold uppercase">Kepuasan Pelanggan</span>
-                    </div>
-                    <span class="text-xl font-black text-amber-500 flex items-center gap-1">
-                        ★ {{ $avgRating > 0 ? $avgRating : '-' }} <span class="text-[10px] text-gray-400 font-normal">/ 5</span>
-                    </span>
+                    <span class="text-xl lg:text-2xl font-black text-emerald-600">{{ $avgDurasiLayananText }}</span>
                 </div>
 
                 <div class="bg-white border border-[#E0E3E8] rounded-2xl p-4 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1.5 bg-purple-600"></div>
                     <div class="flex justify-between items-center mb-1">
-                        <span class="text-[9px] text-[#5D3F3B] font-extrabold uppercase">Total Omset</span>
+                        <span class="text-[9px] text-[#5D3F3B] font-extrabold uppercase tracking-wider">Total Omset</span>
+                        <span class="text-[8px] bg-purple-100 text-purple-800 font-black px-1 py-0.5 rounded">Omset</span>
                     </div>
-                    <span class="text-base font-black text-[#00509E]">Rp {{ number_format($totalOmset, 0, ',', '.') }}</span>
+                    <span class="text-lg lg:text-xl font-black text-[#00509E]">Rp {{ number_format($totalOmset, 0, ',', '.') }}</span>
                 </div>
             </div>
 
@@ -336,7 +329,6 @@
                                 <th class="p-3">Waktu Ambil</th>
                                 <th class="p-3">Status</th>
                                 <th class="p-3">Catatan CS & Solusi</th>
-                                <th class="p-3 text-center">Rating</th>
                                 <th class="p-3 text-right">Nominal</th>
                                 <th class="p-3 text-center">Aksi</th>
                             </tr>
@@ -368,9 +360,6 @@
                                     <td class="p-3 text-gray-600 max-w-[200px] truncate" title="{{ $tiket->catatan_cs ?? $tiket->ringkasan_solusi ?? '-' }}">
                                         {{ $tiket->catatan_cs ?? $tiket->ringkasan_solusi ?? '-' }}
                                     </td>
-                                    <td class="p-3 text-center font-bold text-amber-500">
-                                        {{ $tiket->rating ? "★ {$tiket->rating}" : '-' }}
-                                    </td>
                                     <td class="p-3 text-right font-black text-[#181C20]">Rp {{ number_format($tiket->nominal_pembayaran, 0, ',', '.') }}</td>
                                     <td class="p-3 text-center">
                                         <button @click="selectedTiket = {{ json_encode($tiket) }}; showModalDetail = true" class="px-2.5 py-1 bg-[#00509E]/10 text-[#00509E] hover:bg-[#00509E] hover:text-white rounded-lg font-bold text-[10px] transition-all cursor-pointer">
@@ -379,7 +368,7 @@
                                     </td>
                                 </tr>
                             @empty
-                                <tr><td colspan="10" class="p-6 text-center text-gray-400 font-bold">Tidak ada data antrean pada rentang waktu ini.</td></tr>
+                                <tr><td colspan="9" class="p-6 text-center text-gray-400 font-bold">Tidak ada data antrean pada rentang waktu ini.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -675,20 +664,10 @@
                         </div>
                     </div>
 
-                    <!-- CATATAN PENANGANAN CS & PENILAIAN PELANGGAN -->
-                    <div class="space-y-2">
-                        <div class="p-3 bg-amber-50/60 border border-amber-200 rounded-xl">
-                            <span class="text-[10px] text-amber-700 font-bold uppercase block mb-1">Catatan CS & Ringkasan Solusi</span>
-                            <p class="text-gray-800 italic" x-text="selectedTiket.catatan_cs || selectedTiket.ringkasan_solusi || 'Tidak ada catatan khusus.'"></p>
-                        </div>
-
-                        <div class="p-3 bg-purple-50/60 border border-purple-200 rounded-xl flex items-center justify-between">
-                            <div>
-                                <span class="text-[10px] text-purple-700 font-bold uppercase block">Rating Kepuasan Pelanggan</span>
-                                <p class="text-gray-800 italic" x-text="selectedTiket.feedback ? ('Ulasan: ' + selectedTiket.feedback) : 'Belum memberikan ulasan.'"></p>
-                            </div>
-                            <span class="text-lg font-black text-amber-500" x-text="selectedTiket.rating ? ('★ ' + selectedTiket.rating) : '-'"></span>
-                        </div>
+                    <!-- CATATAN PENANGANAN CS -->
+                    <div class="p-3 bg-amber-50/60 border border-amber-200 rounded-xl">
+                        <span class="text-[10px] text-amber-700 font-bold uppercase block mb-1">Catatan CS & Ringkasan Solusi</span>
+                        <p class="text-gray-800 italic" x-text="selectedTiket.catatan_cs || selectedTiket.ringkasan_solusi || 'Tidak ada catatan khusus.'"></p>
                     </div>
                 </div>
             </template>
