@@ -200,10 +200,10 @@
             </div>
         </div>
 
-        <!-- FORM FILTER GLOBAL DENGAN DATE TO DATE (BISA DIGUNAKAN DI OPERATIONS DAN ANALYTICS) -->
-        <form x-show="activeTab === 'operations' || activeTab === 'analytics'" action="{{ route('admin.dashboard') }}" method="GET" class="bg-white p-4 rounded-2xl border border-[#E0E3E8] shadow-sm flex flex-wrap items-end gap-3 text-xs">
+        <!-- FORM FILTER UTAMA TAB OPERATIONS -->
+        <form x-show="activeTab === 'operations'" action="{{ route('admin.dashboard') }}" method="GET" class="bg-white p-4 rounded-2xl border border-[#E0E3E8] shadow-sm flex flex-wrap items-end gap-3 text-xs">
             <div class="flex-1 min-w-[200px]">
-                <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Periode Waktu Laporan</label>
+                <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Periode Waktu</label>
                 <select name="period" x-model="selectedPeriod" @change="if(selectedPeriod !== 'custom') $el.form.submit()" class="w-full border border-gray-300 bg-gray-50 rounded-xl p-2 font-bold text-gray-700 focus:border-[#00509E] focus:ring-0 cursor-pointer">
                     <option value="all">Semua Waktu (All Time)</option>
                     <option value="today">Hari Ini (Today)</option>
@@ -215,18 +215,17 @@
                 </select>
             </div>
 
-            <!-- OPSI DATE TO DATE DENGAN INPUT TANGGAL -->
             <template x-if="selectedPeriod === 'custom'">
                 <div class="flex flex-wrap items-center gap-2">
                     <div>
-                        <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Dari Tanggal (Start Date)</label>
+                        <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Dari Tanggal</label>
                         <input type="date" name="start_date" value="{{ request('start_date', $startDate->format('Y-m-d')) }}" class="border border-gray-300 rounded-xl p-2 font-semibold">
                     </div>
                     <div>
-                        <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Sampai Tanggal (End Date)</label>
+                        <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Sampai Tanggal</label>
                         <input type="date" name="end_date" value="{{ request('end_date', $endDate->format('Y-m-d')) }}" class="border border-gray-300 rounded-xl p-2 font-semibold">
                     </div>
-                    <button type="submit" class="px-3.5 py-2 bg-[#00509E] text-white font-bold rounded-xl flex items-center gap-1 shadow-sm hover:bg-[#003B75] cursor-pointer">
+                    <button type="submit" class="px-3.5 py-2 bg-[#00509E] text-white font-bold rounded-xl flex items-center gap-1 shadow-sm hover:bg-[#003B75]">
                         <span class="material-symbols-outlined text-sm">filter_alt</span> Terapkan
                     </button>
                 </div>
@@ -383,9 +382,43 @@
         <!-- TAB 2: ANALITIK LAYANAN -->
         <div x-show="activeTab === 'analytics'" x-data="chartFilterComponent()" class="space-y-6">
             
+            <!-- BUTTON BAR FILTER TANGGAL KHUSUS TAB ANALITIK (DIPISAH DI ATAS GRAFIK) -->
+            <div class="bg-white p-4 rounded-2xl border border-[#E0E3E8] shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[#00509E]">tune</span>
+                    <span class="text-xs font-black uppercase tracking-wider text-[#181C20]">Filter Periode Grafik Analitik</span>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-1.5 bg-gray-100 p-1 rounded-xl text-xs font-bold w-full md:w-auto">
+                    <button type="button" @click="switchChartPeriod('wtd')" :class="chartPeriod === 'wtd' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">WTD</button>
+                    <button type="button" @click="switchChartPeriod('mtd')" :class="chartPeriod === 'mtd' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">MTD</button>
+                    <button type="button" @click="switchChartPeriod('mtm')" :class="chartPeriod === 'mtm' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">MTM</button>
+                    <button type="button" @click="switchChartPeriod('last30')" :class="chartPeriod === 'last30' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">30 Hari</button>
+                    <button type="button" @click="switchChartPeriod('custom')" :class="chartPeriod === 'custom' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1">
+                        <span class="material-symbols-outlined text-xs">calendar_today</span> Date to Date
+                    </button>
+                </div>
+            </div>
+
+            <!-- FORM INPUT TANGGAL (HANYA MUNCUL JIKA DATE TO DATE DIKLIK) -->
+            <form x-show="chartPeriod === 'custom'" x-cloak action="{{ route('admin.dashboard') }}" method="GET" class="bg-blue-50/70 border border-blue-200 p-4 rounded-2xl flex flex-wrap items-end gap-3 text-xs">
+                <input type="hidden" name="period" value="custom">
+                <div>
+                    <label class="text-[10px] font-black text-gray-500 uppercase block mb-1">Dari Tanggal (Start Date)</label>
+                    <input type="date" name="start_date" value="{{ request('start_date', $startDate->format('Y-m-d')) }}" class="border border-gray-300 rounded-xl p-2 font-semibold bg-white">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-gray-500 uppercase block mb-1">Sampai Tanggal (End Date)</label>
+                    <input type="date" name="end_date" value="{{ request('end_date', $endDate->format('Y-m-d')) }}" class="border border-gray-300 rounded-xl p-2 font-semibold bg-white">
+                </div>
+                <button type="submit" class="px-4 py-2 bg-[#00509E] text-white font-bold rounded-xl flex items-center gap-1 shadow-sm hover:bg-[#003B75] cursor-pointer">
+                    <span class="material-symbols-outlined text-sm">filter_alt</span> Terapkan Tanggal
+                </button>
+            </form>
+
             <!-- LINE CHART 1: TREN PENDAFTARAN vs LAYANAN SELESAI -->
             <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 pb-3 border-b border-gray-100">
+                <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-100">
                     <h3 class="text-sm font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2">
                         <span class="material-symbols-outlined text-[#00509E]">show_chart</span>
                         1. Grafik Tren Pendaftaran vs Layanan Selesai
@@ -913,7 +946,7 @@
 
         function chartFilterComponent() {
             return {
-                chartPeriod: 'last30',
+                chartPeriod: '{{ request('period') === 'custom' ? 'custom' : 'last30' }}',
                 isMerged: true,
                 allDataSets: {},
                 
@@ -922,8 +955,9 @@
                     if (canvasLine && canvasLine.dataset.chartSets) {
                         try {
                             this.allDataSets = JSON.parse(canvasLine.dataset.chartSets);
-                            this.renderLineChart('last30');
-                            this.renderSlaCharts('last30');
+                            const initialPeriod = this.chartPeriod === 'custom' ? 'last30' : this.chartPeriod;
+                            this.renderLineChart(initialPeriod);
+                            this.renderSlaCharts(initialPeriod);
                         } catch (e) { console.error(e); }
                     }
                     this.renderPieChart();
@@ -932,14 +966,17 @@
 
                 switchChartPeriod: function(period) {
                     this.chartPeriod = period;
-                    this.renderLineChart(period);
-                    this.renderSlaCharts(period);
+                    if (period !== 'custom') {
+                        this.renderLineChart(period);
+                        this.renderSlaCharts(period);
+                    }
                 },
 
                 toggleSlaMode: function(mergedStatus) {
                     this.isMerged = mergedStatus;
                     this.$nextTick(() => {
-                        this.renderSlaCharts(this.chartPeriod);
+                        const currentPeriod = this.chartPeriod === 'custom' ? 'last30' : this.chartPeriod;
+                        this.renderSlaCharts(currentPeriod);
                     });
                 },
 
@@ -965,7 +1002,8 @@
                 },
 
                 renderSlaCharts: function(periodKey) {
-                    const dataSet = this.allDataSets[periodKey || this.chartPeriod] || this.allDataSets['last30'];
+                    const activeKey = periodKey || (this.chartPeriod === 'custom' ? 'last30' : this.chartPeriod);
+                    const dataSet = this.allDataSets[activeKey] || this.allDataSets['last30'];
                     if (!dataSet) return;
 
                     if (this.isMerged) {
