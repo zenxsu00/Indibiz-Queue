@@ -41,14 +41,6 @@
 </head>
 <body>
 
-    <!-- WADAH FLAG KONFIGURASI DARI CONTROLLER -->
-    <div id="pdf-config" 
-         data-summary="{{ request('inc_summary', 1) }}" 
-         data-charts="{{ request('inc_charts', 1) }}" 
-         data-sla-charts="{{ request('inc_sla_charts', 1) }}"
-         data-cs-chart="{{ request('inc_cs_chart', 1) }}"
-         style="display: none;"></div>
-
     <!-- HEADER LAPORAN -->
     <div class="header">
         <h2>INDIBIZ SERVICE DESK - LAPORAN ANTREAN & TRANSAKSI</h2>
@@ -56,15 +48,15 @@
     </div>
 
     <!-- OPSI 1: EXECUTIVE SUMMARY -->
-    @if(request('inc_summary', 1))
-    <div id="pdf-summary-container" class="summary-box" style="display: none;">
+    @if($includeSummary)
+    <div id="pdf-summary-container" class="summary-box">
         <div class="summary-title">Executive Summary / Analisis Otomatis Operasional</div>
         <div id="pdf-summary-content"></div>
     </div>
     @endif
 
     <!-- OPSI 2: GRAFIK ANALITIK DASAR (LINE & PIE) -->
-    @if(request('inc_charts', 1))
+    @if($includeCharts)
     <div id="pdf-charts-container" class="charts-container" style="display: none;">
         <div class="chart-box">
             <div class="chart-title">1. Tren Pendaftaran vs Layanan Selesai</div>
@@ -78,7 +70,7 @@
     @endif
 
     <!-- OPSI 3: GRAFIK TREN WAKTU TUNGGU VS DURASI KONSUL -->
-    @if(request('inc_sla_charts', 1))
+    @if($includeSlaCharts)
     <div id="pdf-sla-container" class="charts-container" style="display: none;">
         <div class="chart-box">
             <div class="chart-title">3. Tren Waktu Tunggu vs Durasi Konsul CS</div>
@@ -102,7 +94,7 @@
     @endif
 
     <!-- OPSI 4: GRAFIK PERFORMA STAF CS -->
-    @if(request('inc_cs_chart', 1))
+    @if($includeCsChart)
     <div id="pdf-cs-container" class="charts-container" style="display: none;">
         <div class="chart-box">
             <div class="chart-title">4. Performa Produktivitas Staf CS per Meja</div>
@@ -112,7 +104,7 @@
     @endif
 
     <!-- OPSI 5: TABEL DETAIL TIKET -->
-    @if(request('inc_table', 1))
+    @if($includeTable)
     <table>
         <thead>
             <tr>
@@ -139,10 +131,10 @@
             <tr>
                 <td>{{ $index + 1 }}</td>
                 <td><strong>{{ $t->nomor_antrian }}</strong></td>
-                <td>{{ $t->pelanggan->nama ?? '-' }} ({{ $t->pelanggan->no_hp ?? '-' }})</td>
+                <td>{{ $t->pelanggan?->nama ?? '-' }} ({{ $t->pelanggan?->no_hp ?? '-' }})</td>
                 <td>
-                    <div>{{ $t->layanan->nama_layanan ?? '-' }}</div>
-                    <div class="sub-text">{{ $t->subLayanan->nama_sub_layanan ?? '-' }}</div>
+                    <div>{{ $t->layanan?->nama_layanan ?? '-' }}</div>
+                    <div class="sub-text">{{ $t->subLayanan?->nama_sub_layanan ?? '-' }}</div>
                 </td>
                 <td>{{ \Carbon\Carbon::parse($t->waktu_dibuat)->timezone('Asia/Jakarta')->format('d/m/Y H:i') }}</td>
                 <td>
@@ -166,87 +158,90 @@
         TOTAL OMSET DITERIMA: Rp {{ number_format($totalOmset, 0, ',', '.') }}
     </div>
 
-    <!-- SCRIPT TARIK DATA FOTO MEMORI BROWSER LALU PRINT (100% MURNI JS) -->
+    <!-- SCRIPT TERTUTUP SAFE-LINTER -->
     <script>
-        window.addEventListener('load', function() {
-            const configEl = document.getElementById('pdf-config');
-            const incSummary = configEl ? configEl.getAttribute('data-summary') : '1';
-            const incCharts = configEl ? configEl.getAttribute('data-charts') : '1';
-            const incSlaCharts = configEl ? configEl.getAttribute('data-sla-charts') : '1';
-            const incCsChart = configEl ? configEl.getAttribute('data-cs-chart') : '1';
-            
-            // 1. Ekstrak data teks Summary
-            if (incSummary === '1') {
-                const summaryHTML = localStorage.getItem('pdf_summary_data');
+        window.addEventListener('load', function () {
+            function getData(key) {
+                var val = localStorage.getItem(key);
+                return (val && val.length > 50) ? val : null;
+            }
+
+            // 1. EXECUTIVE SUMMARY
+            var summaryContainer = document.getElementById('pdf-summary-container');
+            var summaryContent = document.getElementById('pdf-summary-content');
+            if (summaryContainer && summaryContent) {
+                var summaryHTML = localStorage.getItem('pdf_summary_data');
                 if (summaryHTML && summaryHTML.trim() !== '') {
-                    const containerEl = document.getElementById('pdf-summary-container');
-                    const contentEl = document.getElementById('pdf-summary-content');
-                    if (containerEl && contentEl) {
-                        contentEl.innerHTML = summaryHTML;
-                        containerEl.style.display = 'block';
-                    }
+                    summaryContent.innerHTML = summaryHTML;
+                    summaryContainer.style.display = 'block';
                 }
             }
 
-            // 2. Ekstrak Gambar Grafik Dasar (Line & Pie)
-            if (incCharts === '1') {
-                const lineImgData = localStorage.getItem('pdf_line_data');
-                const pieImgData = localStorage.getItem('pdf_pie_data');
-                let hasCharts = false;
+            // 2. GRAFIK LINE & PIE
+            var chartsContainer = document.getElementById('pdf-charts-container');
+            if (chartsContainer) {
+                var lineData = getData('pdf_line_data');
+                var pieData = getData('pdf_pie_data');
+                var hasCharts = false;
 
-                if (lineImgData && lineImgData.length > 50) {
-                    const imgEl = document.getElementById('pdf-line-img');
-                    if (imgEl) { imgEl.src = lineImgData; hasCharts = true; }
+                if (lineData) {
+                    var lineImg = document.getElementById('pdf-line-img');
+                    if (lineImg) lineImg.src = lineData;
+                    hasCharts = true;
                 }
-                if (pieImgData && pieImgData.length > 50) {
-                    const imgEl = document.getElementById('pdf-pie-img');
-                    if (imgEl) { imgEl.src = pieImgData; hasCharts = true; }
+                if (pieData) {
+                    var pieImg = document.getElementById('pdf-pie-img');
+                    if (pieImg) pieImg.src = pieData;
+                    hasCharts = true;
                 }
                 if (hasCharts) {
-                    const containerEl = document.getElementById('pdf-charts-container');
-                    if (containerEl) { containerEl.style.display = 'block'; }
+                    chartsContainer.style.display = 'block';
                 }
             }
 
-            // 3. Ekstrak Gambar Grafik SLA (Waktu Tunggu & Durasi)
-            if (incSlaCharts === '1') {
-                const isMerged = localStorage.getItem('pdf_sla_is_merged') === '1';
-                const mergedData = localStorage.getItem('pdf_sla_merged_data');
-                const tungguData = localStorage.getItem('pdf_sla_tunggu_data');
-                const konsulData = localStorage.getItem('pdf_sla_konsul_data');
-                const containerEl = document.getElementById('pdf-sla-container');
+            // 3. GRAFIK SLA (WAKTU TUNGGU VS DURASI KONSUL)
+            var slaContainer = document.getElementById('pdf-sla-container');
+            if (slaContainer) {
+                var isMerged = localStorage.getItem('pdf_sla_is_merged') === '1';
+                var mergedData = getData('pdf_sla_merged_data');
+                var tungguData = getData('pdf_sla_tunggu_data');
+                var konsulData = getData('pdf_sla_konsul_data');
 
-                if (containerEl) {
-                    // Cek jika sedang memakai Mode Gabung
-                    if (isMerged && mergedData && mergedData.length > 50) {
-                        document.getElementById('pdf-sla-merged-img').src = mergedData;
-                        document.getElementById('sla-merged-wrapper').style.display = 'block';
-                        containerEl.style.display = 'block';
-                    } 
-                    // Cek jika sedang memakai Mode Pisah (Berdampingan)
-                    else if (!isMerged && tungguData && konsulData && tungguData.length > 50) {
-                        document.getElementById('pdf-sla-tunggu-img').src = tungguData;
-                        document.getElementById('pdf-sla-konsul-img').src = konsulData;
-                        document.getElementById('sla-separate-wrapper').style.display = 'flex';
-                        containerEl.style.display = 'block';
+                if (isMerged && mergedData) {
+                    var mergedImg = document.getElementById('pdf-sla-merged-img');
+                    var mergedWrapper = document.getElementById('sla-merged-wrapper');
+                    if (mergedImg && mergedWrapper) {
+                        mergedImg.src = mergedData;
+                        mergedWrapper.style.display = 'block';
+                        slaContainer.style.display = 'block';
+                    }
+                } else if (!isMerged && tungguData && konsulData) {
+                    var tungguImg = document.getElementById('pdf-sla-tunggu-img');
+                    var konsulImg = document.getElementById('pdf-sla-konsul-img');
+                    var separateWrapper = document.getElementById('sla-separate-wrapper');
+                    if (tungguImg && konsulImg && separateWrapper) {
+                        tungguImg.src = tungguData;
+                        konsulImg.src = konsulData;
+                        separateWrapper.style.display = 'flex';
+                        slaContainer.style.display = 'block';
                     }
                 }
             }
 
-            // 4. Ekstrak Gambar Grafik Performa Staf CS (Bar Chart)
-            if (incCsChart === '1') {
-                const csData = localStorage.getItem('pdf_cs_bar_data');
-                if (csData && csData.length > 50) {
-                    const imgEl = document.getElementById('pdf-cs-img');
-                    if (imgEl) {
-                        imgEl.src = csData;
-                        document.getElementById('pdf-cs-container').style.display = 'block';
+            // 4. GRAFIK PERFORMA CS
+            var csContainer = document.getElementById('pdf-cs-container');
+            if (csContainer) {
+                var csData = getData('pdf_cs_bar_data');
+                if (csData) {
+                    var csImg = document.getElementById('pdf-cs-img');
+                    if (csImg) {
+                        csImg.src = csData;
+                        csContainer.style.display = 'block';
                     }
                 }
             }
 
-            // Beri Jeda 0.6 detik render layout HTML/Image ke PDF, lalu Otomatis Print
-            setTimeout(function() {
+            setTimeout(function () {
                 window.print();
             }, 600);
         });

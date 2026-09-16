@@ -75,7 +75,7 @@ class AdminController extends Controller
         $noShowCount   = $allFilteredTickets->where('status', 'No Show')->count();
 
         // -------------------------------------------------------------
-        // DURASI CS & WAKTU TUNGGU (Menggunakan Field waktu_layanan & waktu_tunggu atau fallback timestamp)
+        // DURASI CS & WAKTU TUNGGU
         // -------------------------------------------------------------
         $tiketSelesaiFilter = $allFilteredTickets->where('status', 'Selesai');
 
@@ -196,13 +196,11 @@ class AdminController extends Controller
         }
 
         // -------------------------------------------------------------
-        // GRAFIK ANALITIK DATASET (Termasuk Avg Tunggu & Avg Konsul dalam Menit)
+        // GRAFIK ANALITIK DATASET
         // -------------------------------------------------------------
         $allTickets = TiketAntrian::with('layanan')->get();
 
-        // Helper untuk hitung avg waktu tunggu & durasi konsul CS dalam menit per subset tiket
         $calcSlaMetrics = function($tickets) {
-            // Avg Waktu Tunggu (menit)
             $dipanggil = $tickets->whereIn('status', ['Diproses', 'Selesai', 'No Show', 'Ditransfer']);
             $totalDetikTunggu = 0; $countTunggu = 0;
             foreach ($dipanggil as $t) {
@@ -218,7 +216,6 @@ class AdminController extends Controller
             }
             $avgTungguMenit = $countTunggu > 0 ? round(($totalDetikTunggu / $countTunggu) / 60, 1) : 0;
 
-            // Avg Durasi Konsul CS (menit)
             $selesai = $tickets->where('status', 'Selesai');
             $totalDetikLayanan = 0; $countLayanan = 0;
             foreach ($selesai as $t) {
@@ -279,7 +276,7 @@ class AdminController extends Controller
             $avgLayananMtd[] = $layanan;
         }
 
-        // MTM (12 Bulan)
+        // MTM
         $datesMtm = []; $totalMtm = []; $selesaiMtm = []; $avgTungguMtm = []; $avgLayananMtm = [];
         for ($i = 11; $i >= 0; $i--) {
             $m = Carbon::now('Asia/Jakarta')->subMonths($i);
@@ -311,7 +308,7 @@ class AdminController extends Controller
         ];
 
         // -------------------------------------------------------------
-        // REKAP RIWAYAT OPERASIONAL REAL-TIME CS (30 HARI TERAKHIR)
+        // REKAP RIWAYAT OPERASIONAL
         // -------------------------------------------------------------
         $historyBulanan = [];
         for ($i = 0; $i < 30; $i++) {
@@ -326,7 +323,6 @@ class AdminController extends Controller
             $belumDiproses   = $tks->where('status', 'Menunggu')->count();
             $totalOmsetHari  = $tks->where('status', 'Selesai')->sum('nominal_pembayaran');
 
-            // Breakdown Tipe Layanan (A-B-C-D)
             $breakdownLayanan = [];
             foreach ($tks->groupBy('layanan_id') as $layId => $items) {
                 $namaLayanan = $items->first()->layanan->nama_layanan ?? 'Layanan Umum';
@@ -348,7 +344,7 @@ class AdminController extends Controller
             ];
         }
 
-        // Distribusi Kategori Layanan untuk Pie Chart
+        // Distribusi Kategori Layanan
         $distribusiLayanan = Layanan::all()->map(function($layanan) use ($allFilteredTickets) {
             $item = new stdClass();
             $item->nama  = $layanan->nama_layanan;
@@ -469,16 +465,19 @@ class AdminController extends Controller
         $tickets    = $query->orderBy('waktu_dibuat', 'asc')->get();
         $totalOmset = $tickets->where('status', 'Selesai')->sum('nominal_pembayaran');
 
-        $includeSummary = $request->has('inc_summary');
-        $includeCharts  = $request->has('inc_charts');
-        $includeTable   = $request->has('inc_table');
+        // Menggunakan $request->boolean() agar checkbox yang di-uncheck menghasilkan nilai false (0)
+        $includeSummary   = $request->boolean('inc_summary');
+        $includeCharts    = $request->boolean('inc_charts');
+        $includeSlaCharts = $request->boolean('inc_sla_charts');
+        $includeCsChart   = $request->boolean('inc_cs_chart');
+        $includeTable     = $request->boolean('inc_table');
 
         $chartLineBase64 = $request->input('chart_line_base64');
         $chartPieBase64  = $request->input('chart_pie_base64');
 
         return view('admin.pdf_report', compact(
             'tickets', 'startDate', 'endDate', 'totalOmset', 
-            'includeSummary', 'includeCharts', 'includeTable', 
+            'includeSummary', 'includeCharts', 'includeSlaCharts', 'includeCsChart', 'includeTable', 
             'chartLineBase64', 'chartPieBase64'
         ));
     }

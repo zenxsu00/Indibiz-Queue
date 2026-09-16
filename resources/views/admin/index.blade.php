@@ -28,8 +28,8 @@
           showModalPdf: false,
           selectedTiket: null,
           selectedPeriod: '{{ request('period', 'all') }}',
-          selectedLayananId: '{{ $layanans->first()->id ?? '' }}',
-          selectedLayananNama: '{{ $layanans->first()->nama_layanan ?? '' }}'
+          selectedLayananId: '{{ $layanans->first()?->id ?? '' }}',
+          selectedLayananNama: '{{ addslashes($layanans->first()?->nama_layanan ?? '') }}'
       }">
 
     <!-- HEADER MOBILE -->
@@ -341,14 +341,14 @@
                                 <tr class="hover:bg-[#F8F9FA] transition-colors">
                                     <td class="p-3 font-mono font-bold text-[#00509E]">{{ $tiket->nomor_antrian }}</td>
                                     <td class="p-3 font-bold">
-                                        {{ $tiket->pelanggan->nama ?? '-' }} 
-                                        <br><span class="text-[10px] text-gray-400 font-normal">{{ $tiket->pelanggan->no_hp ?? '-' }}</span>
+                                        {{ $tiket->pelanggan?->nama ?? '-' }} 
+                                        <br><span class="text-[10px] text-gray-400 font-normal">{{ $tiket->pelanggan?->no_hp ?? '-' }}</span>
                                     </td>
                                     <td class="p-3">
-                                        <span class="bg-blue-50 text-[#00509E] px-2 py-0.5 rounded font-bold block mb-0.5">{{ $tiket->layanan->nama_layanan ?? '-' }}</span>
-                                        <span class="text-[10px] text-gray-500 italic">{{ $tiket->subLayanan->nama_sub_layanan ?? 'Tanpa Sub-Layanan' }}</span>
+                                        <span class="bg-blue-50 text-[#00509E] px-2 py-0.5 rounded font-bold block mb-0.5">{{ $tiket->layanan?->nama_layanan ?? '-' }}</span>
+                                        <span class="text-[10px] text-gray-500 italic">{{ $tiket->subLayanan?->nama_sub_layanan ?? 'Tanpa Sub-Layanan' }}</span>
                                     </td>
-                                    <td class="p-3 font-bold">{{ $tiket->cs ? $tiket->cs->nama_lengkap . ' (M'.$tiket->cs->nomor_meja.')' : '-' }}</td>
+                                    <td class="p-3 font-bold">{{ $tiket->cs?->nama_lengkap ? $tiket->cs->nama_lengkap . ' (M' . $tiket->cs->nomor_meja . ')' : '-' }}</td>
                                     <td class="p-3 text-gray-500">{{ \Carbon\Carbon::parse($tiket->waktu_dibuat)->timezone('Asia/Jakarta')->format('d/m/Y H:i') }}</td>
                                     <td class="p-3">
                                         <span class="px-2 py-0.5 rounded-full text-[10px] font-black {{ 
@@ -382,7 +382,7 @@
         <!-- TAB 2: ANALITIK LAYANAN -->
         <div x-show="activeTab === 'analytics'" x-data="chartFilterComponent()" class="space-y-6">
             
-            <!-- BUTTON BAR FILTER TANGGAL KHUSUS TAB ANALITIK (DIPISAH DI ATAS GRAFIK) -->
+            <!-- BUTTON BAR FILTER TANGGAL KHUSUS TAB ANALITIK -->
             <div class="bg-white p-4 rounded-2xl border border-[#E0E3E8] shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                 <div class="flex items-center gap-2">
                     <span class="material-symbols-outlined text-[#00509E]">tune</span>
@@ -400,7 +400,7 @@
                 </div>
             </div>
 
-            <!-- FORM INPUT TANGGAL (HANYA MUNCUL JIKA DATE TO DATE DIKLIK) -->
+            <!-- FORM INPUT TANGGAL -->
             <form x-show="chartPeriod === 'custom'" x-cloak action="{{ route('admin.dashboard') }}" method="GET" class="bg-blue-50/70 border border-blue-200 p-4 rounded-2xl flex flex-wrap items-end gap-3 text-xs">
                 <input type="hidden" name="period" value="custom">
                 <div>
@@ -416,7 +416,7 @@
                 </button>
             </form>
 
-            <!-- LINE CHART 1: TREN PENDAFTARAN vs LAYANAN SELESAI -->
+            <!-- LINE CHART 1 -->
             <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm">
                 <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-100">
                     <h3 class="text-sm font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2">
@@ -433,7 +433,7 @@
                 </p>
             </div>
 
-            <!-- CHART 2: PIE KEPADATAN KATEGORI -->
+            <!-- CHART 2 -->
             <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
                 <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2 border-b pb-2">
                     <span class="material-symbols-outlined text-[#00509E]">pie_chart</span>
@@ -447,7 +447,7 @@
                 </p>
             </div>
 
-            <!-- CHART 3: TREN WAKTU TUNGGU VS DURASI KONSUL -->
+            <!-- CHART 3 -->
             <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3 flex flex-col justify-between">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b pb-2">
                     <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2">
@@ -491,7 +491,7 @@
                 </p>
             </div>
 
-            <!-- CHART 4: BAR PERFORMA CS -->
+            <!-- CHART 4 -->
             <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
                 <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2 border-b pb-2">
                     <span class="material-symbols-outlined text-purple-600">bar_chart</span>
@@ -651,7 +651,7 @@
                         @foreach($layanans as $lay)
                             @php
                                 /** @var \App\Models\Layanan $lay */
-                                $subCount = optional($lay->getAttribute('subLayanans'))->count() ?? 0;
+                                $subCount = $lay->subLayanans?->count() ?? 0;
                             @endphp
                             <div @click="selectedLayananId = '{{ $lay->id }}'; selectedLayananNama = '{{ addslashes($lay->nama_layanan) }}'" :class="selectedLayananId == '{{ $lay->id }}' ? 'border-[#00509E] bg-[#00509E]/5 ring-2 ring-[#00509E]/20' : 'border-[#E0E3E8]'" class="p-3 border rounded-xl flex items-center justify-between cursor-pointer">
                                 <div><h5 class="font-extrabold text-xs text-[#181C20]">{{ $lay->nama_layanan }}</h5><span class="text-[10px] text-gray-500 font-semibold mt-0.5 block">{{ $subCount }} Sub-Layanan</span></div>
@@ -670,7 +670,7 @@
                         @foreach($layanans as $lay)
                             @php
                                 /** @var \App\Models\Layanan $lay */
-                                $subList = optional($lay->getAttribute('subLayanans'))->all() ?? [];
+                                $subList = $lay->subLayanans?->all() ?? [];
                             @endphp
                             <div x-show="selectedLayananId == '{{ $lay->id }}'" class="space-y-2">
                                 @forelse($subList as $sub)
@@ -691,7 +691,7 @@
 
     </main>
 
-    <!-- MODAL POPUP: DETAIL TIKET ANTREAN & PENANGANAN CS -->
+    <!-- MODAL POPUP: DETAIL TIKET ANTREAN -->
     <div x-show="showModalDetail" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-gray-100" @click.away="showModalDetail = false">
             <div class="flex justify-between items-center border-b pb-3 border-gray-100">
@@ -743,7 +743,7 @@
         </div>
     </div>
 
-    <!-- MODAL POPUP: KUSTOMISASI CETAK PDF INTERAKTIF LENGKAP -->
+    <!-- MODAL POPUP: KUSTOMISASI CETAK PDF -->
     <div x-show="showModalPdf" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-gray-100" @click.away="showModalPdf = false">
             <div class="flex justify-between items-center border-b pb-3 border-gray-100">
@@ -863,7 +863,7 @@
         </div>
     </div>
 
-    <!-- SCRIPTS ENGINES -->
+    <!-- SCRIPTS ENGINES SAFE-LINTER -->
     <script>
         var globalQueueChart = null;
         var globalPieChart = null;
@@ -871,6 +871,8 @@
         var globalSlaTungguChart = null;
         var globalSlaKonsulChart = null;
         var globalBarChart = null;
+
+        var serverPeriod = "{{ request('period', 'all') }}";
 
         function togglePdfCustomDates(val) {
             const container = document.getElementById('pdf_custom_dates_container');
@@ -946,7 +948,7 @@
 
         function chartFilterComponent() {
             return {
-                chartPeriod: '{{ request('period') === 'custom' ? 'custom' : 'last30' }}',
+                chartPeriod: serverPeriod === 'custom' ? 'custom' : 'last30',
                 isMerged: true,
                 allDataSets: {},
                 
