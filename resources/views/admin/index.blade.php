@@ -200,10 +200,10 @@
             </div>
         </div>
 
-        <!-- FORM FILTER SIMPEL DENGAN DATE TO DATE -->
-        <form x-show="activeTab === 'operations'" action="{{ route('admin.dashboard') }}" method="GET" class="bg-white p-4 rounded-2xl border border-[#E0E3E8] shadow-sm flex flex-wrap items-end gap-3 text-xs">
+        <!-- FORM FILTER GLOBAL DENGAN DATE TO DATE (BISA DIGUNAKAN DI OPERATIONS DAN ANALYTICS) -->
+        <form x-show="activeTab === 'operations' || activeTab === 'analytics'" action="{{ route('admin.dashboard') }}" method="GET" class="bg-white p-4 rounded-2xl border border-[#E0E3E8] shadow-sm flex flex-wrap items-end gap-3 text-xs">
             <div class="flex-1 min-w-[200px]">
-                <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Periode Waktu</label>
+                <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Periode Waktu Laporan</label>
                 <select name="period" x-model="selectedPeriod" @change="if(selectedPeriod !== 'custom') $el.form.submit()" class="w-full border border-gray-300 bg-gray-50 rounded-xl p-2 font-bold text-gray-700 focus:border-[#00509E] focus:ring-0 cursor-pointer">
                     <option value="all">Semua Waktu (All Time)</option>
                     <option value="today">Hari Ini (Today)</option>
@@ -215,7 +215,7 @@
                 </select>
             </div>
 
-            <!-- OPSI DATE TO DATE -->
+            <!-- OPSI DATE TO DATE DENGAN INPUT TANGGAL -->
             <template x-if="selectedPeriod === 'custom'">
                 <div class="flex flex-wrap items-center gap-2">
                     <div>
@@ -226,7 +226,7 @@
                         <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Sampai Tanggal (End Date)</label>
                         <input type="date" name="end_date" value="{{ request('end_date', $endDate->format('Y-m-d')) }}" class="border border-gray-300 rounded-xl p-2 font-semibold">
                     </div>
-                    <button type="submit" class="px-3.5 py-2 bg-[#00509E] text-white font-bold rounded-xl flex items-center gap-1 shadow-sm hover:bg-[#003B75]">
+                    <button type="submit" class="px-3.5 py-2 bg-[#00509E] text-white font-bold rounded-xl flex items-center gap-1 shadow-sm hover:bg-[#003B75] cursor-pointer">
                         <span class="material-symbols-outlined text-sm">filter_alt</span> Terapkan
                     </button>
                 </div>
@@ -390,13 +390,6 @@
                         <span class="material-symbols-outlined text-[#00509E]">show_chart</span>
                         1. Grafik Tren Pendaftaran vs Layanan Selesai
                     </h3>
-
-                    <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-xl text-xs font-bold">
-                        <button @click="switchChartPeriod('wtd')" :class="chartPeriod === 'wtd' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">WTD</button>
-                        <button @click="switchChartPeriod('mtd')" :class="chartPeriod === 'mtd' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">MTD</button>
-                        <button @click="switchChartPeriod('mtm')" :class="chartPeriod === 'mtm' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">MTM</button>
-                        <button @click="switchChartPeriod('last30')" :class="chartPeriod === 'last30' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">30 Hari</button>
-                    </div>
                 </div>
 
                 <div class="h-64 sm:h-80 relative">
