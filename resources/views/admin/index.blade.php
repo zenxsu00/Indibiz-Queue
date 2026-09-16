@@ -200,31 +200,35 @@
             </div>
         </div>
 
-        <!-- FORM FILTER SIMPEL -->
-        <form x-show="activeTab === 'operations'" action="{{ route('admin.dashboard') }}" method="GET" class="bg-white p-4 rounded-2xl border border-[#E0E3E8] shadow-sm flex flex-wrap items-center gap-3 text-xs">
+        <!-- FORM FILTER SIMPEL DENGAN DATE TO DATE -->
+        <form x-show="activeTab === 'operations'" action="{{ route('admin.dashboard') }}" method="GET" class="bg-white p-4 rounded-2xl border border-[#E0E3E8] shadow-sm flex flex-wrap items-end gap-3 text-xs">
             <div class="flex-1 min-w-[200px]">
                 <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Periode Waktu</label>
-                <select name="period" x-model="selectedPeriod" @change="$el.form.submit()" class="w-full border border-gray-300 bg-gray-50 rounded-xl p-2 font-bold text-gray-700 focus:border-[#00509E] focus:ring-0 cursor-pointer">
+                <select name="period" x-model="selectedPeriod" @change="if(selectedPeriod !== 'custom') $el.form.submit()" class="w-full border border-gray-300 bg-gray-50 rounded-xl p-2 font-bold text-gray-700 focus:border-[#00509E] focus:ring-0 cursor-pointer">
                     <option value="all">Semua Waktu (All Time)</option>
                     <option value="today">Hari Ini (Today)</option>
                     <option value="wtd">Minggu Ini (WTD)</option>
                     <option value="mtd">Bulan Ini (MTD)</option>
                     <option value="last_30">30 Hari Terakhir</option>
                     <option value="ytd">Tahun Ini (YTD)</option>
-                    <option value="custom">Kustom Tanggal...</option>
+                    <option value="custom">Rentang Tanggal (Date to Date)...</option>
                 </select>
             </div>
 
+            <!-- OPSI DATE TO DATE -->
             <template x-if="selectedPeriod === 'custom'">
                 <div class="flex flex-wrap items-center gap-2">
                     <div>
-                        <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Dari Tanggal</label>
+                        <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Dari Tanggal (Start Date)</label>
                         <input type="date" name="start_date" value="{{ request('start_date', $startDate->format('Y-m-d')) }}" class="border border-gray-300 rounded-xl p-2 font-semibold">
                     </div>
                     <div>
-                        <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Sampai Tanggal</label>
+                        <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Sampai Tanggal (End Date)</label>
                         <input type="date" name="end_date" value="{{ request('end_date', $endDate->format('Y-m-d')) }}" class="border border-gray-300 rounded-xl p-2 font-semibold">
                     </div>
+                    <button type="submit" class="px-3.5 py-2 bg-[#00509E] text-white font-bold rounded-xl flex items-center gap-1 shadow-sm hover:bg-[#003B75]">
+                        <span class="material-symbols-outlined text-sm">filter_alt</span> Terapkan
+                    </button>
                 </div>
             </template>
 
@@ -239,7 +243,7 @@
             </div>
 
             @if(request('period') || request('layanan_id') || request('start_date'))
-                <div class="self-end pb-0.5">
+                <div class="pb-0.5">
                     <a href="{{ route('admin.dashboard') }}" class="px-3 py-2 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl font-bold flex items-center gap-1 hover:bg-rose-100 transition-all">
                         <span class="material-symbols-outlined text-sm">restart_alt</span> Reset
                     </a>
@@ -255,7 +259,6 @@
                 <span class="material-symbols-outlined text-[#00509E] text-2xl">insights</span>
                 <div class="flex-1">
                     <span class="text-[10px] font-black text-gray-400 uppercase block">Ringkasan Eksekutif Analisis Otomatis</span>
-                    <!-- ID PELACAK: summary-content-source -->
                     <p id="summary-content-source" class="text-xs font-semibold text-gray-800">
                         {!! preg_replace('/\*\*(.*?)\*\*/', '<strong>$1</strong>', $analisisOtomatis['status_tiket'] ?? '') !!}
                     </p>
@@ -725,7 +728,6 @@
                 <button @click="showModalPdf = false" class="text-gray-400 hover:text-gray-600"><span class="material-symbols-outlined">close</span></button>
             </div>
 
-            <!-- FUNGSI ONSUBMIT JS UNTUK MENG-CAPTURE SEMUA GRAFIK -->
             <form action="{{ route('admin.pdf') }}" method="GET" target="_blank" class="space-y-4 text-xs" onsubmit="return preparePdfSubmit(event)">
                 
                 <div class="space-y-2">
@@ -736,16 +738,16 @@
                         <option value="mtd" selected>Bulan Ini (MTD)</option>
                         <option value="last_30">30 Hari Terakhir</option>
                         <option value="ytd">Tahun Ini (YTD)</option>
-                        <option value="custom">Kustom Tanggal Spesifik...</option>
+                        <option value="custom">Rentang Tanggal (Date to Date)...</option>
                     </select>
 
                     <div id="pdf_custom_dates_container" class="hidden grid-cols-2 gap-2 pt-1">
                         <div>
-                            <label class="text-[10px] font-bold text-gray-400 uppercase">Dari Tanggal</label>
+                            <label class="text-[10px] font-bold text-gray-400 uppercase">Dari Tanggal (Start Date)</label>
                             <input type="date" name="start_date" value="{{ request('start_date', $startDate->format('Y-m-d')) }}" class="w-full p-2 border border-gray-300 rounded-lg">
                         </div>
                         <div>
-                            <label class="text-[10px] font-bold text-gray-400 uppercase">Sampai Tanggal</label>
+                            <label class="text-[10px] font-bold text-gray-400 uppercase">Sampai Tanggal (End Date)</label>
                             <input type="date" name="end_date" value="{{ request('end_date', $endDate->format('Y-m-d')) }}" class="w-full p-2 border border-gray-300 rounded-lg">
                         </div>
                     </div>
@@ -772,7 +774,6 @@
                             <input type="checkbox" name="inc_charts" value="1" checked class="rounded text-[#00509E] w-4 h-4">
                             <span class="font-bold text-gray-800">Sertakan Visualisasi Grafik Analitik (Line & Pie Chart)</span>
                         </label>
-                        <!-- OPSI TAMBAHAN SLA & CS BAR -->
                         <label class="flex items-center gap-2.5 cursor-pointer">
                             <input type="checkbox" name="inc_sla_charts" value="1" checked class="rounded text-[#00509E] w-4 h-4">
                             <span class="font-bold text-gray-800">Sertakan Tren Waktu Tunggu vs Durasi Konsul CS</span>
@@ -781,7 +782,6 @@
                             <input type="checkbox" name="inc_cs_chart" value="1" checked class="rounded text-[#00509E] w-4 h-4">
                             <span class="font-bold text-gray-800">Sertakan Performa Produktivitas Staf CS</span>
                         </label>
-                        <!-- BATAS OPSI -->
                         <label class="flex items-center gap-2.5 cursor-pointer">
                             <input type="checkbox" name="inc_table" value="1" checked class="rounded text-[#00509E] w-4 h-4">
                             <span class="font-bold text-gray-800">Sertakan Tabel Detail Rincian Tiket Antrean</span>
@@ -858,7 +858,6 @@
             }
         }
 
-        // FUNGSI PENTING: HITUNG TANGGAL OTOMATIS & BACKUP IMAGE CHART
         function preparePdfSubmit(event) {
             const period = document.getElementById('pdf_period_select').value;
             const startInput = document.querySelector('input[name="start_date"]');
@@ -890,11 +889,9 @@
                 if(endInput) endInput.value = formatDate(today);
             }
 
-            // SIMPAN DATA SUMMARY TEKS
             const summarySrc = document.getElementById('summary-content-source');
             localStorage.setItem('pdf_summary_data', summarySrc ? summarySrc.innerHTML : '');
 
-            // FOTO SEMUA DATA GRAFIK
             const lineCanvas = document.getElementById('queueChart');
             const pieCanvas = document.getElementById('categoryPieChart');
             const slaMerged = document.getElementById('slaMergedChart');
@@ -910,7 +907,6 @@
             localStorage.setItem('pdf_sla_konsul_data', slaKonsul ? slaKonsul.toDataURL('image/png') : '');
             localStorage.setItem('pdf_cs_bar_data', csBar ? csBar.toDataURL('image/png') : '');
 
-            // Cek apakah Mode SLA yang sedang aktif (terlihat) adalah Mode Gabung atau Pisah
             const isMergedVisible = slaMerged && slaMerged.offsetParent !== null;
             localStorage.setItem('pdf_sla_is_merged', isMergedVisible ? '1' : '0');
 
