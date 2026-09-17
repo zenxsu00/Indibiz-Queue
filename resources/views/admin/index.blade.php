@@ -457,7 +457,7 @@
                             <th class="p-3.5 text-center">Dilayani</th>
                             <th class="p-3.5 text-center">Selesai</th>
                             <th class="p-3.5 text-center">Menunggu</th>
-                            <th class="p-3.5">Tipe Layanan (A-B-C-D)</th>
+                            <th class="p-3.5">Breakdown Tipe Layanan</th>
                             <th class="p-3.5 text-right">Omset</th>
                         </tr>
                     </thead>
@@ -470,15 +470,17 @@
                                 <td class="p-3.5 text-center"><span class="px-2.5 py-1 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800" x-text="row.sudah_diproses"></span></td>
                                 <td class="p-3.5 text-center"><span class="px-2.5 py-1 rounded-full text-[11px] font-black bg-amber-100 text-amber-800" x-text="row.belum_diproses"></span></td>
                                 <td class="p-3.5">
-                                    <div class="flex flex-wrap gap-1 max-w-[280px]">
+                                    <div class="flex flex-wrap items-center gap-1.5">
                                         <template x-if="row.breakdown_layanan && row.breakdown_layanan.length > 0">
                                             <template x-for="(item, bIdx) in row.breakdown_layanan" :key="bIdx">
-                                                <span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[10px] font-semibold border border-gray-200">
-                                                    <span x-text="item.nama"></span>: <strong x-text="item.jumlah"></strong>
+                                                <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded-lg text-[10px] font-semibold border border-gray-200 shadow-sm whitespace-nowrap">
+                                                    <span x-text="item.nama"></span>: <strong class="text-[#00509E]" x-text="item.jumlah"></strong>
                                                 </span>
                                             </template>
                                         </template>
-                                        <template x-if="!row.breakdown_layanan || row.breakdown_layanan.length === 0"><span class="text-gray-400 italic text-[10px]">-</span></template>
+                                        <template x-if="!row.breakdown_layanan || row.breakdown_layanan.length === 0">
+                                            <span class="text-gray-400 italic text-[10px]">-</span>
+                                        </template>
                                     </div>
                                 </td>
                                 <td class="p-3.5 text-right font-black text-[#181C20]" x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(row.total_omset)"></td>
