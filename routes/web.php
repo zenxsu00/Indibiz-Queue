@@ -80,10 +80,12 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/admin/sub-layanan/store', [AdminController::class, 'storeSubLayanan'])->name('admin.sub_layanan.store');
         Route::delete('/admin/sub-layanan/delete/{id}', [AdminController::class, 'destroySubLayanan'])->name('admin.sub_layanan.destroy');
 
-        // CRUD Staff CS
-        Route::post('/admin/staff/store', [StaffManagementController::class, 'storeUser'])->name('admin.staff.store');
-        Route::post('/admin/staff/update-status/{id}', [StaffManagementController::class, 'updateStatusUser'])->name('admin.staff.update_status');
-        Route::delete('/admin/staff/delete/{id}', [StaffManagementController::class, 'destroyUser'])->name('admin.staff.delete');
+        // CRUD Staff CS & Admin Akun
+        Route::post('/admin/staff/store', [AdminController::class, 'storeStaff'])->name('admin.staff.store');
+        Route::post('/admin/staff/update/{id}', [AdminController::class, 'updateStaff'])->name('admin.staff.update');
+        Route::post('/admin/staff/password/{id}', [AdminController::class, 'updatePasswordStaff'])->name('admin.staff.password');
+        Route::post('/admin/staff/toggle/{id}', [AdminController::class, 'toggleStaffStatus'])->name('admin.staff.toggle');
+        Route::delete('/admin/staff/delete/{id}', [AdminController::class, 'destroyStaff'])->name('admin.staff.delete');
 
         // CRUD Master Meja
         Route::post('/admin/meja/store', [StaffManagementController::class, 'storeMeja'])->name('admin.meja.store');

@@ -10,6 +10,7 @@ use App\Models\MasterMeja;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Hash;
 use stdClass;
 
 class AdminController extends Controller
@@ -352,35 +353,36 @@ class AdminController extends Controller
             return $item;
         })->sortByDesc('total')->values();
 
-        // Staf CS & Meja
-        $usersCS = User::where('role', 'cs')->get();
+        // Staf CS & Meja (Diperbarui untuk mengakomodasi Admin)
+        $allUsers = User::orderBy('role', 'asc')->get();
         $mejaCs  = [];
 
-        foreach ($usersCS as $cs) {
+        foreach ($allUsers as $u) {
             $tiketAktif = TiketAntrian::with(['layanan', 'subLayanan'])
-                ->where('user_id', $cs->id)
+                ->where('user_id', $u->id)
                 ->where('status', 'Diproses')
                 ->whereDate('waktu_dibuat', Carbon::today('Asia/Jakarta'))
                 ->first();
 
-            $querySelesai = TiketAntrian::where('user_id', $cs->id)->where('status', 'Selesai');
+            $querySelesai = TiketAntrian::where('user_id', $u->id)->where('status', 'Selesai');
             if ($startDate && $endDate) {
                 $querySelesai->whereBetween('waktu_dibuat', [$startDate, $endDate]);
             }
             $totalSelesai = $querySelesai->count();
 
             $statusText = 'Offline';
-            if ($cs->is_active) {
+            if ($u->is_active) {
                 $statusText = $tiketAktif ? 'Melayani Pelanggan' : 'Aktif';
             }
 
             $stafObj = new stdClass();
-            $stafObj->id             = $cs->id;
-            $stafObj->inisial        = strtoupper(substr($cs->nama_lengkap, 0, 2));
-            $stafObj->nama           = $cs->nama_lengkap;
-            $stafObj->nomor_meja     = str_pad((string)($cs->nomor_meja ?? 0), 2, '0', STR_PAD_LEFT);
-            $stafObj->is_active      = (bool) $cs->is_active;
+            $stafObj->id             = $u->id;
+            $stafObj->inisial        = strtoupper(substr($u->nama_lengkap, 0, 2));
+            $stafObj->nama           = $u->nama_lengkap;
+            $stafObj->nomor_meja     = str_pad((string)($u->nomor_meja ?? 0), 2, '0', STR_PAD_LEFT);
+            $stafObj->is_active      = (bool) $u->is_active;
             $stafObj->status         = $statusText;
+            $stafObj->role           = strtoupper($u->role);
             $stafObj->tiket_aktif    = $tiketAktif ? $tiketAktif->nomor_antrian : '-';
             $stafObj->layanan_aktif  = $tiketAktif ? $tiketAktif->layanan->nama_layanan : '-';
             $stafObj->total_dilayani = $totalSelesai;
@@ -398,7 +400,7 @@ class AdminController extends Controller
         return view('admin.index', compact(
             'totalHariIni', 'menunggu', 'ditransfer', 'noShowCount', 'avgSla', 'avgDurasiLayananText', 
             'avgWaktuTungguText', 'avgRating', 'totalOmset', 'distribusiLayanan', 
-            'statusRatioData', 'analisisOtomatis', 'mejaCs', 'usersCS', 
+            'statusRatioData', 'analisisOtomatis', 'mejaCs', 'allUsers', 
             'masterMejas', 'allFilteredTickets', 'chartDataSets', 
             'layananId', 'layanans', 'historyBulanan'
         ))->with([
@@ -465,7 +467,6 @@ class AdminController extends Controller
         $tickets    = $query->orderBy('waktu_dibuat', 'asc')->get();
         $totalOmset = $tickets->where('status', 'Selesai')->sum('nominal_pembayaran');
 
-        // Menggunakan $request->boolean() agar checkbox yang di-uncheck menghasilkan nilai false (0)
         $includeSummary   = $request->boolean('inc_summary');
         $includeCharts    = $request->boolean('inc_charts');
         $includeSlaCharts = $request->boolean('inc_sla_charts');
@@ -543,5 +544,77 @@ class AdminController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    // -------------------------------------------------------------
+    // FUNGSI MANAJEMEN AKUN (TAMBAH, EDIT, HAPUS)
+    // -------------------------------------------------------------
+    public function storeStaff(Request $request)
+    {
+        $request->validate([
+            'nama_lengkap' => 'required|string|max:255',
+            'username'     => 'required|string|max:255|unique:users',
+            'password'     => 'required|string|min:6',
+            'role'         => 'required|in:admin,cs'
+        ]);
+
+        User::create([
+            'nama_lengkap' => $request->nama_lengkap,
+            'username'     => $request->username,
+            'password'     => Hash::make($request->password),
+            'role'         => $request->role,
+            'is_active'    => true,
+            'nomor_meja'   => 0
+        ]);
+
+        return back()->with('success', 'Akun pengguna berhasil ditambahkan.');
+    }
+
+    public function updateStaff(Request $request, $id)
+    {
+        $request->validate([
+            'nama_lengkap' => 'required|string|max:255',
+            'username'     => 'required|string|max:255|unique:users,username,'.$id,
+            'role'         => 'required|in:admin,cs'
+        ]);
+
+        $user = User::findOrFail($id);
+        $user->update([
+            'nama_lengkap' => $request->nama_lengkap,
+            'username'     => $request->username,
+            'role'         => $request->role,
+        ]);
+
+        return back()->with('success', 'Detail profil akun berhasil diperbarui.');
+    }
+
+    public function updatePasswordStaff(Request $request, $id)
+    {
+        $request->validate([
+            'password' => 'required|string|min:6'
+        ]);
+
+        $user = User::findOrFail($id);
+        $user->update(['password' => Hash::make($request->password)]);
+
+        return back()->with('success', 'Password akun berhasil diganti.');
+    }
+
+    public function toggleStaffStatus($id)
+    {
+        $user = User::findOrFail($id);
+        $user->is_active = !$user->is_active;
+        $user->save();
+
+        $statusStr = $user->is_active ? 'diaktifkan' : 'ditangguhkan (disable)';
+        return back()->with('success', "Akun berhasil {$statusStr}.");
+    }
+
+    public function destroyStaff($id)
+    {
+        $user = User::findOrFail($id);
+        $user->delete();
+
+        return back()->with('success', 'Akun pengguna berhasil dihapus permanen.');
     }
 }
