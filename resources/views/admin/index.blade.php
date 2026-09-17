@@ -20,13 +20,16 @@
       x-data="{ 
           activeTab: 'operations', 
           mobileMenu: false, 
-          showModalCS: false, 
+          showModalAkun: false, 
+          showModalEditAkun: false,
+          showModalPassAkun: false,
           showModalMeja: false, 
           showModalLayanan: false,
           showModalSubLayanan: false,
           showModalDetail: false,
           showModalPdf: false,
           selectedTiket: null,
+          selectedUser: null,
           selectedPeriod: '{{ request('period', 'all') }}',
           selectedLayananId: '{{ $layanans->first()?->id ?? '' }}',
           selectedLayananNama: '{{ addslashes($layanans->first()?->nama_layanan ?? '') }}'
@@ -53,41 +56,16 @@
                 </button>
             </div>
             <nav class="space-y-2">
-                <button @click="activeTab = 'operations'; mobileMenu = false" 
-                    :class="activeTab === 'operations' ? 'bg-white/20 text-white' : 'text-white/70'"
-                    class="w-full flex items-center p-3 font-bold rounded-xl text-xs gap-3">
-                    <span class="material-symbols-outlined">dashboard</span> Operations
-                </button>
-                <button @click="activeTab = 'analytics'; mobileMenu = false" 
-                    :class="activeTab === 'analytics' ? 'bg-white/20 text-white' : 'text-white/70'"
-                    class="w-full flex items-center p-3 font-bold rounded-xl text-xs gap-3">
-                    <span class="material-symbols-outlined">analytics</span> Analitik & Grafik
-                </button>
-                <button @click="activeTab = 'history'; mobileMenu = false" 
-                    :class="activeTab === 'history' ? 'bg-white/20 text-white' : 'text-white/70'"
-                    class="w-full flex items-center p-3 font-bold rounded-xl text-xs gap-3">
-                    <span class="material-symbols-outlined">history</span> Riwayat Bulanan
-                </button>
-                <button @click="activeTab = 'staff'; mobileMenu = false" 
-                    :class="activeTab === 'staff' ? 'bg-white/20 text-white' : 'text-white/70'"
-                    class="w-full flex items-center p-3 font-bold rounded-xl text-xs gap-3">
-                    <span class="material-symbols-outlined">badge</span> Staff & Meja Monitor
-                </button>
-                <button @click="activeTab = 'master_layanan'; mobileMenu = false" 
-                    :class="activeTab === 'master_layanan' ? 'bg-white/20 text-white' : 'text-white/70'"
-                    class="w-full flex items-center p-3 font-bold rounded-xl text-xs gap-3">
-                    <span class="material-symbols-outlined">category</span> Kelola Layanan
-                </button>
-
-                <a href="{{ route('cs.select-meja') }}" class="w-full flex items-center p-3 font-bold rounded-xl text-xs gap-3 bg-amber-500 text-white shadow-sm mt-4">
-                    <span class="material-symbols-outlined">swap_horiz</span> Switch ke CS Console
-                </a>
+                <button @click="activeTab = 'operations'; mobileMenu = false" :class="activeTab === 'operations' ? 'bg-white/20 text-white' : 'text-white/70'" class="w-full flex items-center p-3 font-bold rounded-xl text-xs gap-3"><span class="material-symbols-outlined">dashboard</span> Operations</button>
+                <button @click="activeTab = 'analytics'; mobileMenu = false" :class="activeTab === 'analytics' ? 'bg-white/20 text-white' : 'text-white/70'" class="w-full flex items-center p-3 font-bold rounded-xl text-xs gap-3"><span class="material-symbols-outlined">analytics</span> Analitik & Grafik</button>
+                <button @click="activeTab = 'history'; mobileMenu = false" :class="activeTab === 'history' ? 'bg-white/20 text-white' : 'text-white/70'" class="w-full flex items-center p-3 font-bold rounded-xl text-xs gap-3"><span class="material-symbols-outlined">history</span> Riwayat Bulanan</button>
+                <button @click="activeTab = 'staff'; mobileMenu = false" :class="activeTab === 'staff' ? 'bg-white/20 text-white' : 'text-white/70'" class="w-full flex items-center p-3 font-bold rounded-xl text-xs gap-3"><span class="material-symbols-outlined">badge</span> Monitoring Akun & Meja</button>
+                <button @click="activeTab = 'master_layanan'; mobileMenu = false" :class="activeTab === 'master_layanan' ? 'bg-white/20 text-white' : 'text-white/70'" class="w-full flex items-center p-3 font-bold rounded-xl text-xs gap-3"><span class="material-symbols-outlined">category</span> Kelola Layanan</button>
+                <a href="{{ route('cs.select-meja') }}" class="w-full flex items-center p-3 font-bold rounded-xl text-xs gap-3 bg-amber-500 text-white shadow-sm mt-4"><span class="material-symbols-outlined">swap_horiz</span> Switch ke CS Console</a>
             </nav>
             <form action="{{ route('logout') }}" method="POST" class="pt-2 border-t border-white/10">
                 @csrf
-                <button type="submit" class="w-full py-2.5 bg-[#EE2E24] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5">
-                    <span class="material-symbols-outlined text-base">logout</span> Keluar Sistem
-                </button>
+                <button type="submit" class="w-full py-2.5 bg-[#EE2E24] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5"><span class="material-symbols-outlined text-base">logout</span> Keluar Sistem</button>
             </form>
         </div>
     </div>
@@ -104,46 +82,14 @@
             </div>
 
             <nav class="py-4 space-y-1.5 px-3">
-                <button @click="activeTab = 'operations'" 
-                    :class="activeTab === 'operations' ? 'bg-white/20 text-white shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'"
-                    class="w-full flex items-center px-3.5 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer">
-                    <span class="material-symbols-outlined mr-3 text-lg">dashboard</span> 
-                    <span>Operations</span>
-                </button>
-
-                <button @click="activeTab = 'analytics'" 
-                    :class="activeTab === 'analytics' ? 'bg-white/20 text-white shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'"
-                    class="w-full flex items-center px-3.5 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer">
-                    <span class="material-symbols-outlined mr-3 text-lg">analytics</span> 
-                    <span>Analitik & Grafik</span>
-                </button>
-
-                <button @click="activeTab = 'history'" 
-                    :class="activeTab === 'history' ? 'bg-white/20 text-white shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'"
-                    class="w-full flex items-center px-3.5 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer">
-                    <span class="material-symbols-outlined mr-3 text-lg">history</span> 
-                    <span>Riwayat Bulanan</span>
-                </button>
-
-                <button @click="activeTab = 'staff'" 
-                    :class="activeTab === 'staff' ? 'bg-white/20 text-white shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'"
-                    class="w-full flex items-center px-3.5 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer">
-                    <span class="material-symbols-outlined mr-3 text-lg">badge</span> 
-                    <span>Staff & Meja Monitor</span>
-                </button>
-
-                <button @click="activeTab = 'master_layanan'" 
-                    :class="activeTab === 'master_layanan' ? 'bg-white/20 text-white shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'"
-                    class="w-full flex items-center px-3.5 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer">
-                    <span class="material-symbols-outlined mr-3 text-lg">category</span> 
-                    <span>Kelola Layanan</span>
-                </button>
+                <button @click="activeTab = 'operations'" :class="activeTab === 'operations' ? 'bg-white/20 text-white shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'" class="w-full flex items-center px-3.5 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer"><span class="material-symbols-outlined mr-3 text-lg">dashboard</span> <span>Operations</span></button>
+                <button @click="activeTab = 'analytics'" :class="activeTab === 'analytics' ? 'bg-white/20 text-white shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'" class="w-full flex items-center px-3.5 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer"><span class="material-symbols-outlined mr-3 text-lg">analytics</span> <span>Analitik & Grafik</span></button>
+                <button @click="activeTab = 'history'" :class="activeTab === 'history' ? 'bg-white/20 text-white shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'" class="w-full flex items-center px-3.5 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer"><span class="material-symbols-outlined mr-3 text-lg">history</span> <span>Riwayat Bulanan</span></button>
+                <button @click="activeTab = 'staff'" :class="activeTab === 'staff' ? 'bg-white/20 text-white shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'" class="w-full flex items-center px-3.5 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer"><span class="material-symbols-outlined mr-3 text-lg">badge</span> <span>Monitoring Akun & Meja</span></button>
+                <button @click="activeTab = 'master_layanan'" :class="activeTab === 'master_layanan' ? 'bg-white/20 text-white shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'" class="w-full flex items-center px-3.5 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer"><span class="material-symbols-outlined mr-3 text-lg">category</span> <span>Kelola Layanan</span></button>
 
                 <div class="pt-4 border-t border-white/10 mt-3">
-                    <a href="{{ route('cs.select-meja') }}" class="w-full flex items-center px-3.5 py-2.5 text-xs font-bold rounded-xl bg-amber-500 hover:bg-amber-600 text-white transition-all shadow-sm">
-                        <span class="material-symbols-outlined mr-2.5 text-lg">swap_horiz</span>
-                        <span>Switch ke CS Console</span>
-                    </a>
+                    <a href="{{ route('cs.select-meja') }}" class="w-full flex items-center px-3.5 py-2.5 text-xs font-bold rounded-xl bg-amber-500 hover:bg-amber-600 text-white transition-all shadow-sm"><span class="material-symbols-outlined mr-2.5 text-lg">swap_horiz</span><span>Switch ke CS Console</span></a>
                 </div>
             </nav>
         </div>
@@ -151,10 +97,7 @@
         <div class="p-3.5 border-t border-white/10">
             <form action="{{ route('logout') }}" method="POST">
                 @csrf
-                <button type="submit" class="w-full py-2.5 bg-[#EE2E24] hover:bg-[#CE1111] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer">
-                    <span class="material-symbols-outlined text-base">logout</span>
-                    <span>Keluar Sistem</span>
-                </button>
+                <button type="submit" class="w-full py-2.5 bg-[#EE2E24] hover:bg-[#CE1111] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"><span class="material-symbols-outlined text-base">logout</span><span>Keluar Sistem</span></button>
             </form>
         </div>
     </aside>
@@ -183,7 +126,7 @@
                     activeTab === 'operations' ? 'Operations Dashboard' : 
                     (activeTab === 'analytics' ? 'Analitik Tren & Kepadatan Layanan' : 
                     (activeTab === 'history' ? 'Riwayat Operasional & Rekap Omset' : 
-                    (activeTab === 'staff' ? 'Monitoring Staf CS & Slot Meja' : 'Kelola Master Layanan & Sub-Layanan')))
+                    (activeTab === 'staff' ? 'Monitoring Akun & Meja' : 'Kelola Master Layanan & Sub-Layanan')))
                 "></h2>
                 <p class="text-xs text-[#5D3F3B] mt-0.5">
                     Pemantauan metrik antrean, rekapitulasi data, serta konfigurasi layanan secara real-time.
@@ -252,7 +195,6 @@
 
         <!-- TAB 1: OPERATIONS -->
         <div x-show="activeTab === 'operations'" class="space-y-6">
-            
             <!-- RINGKASAN ANALISIS OTOMATIS TREN OPERASIONAL -->
             <div class="bg-white p-4 rounded-2xl border border-[#E0E3E8] shadow-sm flex items-center gap-3">
                 <span class="material-symbols-outlined text-[#00509E] text-2xl">insights</span>
@@ -274,7 +216,6 @@
                     <span class="text-[10px] text-[#5D3F3B] font-extrabold uppercase tracking-wider block mb-1">Total Antrean</span>
                     <span class="text-2xl lg:text-3xl font-black text-[#181C20]">{{ number_format($totalHariIni) }}</span>
                 </div>
-
                 <div class="bg-white border border-[#E0E3E8] rounded-2xl p-4 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1.5 bg-amber-500"></div>
                     <div class="flex justify-between items-center mb-1">
@@ -285,7 +226,6 @@
                     </div>
                     <span class="text-2xl lg:text-3xl font-black text-[#181C20]">{{ number_format($menunggu) }}</span>
                 </div>
-
                 <div class="bg-white border border-[#E0E3E8] rounded-2xl p-4 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1.5 bg-blue-500"></div>
                     <div class="flex justify-between items-center mb-1">
@@ -294,7 +234,6 @@
                     </div>
                     <span class="text-xl lg:text-2xl font-black text-blue-600">{{ $avgWaktuTungguText }}</span>
                 </div>
-
                 <div class="bg-white border border-[#E0E3E8] rounded-2xl p-4 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1.5 bg-emerald-500"></div>
                     <div class="flex justify-between items-center mb-1">
@@ -303,7 +242,6 @@
                     </div>
                     <span class="text-xl lg:text-2xl font-black text-emerald-600">{{ $avgDurasiLayananText }}</span>
                 </div>
-
                 <div class="bg-white border border-[#E0E3E8] rounded-2xl p-4 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1.5 bg-purple-600"></div>
                     <div class="flex justify-between items-center mb-1">
@@ -320,7 +258,6 @@
                     <h3 class="text-xs font-black uppercase tracking-wider text-[#181C20]">Data Transaksi & Tiket Antrean</h3>
                     <span class="text-xs text-gray-400 font-semibold">Total {{ $allFilteredTickets->count() }} Data</span>
                 </div>
-
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-xs">
                         <thead class="bg-[#F8F9FA] border-b border-[#E0E3E8] text-gray-500 font-black uppercase text-[10px]">
@@ -328,7 +265,7 @@
                                 <th class="p-3">Kode Tiket</th>
                                 <th class="p-3">Pelanggan</th>
                                 <th class="p-3">Kategori & Sub-Layanan</th>
-                                <th class="p-3">CS / Loket</th>
+                                <th class="p-3">Akun Petugas</th>
                                 <th class="p-3">Waktu Ambil</th>
                                 <th class="p-3">Status</th>
                                 <th class="p-3">Catatan CS & Solusi</th>
@@ -356,18 +293,12 @@
                                             ($tiket->status === 'Batal' ? 'bg-red-100 text-red-700' : 
                                             ($tiket->status === 'No Show' ? 'bg-purple-100 text-purple-700' : 
                                             ($tiket->status === 'Ditransfer' ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'))) 
-                                        }}">
-                                            {{ $tiket->status }}
-                                        </span>
+                                        }}">{{ $tiket->status }}</span>
                                     </td>
-                                    <td class="p-3 text-gray-600 max-w-[200px] truncate" title="{{ $tiket->catatan_cs ?? $tiket->ringkasan_solusi ?? '-' }}">
-                                        {{ $tiket->catatan_cs ?? $tiket->ringkasan_solusi ?? '-' }}
-                                    </td>
+                                    <td class="p-3 text-gray-600 max-w-[200px] truncate" title="{{ $tiket->catatan_cs ?? $tiket->ringkasan_solusi ?? '-' }}">{{ $tiket->catatan_cs ?? $tiket->ringkasan_solusi ?? '-' }}</td>
                                     <td class="p-3 text-right font-black text-[#181C20]">Rp {{ number_format($tiket->nominal_pembayaran, 0, ',', '.') }}</td>
                                     <td class="p-3 text-center">
-                                        <button @click="selectedTiket = {{ json_encode($tiket) }}; showModalDetail = true" class="px-2.5 py-1 bg-[#00509E]/10 text-[#00509E] hover:bg-[#00509E] hover:text-white rounded-lg font-bold text-[10px] transition-all cursor-pointer">
-                                            Detail
-                                        </button>
+                                        <button @click="selectedTiket = {{ json_encode($tiket) }}; showModalDetail = true" class="px-2.5 py-1 bg-[#00509E]/10 text-[#00509E] hover:bg-[#00509E] hover:text-white rounded-lg font-bold text-[10px] transition-all cursor-pointer">Detail</button>
                                     </td>
                                 </tr>
                             @empty
@@ -381,22 +312,15 @@
 
         <!-- TAB 2: ANALITIK LAYANAN -->
         <div x-show="activeTab === 'analytics'" x-data="chartFilterComponent()" class="space-y-6">
-            
-            <!-- BUTTON BAR FILTER TANGGAL KHUSUS TAB ANALITIK -->
+            <!-- Filter Analytics -->
             <div class="bg-white p-4 rounded-2xl border border-[#E0E3E8] shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                <div class="flex items-center gap-2">
-                    <span class="material-symbols-outlined text-[#00509E]">tune</span>
-                    <span class="text-xs font-black uppercase tracking-wider text-[#181C20]">Filter Periode Grafik Analitik</span>
-                </div>
-
+                <div class="flex items-center gap-2"><span class="material-symbols-outlined text-[#00509E]">tune</span><span class="text-xs font-black uppercase tracking-wider text-[#181C20]">Filter Periode Grafik Analitik</span></div>
                 <div class="flex flex-wrap items-center gap-1.5 bg-gray-100 p-1 rounded-xl text-xs font-bold w-full md:w-auto">
                     <button type="button" @click="switchChartPeriod('wtd')" :class="chartPeriod === 'wtd' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">WTD</button>
                     <button type="button" @click="switchChartPeriod('mtd')" :class="chartPeriod === 'mtd' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">MTD</button>
                     <button type="button" @click="switchChartPeriod('mtm')" :class="chartPeriod === 'mtm' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">MTM</button>
                     <button type="button" @click="switchChartPeriod('last30')" :class="chartPeriod === 'last30' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">30 Hari</button>
-                    <button type="button" @click="switchChartPeriod('custom')" :class="chartPeriod === 'custom' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1">
-                        <span class="material-symbols-outlined text-xs">calendar_today</span> Date to Date
-                    </button>
+                    <button type="button" @click="switchChartPeriod('custom')" :class="chartPeriod === 'custom' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1"><span class="material-symbols-outlined text-xs">calendar_today</span> Date to Date</button>
                 </div>
             </div>
 
@@ -416,93 +340,64 @@
                 </button>
             </form>
 
-            <!-- LINE CHART 1 -->
-            <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm">
-                <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-100">
-                    <h3 class="text-sm font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2">
-                        <span class="material-symbols-outlined text-[#00509E]">show_chart</span>
-                        1. Grafik Tren Pendaftaran vs Layanan Selesai
-                    </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- CHART 1 -->
+                <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm">
+                    <h3 class="text-sm font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2 mb-4 border-b pb-3"><span class="material-symbols-outlined text-[#00509E]">show_chart</span>1. Pendaftaran vs Selesai</h3>
+                    <div class="h-64 relative"><canvas id="queueChart" data-chart-sets='{{ json_encode($chartDataSets ?? []) }}'></canvas></div>
                 </div>
-
-                <div class="h-64 sm:h-80 relative">
-                    <canvas id="queueChart" data-chart-sets='{{ json_encode($chartDataSets ?? []) }}'></canvas>
+                <!-- CHART 2 -->
+                <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
+                    <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2 border-b pb-2"><span class="material-symbols-outlined text-[#00509E]">pie_chart</span>2. Kepadatan Kategori Layanan</h3>
+                    <div class="h-64 relative"><canvas id="categoryPieChart" data-dist='{{ json_encode($distribusiLayanan ?? []) }}'></canvas></div>
                 </div>
-                <p class="text-[11px] text-gray-500 italic mt-3 border-t pt-2">
-                    💡 **Penjelasan:** Menampilkan fluktuasi harian antara tiket yang masuk dibandingkan tiket yang berhasil diselesaikan oleh staf loket CS.
-                </p>
-            </div>
-
-            <!-- CHART 2 -->
-            <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
-                <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2 border-b pb-2">
-                    <span class="material-symbols-outlined text-[#00509E]">pie_chart</span>
-                    2. Proporsi Kepadatan Kategori Layanan
-                </h3>
-                <div class="h-72 sm:h-80 relative flex justify-center items-center py-2">
-                    <canvas id="categoryPieChart" data-dist='{{ json_encode($distribusiLayanan ?? []) }}'></canvas>
-                </div>
-                <p class="text-[10px] text-gray-500 italic border-t pt-2">
-                    💡 **Penjelasan:** Mengukur kategori mana yang paling mendominasi beban kerja loket pelayanan Indibiz.
-                </p>
             </div>
 
             <!-- CHART 3 -->
             <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3 flex flex-col justify-between">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b pb-2">
-                    <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2">
-                        <span class="material-symbols-outlined text-blue-600">timeline</span>
-                        3. Tren Waktu Tunggu vs Durasi Konsul CS (Estimasi Rata-Rata)
-                    </h3>
-                    
+                    <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2"><span class="material-symbols-outlined text-blue-600">timeline</span>3. Waktu Tunggu vs Durasi Konsul CS</h3>
                     <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-xl text-[10px] font-bold">
-                        <button @click="toggleSlaMode(true)" :class="isMerged ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all duration-300 ease-in-out flex items-center gap-1 cursor-pointer">
-                            <span class="material-symbols-outlined text-xs">merge</span> Mode Gabung
-                        </button>
-                        <button @click="toggleSlaMode(false)" :class="!isMerged ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all duration-300 ease-in-out flex items-center gap-1 cursor-pointer">
-                            <span class="material-symbols-outlined text-xs">call_split</span> Mode Pisah
-                        </button>
+                        <button @click="toggleSlaMode(true)" :class="isMerged ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600'" class="px-3 py-1.5 rounded-lg cursor-pointer">Gabung</button>
+                        <button @click="toggleSlaMode(false)" :class="!isMerged ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600'" class="px-3 py-1.5 rounded-lg cursor-pointer">Pisah</button>
                     </div>
                 </div>
-
                 <div class="relative min-h-[260px] py-2">
-                    <div x-show="isMerged" x-transition:enter="transition ease-out duration-500 transform" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="h-64 sm:h-72 relative">
-                        <canvas id="slaMergedChart" data-chart-sets='{{ json_encode($chartDataSets ?? []) }}'></canvas>
-                    </div>
-
-                    <div x-show="!isMerged" x-cloak x-transition:enter="transition ease-out duration-500 transform" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="grid grid-cols-1 md:grid-cols-2 gap-4 h-64 sm:h-72">
-                        <div class="relative h-full border border-blue-100 p-3 rounded-xl bg-blue-50/30 flex flex-col justify-between">
-                            <span class="text-[10px] font-extrabold text-blue-700 block text-center uppercase tracking-wider">Rata-Rata Waktu Tunggu (Menit)</span>
-                            <div class="h-52 relative">
-                                <canvas id="slaTungguSeparateChart"></canvas>
-                            </div>
-                        </div>
-                        <div class="relative h-full border border-emerald-100 p-3 rounded-xl bg-emerald-50/30 flex flex-col justify-between">
-                            <span class="text-[10px] font-extrabold text-emerald-700 block text-center uppercase tracking-wider">Rata-Rata Durasi Konsul CS (Menit)</span>
-                            <div class="h-52 relative">
-                                <canvas id="slaKonsulSeparateChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
+                    <div x-show="isMerged" class="h-64 relative"><canvas id="slaMergedChart"></canvas></div>
+                    <div x-show="!isMerged" x-cloak class="grid grid-cols-2 gap-4 h-64"><div class="relative"><canvas id="slaTungguSeparateChart"></canvas></div><div class="relative"><canvas id="slaKonsulSeparateChart"></canvas></div></div>
                 </div>
-
-                <p class="text-[10px] text-gray-500 italic border-t pt-2">
-                    💡 **Penjelasan:** Mode Gabung menyatukan 2 kurva sekaligus, sedangkan Mode Pisah mengisolasi tren antrean dan konsul CS secara rinci.
-                </p>
             </div>
 
-            <!-- CHART 4 -->
-            <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
-                <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2 border-b pb-2">
-                    <span class="material-symbols-outlined text-purple-600">bar_chart</span>
-                    4. Performa Produktivitas Staf CS per Meja
-                </h3>
+            <!-- CHART 4 (MODERNISED + HIDE ACCOUNT) -->
+            <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3 relative">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-2 gap-3">
+                    <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2">
+                        <span class="material-symbols-outlined text-purple-600">bar_chart</span>
+                        4. Performa Produktivitas Staf CS per Akun
+                    </h3>
+                    
+                    <!-- FILTER HIDE AKUN -->
+                    <div x-data="{ showFilter: false }" class="relative z-20">
+                        <button @click="showFilter = !showFilter" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-all">
+                            <span class="material-symbols-outlined text-[14px]">filter_alt</span> Sembunyikan Akun
+                        </button>
+                        <div x-show="showFilter" @click.away="showFilter = false" x-transition x-cloak class="absolute right-0 mt-2 w-56 bg-white border border-[#E0E3E8] rounded-xl shadow-xl p-3">
+                            <span class="text-[10px] font-black uppercase text-gray-400 block mb-2 border-b pb-1">Centang untuk sembunyikan</span>
+                            <div class="max-h-48 overflow-y-auto custom-scrollbar space-y-1">
+                                <template x-for="cs in rawCsData" :key="cs.id">
+                                    <label class="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer p-1 hover:bg-gray-50 rounded">
+                                        <input type="checkbox" :value="cs.id.toString()" x-model="hiddenAccounts" @change="renderBarChart()" class="rounded text-purple-600 w-3.5 h-3.5 border-gray-300">
+                                        <span x-text="cs.nama + ' (' + cs.role + ')' "></span>
+                                    </label>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="h-64 sm:h-72 relative">
                     <canvas id="csBarChart" data-cs='{{ json_encode($mejaCs ?? []) }}'></canvas>
                 </div>
-                <p class="text-[10px] text-gray-500 italic border-t pt-2">
-                    💡 **Penjelasan:** Menilai kontribusi jumlah tiket yang berhasil diselesaikan oleh masing-masing meja CS pada rentang waktu terpilih.
-                </p>
             </div>
         </div>
 
@@ -558,12 +453,12 @@
                     <thead class="bg-[#F8F9FA] border-b border-[#E0E3E8] text-gray-500 font-black uppercase text-[10px]">
                         <tr>
                             <th class="p-3.5">Tanggal</th>
-                            <th class="p-3.5 text-center">Tiket Masuk</th>
-                            <th class="p-3.5 text-center">Tiket Dilayani</th>
-                            <th class="p-3.5 text-center">Sudah Diproses</th>
-                            <th class="p-3.5 text-center">Belum Diproses</th>
+                            <th class="p-3.5 text-center">Masuk</th>
+                            <th class="p-3.5 text-center">Dilayani</th>
+                            <th class="p-3.5 text-center">Selesai</th>
+                            <th class="p-3.5 text-center">Menunggu</th>
                             <th class="p-3.5">Tipe Layanan (A-B-C-D)</th>
-                            <th class="p-3.5 text-right">Jumlah Transaksi</th>
+                            <th class="p-3.5 text-right">Omset</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-[#E0E3E8]">
@@ -572,12 +467,8 @@
                                 <td class="p-3.5 font-bold text-[#181C20]" x-text="row.tanggal"></td>
                                 <td class="p-3.5 text-center font-bold text-[#00509E]" x-text="row.tiket_masuk"></td>
                                 <td class="p-3.5 text-center font-bold text-indigo-600" x-text="row.tiket_dilayani"></td>
-                                <td class="p-3.5 text-center">
-                                    <span class="px-2.5 py-1 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800" x-text="row.sudah_diproses"></span>
-                                </td>
-                                <td class="p-3.5 text-center">
-                                    <span class="px-2.5 py-1 rounded-full text-[11px] font-black bg-amber-100 text-amber-800" x-text="row.belum_diproses"></span>
-                                </td>
+                                <td class="p-3.5 text-center"><span class="px-2.5 py-1 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800" x-text="row.sudah_diproses"></span></td>
+                                <td class="p-3.5 text-center"><span class="px-2.5 py-1 rounded-full text-[11px] font-black bg-amber-100 text-amber-800" x-text="row.belum_diproses"></span></td>
                                 <td class="p-3.5">
                                     <div class="flex flex-wrap gap-1 max-w-[280px]">
                                         <template x-if="row.breakdown_layanan && row.breakdown_layanan.length > 0">
@@ -587,9 +478,7 @@
                                                 </span>
                                             </template>
                                         </template>
-                                        <template x-if="!row.breakdown_layanan || row.breakdown_layanan.length === 0">
-                                            <span class="text-gray-400 italic text-[10px]">-</span>
-                                        </template>
+                                        <template x-if="!row.breakdown_layanan || row.breakdown_layanan.length === 0"><span class="text-gray-400 italic text-[10px]">-</span></template>
                                     </div>
                                 </td>
                                 <td class="p-3.5 text-right font-black text-[#181C20]" x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(row.total_omset)"></td>
@@ -600,19 +489,98 @@
             </div>
         </div>
 
-        <!-- TAB 4: STAFF MONITORING -->
+        <!-- TAB 4: STAFF & AKUN MONITORING -->
         <div x-show="activeTab === 'staff'" class="space-y-6">
             <div class="bg-white p-4 rounded-2xl border border-[#E0E3E8] shadow-sm flex flex-wrap items-center justify-between gap-3">
                 <h4 class="font-extrabold text-xs text-[#181C20]">Aksi Pengelolaan Staf & Loket:</h4>
                 <div class="flex flex-wrap items-center gap-2">
-                    <button @click="showModalCS = true" class="px-3.5 py-2 bg-[#00509E] text-white font-bold text-xs rounded-xl flex items-center gap-1"><span class="material-symbols-outlined text-base">person_add</span> Tambah CS Baru</button>
+                    <button @click="showModalAkun = true" class="px-3.5 py-2 bg-[#00509E] text-white font-bold text-xs rounded-xl flex items-center gap-1"><span class="material-symbols-outlined text-base">person_add</span> Tambah Akun Baru</button>
                     <button @click="showModalMeja = true" class="px-3.5 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl flex items-center gap-1"><span class="material-symbols-outlined text-base">add_box</span> Tambah Slot Meja</button>
                 </div>
             </div>
 
+            <!-- DAFTAR AKUN PENGGUNA -->
             <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
-                <h3 class="text-xs font-black uppercase text-[#181C20]">Katalog Ketersediaan Meja Loket</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div class="flex items-center justify-between border-b border-[#E0E3E8] pb-3 mb-2">
+                    <h3 class="text-xs font-black uppercase text-[#181C20]">Katalog Akun Pengguna Sistem (Admin & CS)</h3>
+                    <span class="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-full">Total {{ isset($allUsers) ? $allUsers->count() : 0 }} Akun</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-[#F8F9FA] border-b border-[#E0E3E8] text-gray-500 font-black uppercase text-[10px]">
+                            <tr>
+                                <th class="p-3">Info Pengguna</th>
+                                <th class="p-3">Hak Akses (Role)</th>
+                                <th class="p-3">Status Login</th>
+                                <th class="p-3">Terakhir Buat Tiket</th>
+                                <th class="p-3 text-center">Manajemen Akun</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[#E0E3E8]">
+                            @forelse($allUsers ?? [] as $user)
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="p-3">
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="w-8 h-8 rounded-full bg-[#00509E]/10 text-[#00509E] font-black flex items-center justify-center">{{ strtoupper(substr($user->nama_lengkap, 0, 2)) }}</div>
+                                        <div>
+                                            <p class="font-extrabold text-[#181C20]">{{ $user->nama_lengkap }}</p>
+                                            <p class="text-[10px] font-semibold text-gray-500">@ {{ $user->username }}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="p-3">
+                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-black {{ $user->role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-emerald-100 text-emerald-700' }}">
+                                        {{ strtoupper($user->role) }}
+                                    </span>
+                                </td>
+                                <td class="p-3">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold {{ $user->is_active ? 'bg-blue-50 text-blue-600' : 'bg-rose-50 text-rose-600' }}">
+                                        {{ $user->is_active ? 'Aktif' : 'Suspended' }}
+                                    </span>
+                                </td>
+                                <td class="p-3 text-gray-500">
+                                    {{ $user->created_at->format('d M Y') }}
+                                </td>
+                                <td class="p-3 text-center">
+                                    <div class="flex items-center justify-center gap-1">
+                                        <!-- Edit Profil -->
+                                        <button @click="selectedUser = {{ json_encode($user) }}; showModalEditAkun = true" class="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-all" title="Edit Detail">
+                                            <span class="material-symbols-outlined text-sm">edit</span>
+                                        </button>
+                                        <!-- Ganti Password -->
+                                        <button @click="selectedUser = {{ json_encode($user) }}; showModalPassAkun = true" class="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg transition-all" title="Ganti Password">
+                                            <span class="material-symbols-outlined text-sm">key</span>
+                                        </button>
+                                        <!-- Toggle Suspend -->
+                                        <form action="{{ route('admin.staff.toggle', $user->id) }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="p-1.5 {{ $user->is_active ? 'bg-rose-50 hover:bg-rose-100 text-rose-600' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600' }} rounded-lg transition-all" title="{{ $user->is_active ? 'Suspend/Nonaktifkan' : 'Aktivasi Ulang' }}">
+                                                <span class="material-symbols-outlined text-sm">{{ $user->is_active ? 'person_off' : 'how_to_reg' }}</span>
+                                            </button>
+                                        </form>
+                                        <!-- Delete Akun -->
+                                        <form action="{{ route('admin.staff.delete', $user->id) }}" method="POST" onsubmit="return confirm('PERINGATAN: Yakin menghapus akun ini permanen? Ini akan mempengaruhi data historis tiket yang ditangani staf ini.')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="p-1.5 bg-gray-800 hover:bg-black text-white rounded-lg transition-all" title="Hapus Akun">
+                                                <span class="material-symbols-outlined text-sm">delete_forever</span>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr><td colspan="5" class="p-6 text-center text-gray-400 font-bold">Belum ada akun di sistem.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- KATALOG MEJA FISIK -->
+            <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3 mt-4">
+                <h3 class="text-xs font-black uppercase text-[#181C20] border-b border-[#E0E3E8] pb-3">Katalog Ketersediaan Slot Meja Loket Fisik</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pt-2">
                     @forelse($masterMejas ?? [] as $meja)
                         <div class="p-3.5 border rounded-xl flex items-center justify-between bg-[#F8F9FA] border-[#E0E3E8]">
                             <div>
@@ -628,7 +596,7 @@
                             </div>
                         </div>
                     @empty
-                        <div class="col-span-full p-4 text-center text-gray-400 font-bold text-xs">Belum ada slot meja fisik.</div>
+                        <div class="col-span-full p-4 text-center text-gray-400 font-bold text-xs">Belum ada slot meja fisik terdaftar.</div>
                     @endforelse
                 </div>
             </div>
@@ -649,10 +617,7 @@
                     <div class="p-4 bg-[#F8F9FA] border-b flex justify-between items-center"><h4 class="font-black text-xs text-[#00509E] uppercase">Kategori Utama</h4></div>
                     <div class="p-3 space-y-2 max-h-[550px] overflow-y-auto custom-scrollbar">
                         @foreach($layanans as $lay)
-                            @php
-                                /** @var \App\Models\Layanan $lay */
-                                $subCount = $lay->subLayanans?->count() ?? 0;
-                            @endphp
+                            @php $subCount = $lay->subLayanans?->count() ?? 0; @endphp
                             <div @click="selectedLayananId = '{{ $lay->id }}'; selectedLayananNama = '{{ addslashes($lay->nama_layanan) }}'" :class="selectedLayananId == '{{ $lay->id }}' ? 'border-[#00509E] bg-[#00509E]/5 ring-2 ring-[#00509E]/20' : 'border-[#E0E3E8]'" class="p-3 border rounded-xl flex items-center justify-between cursor-pointer">
                                 <div><h5 class="font-extrabold text-xs text-[#181C20]">{{ $lay->nama_layanan }}</h5><span class="text-[10px] text-gray-500 font-semibold mt-0.5 block">{{ $subCount }} Sub-Layanan</span></div>
                                 <form action="{{ route('admin.layanan.destroy', $lay->id) }}" method="POST" onsubmit="return confirm('Hapus kategori ini?')">@csrf @method('DELETE') <button type="submit" class="p-1.5 bg-rose-50 text-rose-600 rounded-lg"><span class="material-symbols-outlined text-sm">delete</span></button></form>
@@ -668,13 +633,9 @@
                     </div>
                     <div class="p-4 min-h-[300px] max-h-[550px] overflow-y-auto custom-scrollbar">
                         @foreach($layanans as $lay)
-                            @php
-                                /** @var \App\Models\Layanan $lay */
-                                $subList = $lay->subLayanans?->all() ?? [];
-                            @endphp
+                            @php $subList = $lay->subLayanans?->all() ?? []; @endphp
                             <div x-show="selectedLayananId == '{{ $lay->id }}'" class="space-y-2">
                                 @forelse($subList as $sub)
-                                    @php /** @var \App\Models\SubLayanan $sub */ @endphp
                                     <div class="p-3 bg-[#F8F9FA] border border-[#E0E3E8] rounded-xl flex items-center justify-between">
                                         <div class="flex items-center gap-2"><span class="material-symbols-outlined text-emerald-600 text-base">subdirectory_arrow_right</span><span class="font-extrabold text-xs text-gray-800">{{ $sub->nama_sub_layanan }}</span></div>
                                         <form action="{{ route('admin.sub_layanan.destroy', $sub->id) }}" method="POST" onsubmit="return confirm('Hapus sub-layanan?')">@csrf @method('DELETE') <button type="submit" class="p-1.5 bg-rose-50 text-rose-600 rounded-lg"><span class="material-symbols-outlined text-sm">delete</span></button></form>
@@ -690,6 +651,73 @@
         </div>
 
     </main>
+
+    <!-- KUMPULAN MODAL POPUP -->
+
+    <!-- Modal Tambah Akun (Admin & CS) -->
+    <div x-show="showModalAkun" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalAkun = false">
+            <div class="flex justify-between items-center border-b pb-3 border-gray-100">
+                <h3 class="text-base font-black flex items-center gap-1.5"><span class="material-symbols-outlined text-[#00509E]">person_add</span> Tambah Akun Baru</h3>
+                <button type="button" @click="showModalAkun = false" class="text-gray-400 hover:text-black"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            <form action="{{ route('admin.staff.store') }}" method="POST" class="space-y-3 text-xs">
+                @csrf
+                <div><label class="font-bold block mb-1">Nama Lengkap</label><input type="text" name="nama_lengkap" required class="w-full p-2.5 border rounded-xl"></div>
+                <div><label class="font-bold block mb-1">Username Login</label><input type="text" name="username" required class="w-full p-2.5 border rounded-xl"></div>
+                <div>
+                    <label class="font-bold block mb-1">Hak Akses (Role)</label>
+                    <select name="role" required class="w-full p-2.5 border rounded-xl font-bold bg-gray-50">
+                        <option value="cs">Petugas CS (Customer Service)</option>
+                        <option value="admin">Administrator (Super Admin)</option>
+                    </select>
+                </div>
+                <div><label class="font-bold block mb-1">Password Awal</label><input type="password" name="password" required minlength="6" class="w-full p-2.5 border rounded-xl" placeholder="Minimal 6 karakter"></div>
+                
+                <div class="flex justify-end gap-2 pt-3">
+                    <button type="button" @click="showModalAkun = false" class="px-4 py-2 bg-gray-100 rounded-xl font-bold">Batal</button>
+                    <button type="submit" class="px-5 py-2 bg-[#00509E] text-white font-bold rounded-xl">Simpan Akun</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Edit Akun -->
+    <div x-show="showModalEditAkun" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalEditAkun = false">
+            <h3 class="text-base font-black flex items-center gap-1.5"><span class="material-symbols-outlined text-[#00509E]">edit_square</span> Edit Detail Akun</h3>
+            <template x-if="selectedUser">
+                <form :action="`{{ url('/admin/staff/update') }}/${selectedUser.id}`" method="POST" class="space-y-3 text-xs">
+                    @csrf
+                    <div><label class="font-bold block mb-1">Nama Lengkap</label><input type="text" name="nama_lengkap" :value="selectedUser.nama_lengkap" required class="w-full p-2.5 border rounded-xl"></div>
+                    <div><label class="font-bold block mb-1">Username</label><input type="text" name="username" :value="selectedUser.username" required class="w-full p-2.5 border rounded-xl"></div>
+                    <div>
+                        <label class="font-bold block mb-1">Role</label>
+                        <select name="role" required class="w-full p-2.5 border rounded-xl font-bold">
+                            <option value="cs" :selected="selectedUser.role === 'cs'">CS</option>
+                            <option value="admin" :selected="selectedUser.role === 'admin'">Admin</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-end gap-2 pt-3"><button type="button" @click="showModalEditAkun = false" class="px-4 py-2 bg-gray-100 rounded-xl font-bold">Batal</button><button type="submit" class="px-5 py-2 bg-[#00509E] text-white font-bold rounded-xl">Update Profil</button></div>
+                </form>
+            </template>
+        </div>
+    </div>
+
+    <!-- Modal Ganti Password -->
+    <div x-show="showModalPassAkun" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalPassAkun = false">
+            <h3 class="text-base font-black flex items-center gap-1.5"><span class="material-symbols-outlined text-amber-500">lock_reset</span> Ganti Password</h3>
+            <template x-if="selectedUser">
+                <form :action="`{{ url('/admin/staff/password') }}/${selectedUser.id}`" method="POST" class="space-y-3 text-xs">
+                    @csrf
+                    <p class="text-gray-500 mb-2">Reset kata sandi untuk akun: <strong class="text-gray-800" x-text="selectedUser.nama_lengkap"></strong></p>
+                    <div><label class="font-bold block mb-1">Password Baru</label><input type="password" name="password" required minlength="6" class="w-full p-2.5 border rounded-xl" placeholder="Minimal 6 Karakter"></div>
+                    <div class="flex justify-end gap-2 pt-3"><button type="button" @click="showModalPassAkun = false" class="px-4 py-2 bg-gray-100 rounded-xl font-bold">Batal</button><button type="submit" class="px-5 py-2 bg-amber-500 text-white font-bold rounded-xl shadow-sm">Ubah Password</button></div>
+                </form>
+            </template>
+        </div>
+    </div>
 
     <!-- MODAL POPUP: DETAIL TIKET ANTREAN -->
     <div x-show="showModalDetail" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -825,31 +853,30 @@
         </div>
     </div>
 
-    <!-- MODAL CS & MEJA -->
-    <div x-show="showModalCS" x-cloak class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalCS = false">
-            <h3 class="text-base font-black">Tambah Petugas CS Baru</h3>
-            <form action="{{ route('admin.staff.store') }}" method="POST" class="space-y-3 text-xs">
+    <!-- MODAL TAMBAH MEJA -->
+    <div x-show="showModalMeja" x-cloak class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalMeja = false">
+            <h3 class="text-base font-black flex items-center gap-1.5"><span class="material-symbols-outlined text-emerald-600">add_box</span> Tambah Slot Meja</h3>
+            <form action="{{ route('admin.meja.store') }}" method="POST" class="space-y-3 text-xs">
                 @csrf
-                <div><label class="font-bold block mb-1">Nama Lengkap</label><input type="text" name="nama_lengkap" required class="w-full p-2.5 border rounded-xl"></div>
-                <div><label class="font-bold block mb-1">Username</label><input type="text" name="username" required class="w-full p-2.5 border rounded-xl"></div>
-                <div><label class="font-bold block mb-1">Password</label><input type="password" name="password" required class="w-full p-2.5 border rounded-xl"></div>
-                <div class="flex justify-end gap-2"><button type="button" @click="showModalCS = false" class="px-4 py-2 bg-gray-100 rounded-xl font-bold">Batal</button><button type="submit" class="px-5 py-2 bg-[#00509E] text-white font-bold rounded-xl">Simpan</button></div>
+                <div class="flex justify-end gap-2 pt-3"><button type="button" @click="showModalMeja = false" class="px-4 py-2 bg-gray-100 rounded-xl font-bold">Batal</button><button type="submit" class="px-5 py-2 bg-emerald-600 text-white font-bold rounded-xl">Tambah Meja Otomatis</button></div>
             </form>
         </div>
     </div>
 
+    <!-- MODAL LAYANAN -->
     <div x-show="showModalLayanan" x-cloak class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalLayanan = false">
             <h3 class="text-base font-black">Tambah Kategori Layanan Utama</h3>
             <form action="{{ route('admin.layanan.store') }}" method="POST" class="space-y-3 text-xs">
                 @csrf
                 <div><label class="font-bold block mb-1">Nama Kategori</label><input type="text" name="nama_layanan" required class="w-full p-2.5 border rounded-xl"></div>
-                <div class="flex justify-end gap-2"><button type="button" @click="showModalLayanan = false" class="px-4 py-2 bg-gray-100 rounded-xl font-bold">Batal</button><button type="submit" class="px-5 py-2 bg-[#00509E] text-white font-bold rounded-xl">Simpan</button></div>
+                <div class="flex justify-end gap-2 pt-3"><button type="button" @click="showModalLayanan = false" class="px-4 py-2 bg-gray-100 rounded-xl font-bold">Batal</button><button type="submit" class="px-5 py-2 bg-[#00509E] text-white font-bold rounded-xl">Simpan</button></div>
             </form>
         </div>
     </div>
 
+    <!-- MODAL SUB-LAYANAN -->
     <div x-show="showModalSubLayanan" x-cloak class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalSubLayanan = false">
             <h3 class="text-base font-black">Tambah Sub-Layanan</h3>
@@ -858,12 +885,12 @@
                 <input type="hidden" name="layanan_id" :value="selectedLayananId">
                 <div><label class="font-bold block mb-1">Kategori Utama</label><input type="text" readonly :value="selectedLayananNama" class="w-full p-2.5 bg-gray-100 border rounded-xl font-bold text-[#00509E]"></div>
                 <div><label class="font-bold block mb-1">Nama Sub-Layanan</label><input type="text" name="nama_sub_layanan" required class="w-full p-2.5 border rounded-xl"></div>
-                <div class="flex justify-end gap-2"><button type="button" @click="showModalSubLayanan = false" class="px-4 py-2 bg-gray-100 rounded-xl font-bold">Batal</button><button type="submit" class="px-5 py-2 bg-emerald-600 text-white font-bold rounded-xl">Simpan Sub-Layanan</button></div>
+                <div class="flex justify-end gap-2 pt-3"><button type="button" @click="showModalSubLayanan = false" class="px-4 py-2 bg-gray-100 rounded-xl font-bold">Batal</button><button type="submit" class="px-5 py-2 bg-emerald-600 text-white font-bold rounded-xl">Simpan Sub-Layanan</button></div>
             </form>
         </div>
     </div>
 
-    <!-- SCRIPTS ENGINES SAFE-LINTER -->
+    <!-- SCRIPTS ENGINES -->
     <script>
         var globalQueueChart = null;
         var globalPieChart = null;
@@ -951,6 +978,8 @@
                 chartPeriod: serverPeriod === 'custom' ? 'custom' : 'last30',
                 isMerged: true,
                 allDataSets: {},
+                rawCsData: [],
+                hiddenAccounts: [],
                 
                 init: function() {
                     const canvasLine = document.getElementById('queueChart');
@@ -1092,9 +1121,16 @@
                     if (!canvas || !canvas.dataset.cs) return;
 
                     try {
-                        const raw = JSON.parse(canvas.dataset.cs);
-                        const labels = raw.map(i => i.nama + ' (M' + i.nomor_meja + ')');
-                        const data = raw.map(i => i.total_dilayani);
+                        if (this.rawCsData.length === 0) {
+                            this.rawCsData = JSON.parse(canvas.dataset.cs);
+                        }
+
+                        const filteredData = this.rawCsData.filter(i => {
+                            return !this.hiddenAccounts.includes(i.id.toString());
+                        });
+
+                        const labels = filteredData.map(i => i.nama + (i.nomor_meja > 0 ? ' (M' + i.nomor_meja + ')' : ''));
+                        const data = filteredData.map(i => i.total_dilayani);
 
                         if (globalBarChart) globalBarChart.destroy();
 
@@ -1103,12 +1139,33 @@
                             data: {
                                 labels: labels,
                                 datasets: [{
-                                    label: 'Total Tiket Dilayani',
+                                    label: 'Tiket Berhasil Diselesaikan',
                                     data: data,
-                                    backgroundColor: '#8B5CF6'
+                                    backgroundColor: '#8B5CF6', 
+                                    borderRadius: 6, 
+                                    borderSkipped: false,
+                                    barPercentage: 0.6
                                 }]
                             },
-                            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                            options: { 
+                                indexAxis: 'y', 
+                                responsive: true, 
+                                maintainAspectRatio: false, 
+                                plugins: { 
+                                    legend: { display: false },
+                                    tooltip: {
+                                        backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                                        titleFont: { size: 13, weight: 'bold' },
+                                        bodyFont: { size: 12 },
+                                        padding: 10,
+                                        cornerRadius: 8
+                                    }
+                                },
+                                scales: {
+                                    x: { grid: { display: false, drawBorder: false } },
+                                    y: { grid: { color: '#F3F4F6', drawBorder: false } }
+                                }
+                            }
                         });
                     } catch (e) { console.error(e); }
                 }
