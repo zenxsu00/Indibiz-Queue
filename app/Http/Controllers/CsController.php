@@ -23,6 +23,12 @@ class CsController extends Controller
         /** @var User $user */
         $user = User::find(Auth::id());
 
+        // KICK USER JIKA AKUN DIKUNCI ADMIN SAAT SEDANG BEROPERASI
+        if (!$user || !$user->is_active) {
+            $this->resetUserState($user);
+            return false;
+        }
+
         $nomorMeja = $user->nomor_meja ?? session('meja_terpilih');
         $isSpectator = (empty($nomorMeja) || $nomorMeja == 0) && $user->role === 'admin';
 
@@ -49,10 +55,12 @@ class CsController extends Controller
 
     private function resetUserState(User $user)
     {
-        $this->closeActiveLog((int) $user->id);
-        $user->is_active = false;
-        $user->nomor_meja = null;
-        $user->save();
+        if ($user) {
+            $this->closeActiveLog((int) $user->id);
+            // CUKUP RESET MEJA, JANGAN UBAH is_active!
+            $user->nomor_meja = null;
+            $user->save();
+        }
         session()->forget('meja_terpilih');
     }
 
@@ -114,9 +122,8 @@ class CsController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
-        if ($user) {
+        if ($user && $user->is_active) {
             $user->update([
-                'is_active'    => true,
                 'last_seen_at' => Carbon::now('Asia/Jakarta')
             ]);
             return response()->json(['status' => 'ok']);
@@ -127,10 +134,18 @@ class CsController extends Controller
 
     public function selectMeja()
     {
+        /** @var User $user */
+        $user = Auth::user();
+
+        if (!$user->is_active) {
+            Auth::logout();
+            return redirect()->route('login')->with('error', 'Akses akun Anda dikunci oleh Super Admin.');
+        }
+
         $masterMejas = MasterMeja::where('is_available', true)->orderBy('nomor_meja', 'asc')->get();
         
-        $mejaTerpakai = User::where('is_active', true)
-            ->whereNotNull('nomor_meja')
+        // Meja terpakai adalah meja yang sedang diduduki CS aktif (nomor_meja != null)
+        $mejaTerpakai = User::whereNotNull('nomor_meja')
             ->where('nomor_meja', '!=', 0)
             ->where('id', '!=', Auth::id())
             ->pluck('nomor_meja')
@@ -141,11 +156,19 @@ class CsController extends Controller
 
     public function setMeja(Request $request)
     {
+        /** @var User $user */
+        $user = Auth::user();
+
+        if (!$user->is_active) {
+            Auth::logout();
+            return redirect()->route('login')->with('error', 'Akses akun Anda dikunci oleh Super Admin.');
+        }
+
         $request->validate([
             'nomor_meja' => 'required|integer|gt:0',
         ]);
 
-        $mejaSedangDipakai = User::where('is_active', true)
+        $mejaSedangDipakai = User::whereNotNull('nomor_meja')
             ->where('nomor_meja', $request->nomor_meja)
             ->where('id', '!=', Auth::id())
             ->exists();
@@ -159,10 +182,7 @@ class CsController extends Controller
             return redirect()->route('cs.select-meja')->with('error', 'Meja yang dipilih tidak tersedia atau telah dihapus.');
         }
 
-        /** @var User $user */
-        $user = Auth::user();
         $user->nomor_meja = $request->nomor_meja;
-        $user->is_active  = true;
         $user->save();
 
         session(['meja_terpilih' => $request->nomor_meja]);
@@ -174,7 +194,7 @@ class CsController extends Controller
     public function index(Request $request)
     {
         if (!$this->checkValidMeja()) {
-            return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus atau dinonaktifkan oleh Admin. Silakan pilih meja lain.');
+            return redirect()->route('cs.select-meja')->with('error', 'Akses ditolak atau meja loket Anda tidak valid.');
         }
 
         $hariIni = Carbon::today('Asia/Jakarta');
@@ -184,9 +204,7 @@ class CsController extends Controller
         $nomorMejaTerpilih = $user->nomor_meja ?? session('meja_terpilih');
         $isSpectator = (empty($nomorMejaTerpilih) || $nomorMejaTerpilih == 0) && $user->role === 'admin';
 
-        if (!$isSpectator && !$user->is_active) {
-            $user->is_active = true;
-            $user->save();
+        if (!$isSpectator) {
             $this->openActiveLog((int) $user->id);
         }
 
@@ -298,7 +316,7 @@ class CsController extends Controller
     public function panggilSelanjutnya()
     {
         if (!$this->checkValidMeja()) {
-            return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus oleh Admin.');
+            return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus atau akun dikunci.');
         }
 
         /** @var User $user */
@@ -344,7 +362,7 @@ class CsController extends Controller
     public function panggilSpesifik(int $id)
     {
         if (!$this->checkValidMeja()) {
-            return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus oleh Admin.');
+            return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus atau akun dikunci.');
         }
 
         /** @var User $user */
@@ -386,7 +404,7 @@ class CsController extends Controller
     public function panggilUlang(int $id)
     {
         if (!$this->checkValidMeja()) {
-            return response()->json(['status' => 'error', 'message' => 'Meja loket Anda telah dihapus oleh Admin.'], 403);
+            return response()->json(['status' => 'error', 'message' => 'Sesi tidak valid atau akun dikunci.'], 403);
         }
 
         /** @var User $user */
@@ -411,7 +429,7 @@ class CsController extends Controller
     public function batalAtauKembalikan(int $id)
     {
         if (!$this->checkValidMeja()) {
-            return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus oleh Admin.');
+            return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus atau akun dikunci.');
         }
 
         /** @var User $user */
@@ -444,7 +462,7 @@ class CsController extends Controller
     public function selesaikanTiket(Request $request, int $id)
     {
         if (!$this->checkValidMeja()) {
-            return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus oleh Admin.');
+            return redirect()->route('cs.select-meja')->with('error', 'Meja loket Anda telah dihapus atau akun dikunci.');
         }
 
         /** @var User $user */
@@ -540,10 +558,12 @@ class CsController extends Controller
     {
         /** @var User $user */
         $user = Auth::user();
-        $this->closeActiveLog((int) $user->id);
-        $user->is_active = false;
-        $user->nomor_meja = null;
-        $user->save();
+        if ($user) {
+            $this->closeActiveLog((int) $user->id);
+            // BEBASKAN MEJA, TANPA MENGUBAH STATUS HAK AKSES (is_active)
+            $user->nomor_meja = null;
+            $user->save();
+        }
 
         session()->forget('meja_terpilih');
 

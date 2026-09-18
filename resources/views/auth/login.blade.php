@@ -74,8 +74,18 @@
                         <input type="password" name="password" required placeholder="Masukkan password" class="w-full px-4 py-3 border border-[#E0E3E8] bg-[#F8F9FA] rounded-xl text-sm font-semibold tracking-widest focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00509E]">
                     </div>
 
+                    <!-- PENANGANAN NOTIFIKASI ERROR (FLASH SESSION + VALIDATION ERRORS) -->
                     @if(session('error'))
-                        <p class="text-xs font-semibold text-[#BA1A1A] mt-1 text-center">{{ session('error') }}</p>
+                        <div class="p-3 bg-rose-50 border border-rose-200 text-[#BA1A1A] rounded-xl text-xs font-bold flex items-center gap-2">
+                            <span class="material-symbols-outlined text-base">error</span>
+                            <span>{{ session('error') }}</span>
+                        </div>
+                    @endif
+                    @if($errors->has('username'))
+                        <div class="p-3 bg-rose-50 border border-rose-200 text-[#BA1A1A] rounded-xl text-xs font-bold flex items-center gap-2">
+                            <span class="material-symbols-outlined text-base">error</span>
+                            <span>{{ $errors->first('username') }}</span>
+                        </div>
                     @endif
 
                     <button type="submit" class="w-full text-white bg-[#00509E] hover:bg-[#003C7E] p-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-sm mt-6 cursor-pointer">
@@ -106,8 +116,18 @@
                         <input type="password" name="password" required placeholder="Masukkan password admin" class="w-full px-4 py-3 border border-[#E0E3E8] bg-[#F8F9FA] rounded-xl text-sm font-semibold tracking-widest focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#EE2E24]">
                     </div>
 
+                    <!-- PENANGANAN NOTIFIKASI ERROR (FLASH SESSION + VALIDATION ERRORS) -->
                     @if(session('error'))
-                        <p class="text-xs font-semibold text-[#BA1A1A] mt-1 text-center">{{ session('error') }}</p>
+                        <div class="p-3 bg-rose-50 border border-rose-200 text-[#BA1A1A] rounded-xl text-xs font-bold flex items-center gap-2">
+                            <span class="material-symbols-outlined text-base">error</span>
+                            <span>{{ session('error') }}</span>
+                        </div>
+                    @endif
+                    @if($errors->has('username'))
+                        <div class="p-3 bg-rose-50 border border-rose-200 text-[#BA1A1A] rounded-xl text-xs font-bold flex items-center gap-2">
+                            <span class="material-symbols-outlined text-base">error</span>
+                            <span>{{ $errors->first('username') }}</span>
+                        </div>
                     @endif
 
                     <button type="submit" class="w-full text-white bg-[#EE2E24] hover:bg-[#CE1111] p-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-sm mt-6 cursor-pointer">

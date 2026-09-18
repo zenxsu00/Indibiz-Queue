@@ -25,7 +25,7 @@ class StaffManagementController extends Controller
             'password'      => Hash::make($request->password),
             'role'          => 'cs',
             'status_kerja'  => 'aktif',
-            'is_active'     => false,
+            'is_active'     => true, // DEFAULT BARU = AKSES AKTIF
         ]);
 
         return back()->with('success', 'Akun Petugas CS baru berhasil ditambahkan!');
@@ -40,8 +40,8 @@ class StaffManagementController extends Controller
 
         $user = User::findOrFail($id);
         
+        // JIKA STATUS KERJA DIUBAH, CUKUP LEPASKAN DARI MEJA
         if ($request->status_kerja !== 'aktif') {
-            $user->is_active  = false;
             $user->nomor_meja = null;
         }
 
@@ -88,11 +88,10 @@ class StaffManagementController extends Controller
         $meja->is_available = !$meja->is_available;
         $meja->save();
 
-        // Jika meja dinonaktifkan, tendang user yang sedang menggunakan meja tersebut agar otomatis Offline
+        // JIKA MEJA DINONAKTIFKAN, LEPASKAN USER DARI MEJA TERSEBUT (TANPA MENGUNCI HAK AKSES AKUN)
         if (!$meja->is_available) {
             User::where('nomor_meja', $meja->nomor_meja)->update([
-                'nomor_meja' => null,
-                'is_active'  => false
+                'nomor_meja' => null
             ]);
         }
 
@@ -105,10 +104,9 @@ class StaffManagementController extends Controller
         $meja = MasterMeja::findOrFail($id);
         $nomorMeja = $meja->nomor_meja;
 
-        // Reset semua CS / Admin yang sedang duduk di meja ini agar otomatis Offline & tidak terbaca Loket M00
+        // RESET MEJA SEMUA CS / ADMIN YANG DUDUK DI MEJA INI
         User::where('nomor_meja', $nomorMeja)->update([
-            'nomor_meja' => null,
-            'is_active'  => false
+            'nomor_meja' => null
         ]);
 
         $meja->delete();
