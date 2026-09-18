@@ -416,6 +416,14 @@ class AdminController extends Controller
         return back()->with('success', 'Kategori Layanan Utama berhasil ditambahkan.');
     }
 
+    public function updateLayanan(Request $request, $id)
+    {
+        $request->validate(['nama_layanan' => 'required|string|max:255']);
+        $layanan = Layanan::findOrFail($id);
+        $layanan->update(['nama_layanan' => $request->input('nama_layanan')]);
+        return back()->with('success', 'Kategori Layanan Utama berhasil diperbarui.');
+    }
+
     public function destroyLayanan(int $id)
     {
         $layanan = Layanan::findOrFail($id);
@@ -435,6 +443,14 @@ class AdminController extends Controller
             'is_active'        => true
         ]);
         return back()->with('success', 'Sub-Layanan Sektoral berhasil ditambahkan.');
+    }
+
+    public function updateSubLayanan(Request $request, $id)
+    {
+        $request->validate(['nama_sub_layanan' => 'required|string|max:255']);
+        $sub = SubLayanan::findOrFail($id);
+        $sub->update(['nama_sub_layanan' => $request->input('nama_sub_layanan')]);
+        return back()->with('success', 'Sub-Layanan Sektoral berhasil diperbarui.');
     }
 
     public function destroySubLayanan(int $id)

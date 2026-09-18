@@ -25,11 +25,15 @@
           showModalPassAkun: false,
           showModalMeja: false, 
           showModalLayanan: false,
+          showModalEditLayanan: false,
           showModalSubLayanan: false,
+          showModalEditSubLayanan: false,
           showModalDetail: false,
           showModalPdf: false,
           selectedTiket: null,
           selectedUser: null,
+          selectedEditLayanan: null,
+          selectedEditSubLayanan: null,
           selectedPeriod: '{{ request('period', 'all') }}',
           selectedLayananId: '{{ $layanans->first()?->id ?? '' }}',
           selectedLayananNama: '{{ addslashes($layanans->first()?->nama_layanan ?? '') }}'
@@ -513,8 +517,8 @@
                             <tr>
                                 <th class="p-3">Info Pengguna</th>
                                 <th class="p-3">Hak Akses (Role)</th>
-                                <th class="p-3">Status Login</th>
-                                <th class="p-3">Terakhir Buat Tiket</th>
+                                <th class="p-3">Status Izin Akses</th>
+                                <th class="p-3">Sesi Loket Realtime</th>
                                 <th class="p-3 text-center">Manajemen Akun</th>
                             </tr>
                         </thead>
@@ -536,12 +540,27 @@
                                     </span>
                                 </td>
                                 <td class="p-3">
-                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold {{ $user->is_active ? 'bg-blue-50 text-blue-600' : 'bg-rose-50 text-rose-600' }}">
-                                        {{ $user->is_active ? 'Aktif' : 'Suspended' }}
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold {{ $user->is_active ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200' }}">
+                                        <span class="w-1.5 h-1.5 rounded-full {{ $user->is_active ? 'bg-emerald-500' : 'bg-rose-500' }}"></span>
+                                        <span>{{ $user->is_active ? 'Akses Aktif' : 'Akses Dikunci' }}</span>
                                     </span>
                                 </td>
-                                <td class="p-3 text-gray-500">
-                                    {{ $user->created_at->format('d M Y') }}
+                                <td class="p-3">
+                                    @if($user->role === 'cs')
+                                        @if($user->nomor_meja)
+                                            <span class="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-200">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
+                                                <span>Online (Meja {{ $user->nomor_meja }})</span>
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-lg">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                                                <span>Offline</span>
+                                            </span>
+                                        @endif
+                                    @else
+                                        <span class="text-gray-400 text-[10px] italic">N/A (Admin)</span>
+                                    @endif
                                 </td>
                                 <td class="p-3 text-center">
                                     <div class="flex items-center justify-center gap-1">
@@ -556,8 +575,8 @@
                                         <!-- Toggle Suspend -->
                                         <form action="{{ route('admin.staff.toggle', $user->id) }}" method="POST">
                                             @csrf
-                                            <button type="submit" class="p-1.5 {{ $user->is_active ? 'bg-rose-50 hover:bg-rose-100 text-rose-600' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600' }} rounded-lg transition-all" title="{{ $user->is_active ? 'Suspend/Nonaktifkan' : 'Aktivasi Ulang' }}">
-                                                <span class="material-symbols-outlined text-sm">{{ $user->is_active ? 'person_off' : 'how_to_reg' }}</span>
+                                            <button type="submit" class="p-1.5 {{ $user->is_active ? 'bg-rose-50 hover:bg-rose-100 text-rose-600' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600' }} rounded-lg transition-all" title="{{ $user->is_active ? 'Kunci/Nonaktifkan Akses' : 'Buka Kunci Akses' }}">
+                                                <span class="material-symbols-outlined text-sm">{{ $user->is_active ? 'lock' : 'lock_open' }}</span>
                                             </button>
                                         </form>
                                         <!-- Delete Akun -->
@@ -615,6 +634,7 @@
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <!-- KATEGORI UTAMA -->
                 <div class="lg:col-span-5 bg-white rounded-2xl border border-[#E0E3E8] shadow-sm overflow-hidden flex flex-col">
                     <div class="p-4 bg-[#F8F9FA] border-b flex justify-between items-center"><h4 class="font-black text-xs text-[#00509E] uppercase">Kategori Utama</h4></div>
                     <div class="p-3 space-y-2 max-h-[550px] overflow-y-auto custom-scrollbar">
@@ -622,12 +642,26 @@
                             @php $subCount = $lay->subLayanans?->count() ?? 0; @endphp
                             <div @click="selectedLayananId = '{{ $lay->id }}'; selectedLayananNama = '{{ addslashes($lay->nama_layanan) }}'" :class="selectedLayananId == '{{ $lay->id }}' ? 'border-[#00509E] bg-[#00509E]/5 ring-2 ring-[#00509E]/20' : 'border-[#E0E3E8]'" class="p-3 border rounded-xl flex items-center justify-between cursor-pointer">
                                 <div><h5 class="font-extrabold text-xs text-[#181C20]">{{ $lay->nama_layanan }}</h5><span class="text-[10px] text-gray-500 font-semibold mt-0.5 block">{{ $subCount }} Sub-Layanan</span></div>
-                                <form action="{{ route('admin.layanan.destroy', $lay->id) }}" method="POST" onsubmit="return confirm('Hapus kategori ini?')">@csrf @method('DELETE') <button type="submit" class="p-1.5 bg-rose-50 text-rose-600 rounded-lg"><span class="material-symbols-outlined text-sm">delete</span></button></form>
+                                <div class="flex items-center gap-1" @click.stop>
+                                    <!-- Tombol Edit Layanan Utama -->
+                                    <button @click="selectedEditLayanan = {{ json_encode($lay) }}; showModalEditLayanan = true" class="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-all" title="Edit Kategori">
+                                        <span class="material-symbols-outlined text-sm">edit</span>
+                                    </button>
+                                    <!-- Tombol Hapus Layanan Utama -->
+                                    <form action="{{ route('admin.layanan.destroy', $lay->id) }}" method="POST" onsubmit="return confirm('Hapus kategori ini?')">
+                                        @csrf 
+                                        @method('DELETE') 
+                                        <button type="submit" class="p-1.5 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 transition-all">
+                                            <span class="material-symbols-outlined text-sm">delete</span>
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
                         @endforeach
                     </div>
                 </div>
 
+                <!-- SUB LAYANAN -->
                 <div class="lg:col-span-7 bg-white rounded-2xl border border-[#E0E3E8] shadow-sm overflow-hidden flex flex-col">
                     <div class="p-4 bg-emerald-50/60 border-b flex items-center justify-between">
                         <div><span class="text-[9px] font-black text-emerald-700 uppercase">SUB-LAYANAN UNTUK:</span><h4 class="font-black text-sm text-[#181C20]" x-text="selectedLayananNama || 'Pilih Kategori'"></h4></div>
@@ -640,7 +674,20 @@
                                 @forelse($subList as $sub)
                                     <div class="p-3 bg-[#F8F9FA] border border-[#E0E3E8] rounded-xl flex items-center justify-between">
                                         <div class="flex items-center gap-2"><span class="material-symbols-outlined text-emerald-600 text-base">subdirectory_arrow_right</span><span class="font-extrabold text-xs text-gray-800">{{ $sub->nama_sub_layanan }}</span></div>
-                                        <form action="{{ route('admin.sub_layanan.destroy', $sub->id) }}" method="POST" onsubmit="return confirm('Hapus sub-layanan?')">@csrf @method('DELETE') <button type="submit" class="p-1.5 bg-rose-50 text-rose-600 rounded-lg"><span class="material-symbols-outlined text-sm">delete</span></button></form>
+                                        <div class="flex items-center gap-1">
+                                            <!-- Tombol Edit Sub-Layanan -->
+                                            <button @click="selectedEditSubLayanan = {{ json_encode($sub) }}; showModalEditSubLayanan = true" class="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-all" title="Edit Sub-Layanan">
+                                                <span class="material-symbols-outlined text-sm">edit</span>
+                                            </button>
+                                            <!-- Tombol Hapus Sub-Layanan -->
+                                            <form action="{{ route('admin.sub_layanan.destroy', $sub->id) }}" method="POST" onsubmit="return confirm('Hapus sub-layanan?')">
+                                                @csrf 
+                                                @method('DELETE') 
+                                                <button type="submit" class="p-1.5 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 transition-all">
+                                                    <span class="material-symbols-outlined text-sm">delete</span>
+                                                </button>
+                                            </form>
+                                        </div>
                                     </div>
                                 @empty
                                     <div class="p-8 text-center text-gray-400 font-bold text-xs">Belum ada sub-layanan.</div>
@@ -716,6 +763,54 @@
                     <p class="text-gray-500 mb-2">Reset kata sandi untuk akun: <strong class="text-gray-800" x-text="selectedUser.nama_lengkap"></strong></p>
                     <div><label class="font-bold block mb-1">Password Baru</label><input type="password" name="password" required minlength="6" class="w-full p-2.5 border rounded-xl" placeholder="Minimal 6 Karakter"></div>
                     <div class="flex justify-end gap-2 pt-3"><button type="button" @click="showModalPassAkun = false" class="px-4 py-2 bg-gray-100 rounded-xl font-bold">Batal</button><button type="submit" class="px-5 py-2 bg-amber-500 text-white font-bold rounded-xl shadow-sm">Ubah Password</button></div>
+                </form>
+            </template>
+        </div>
+    </div>
+
+    <!-- MODAL EDIT LAYANAN UTAMA -->
+    <div x-show="showModalEditLayanan" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalEditLayanan = false">
+            <div class="flex justify-between items-center border-b pb-3 border-gray-100">
+                <h3 class="text-base font-black flex items-center gap-1.5"><span class="material-symbols-outlined text-[#00509E]">edit_note</span> Edit Kategori Utama</h3>
+                <button type="button" @click="showModalEditLayanan = false" class="text-gray-400 hover:text-black"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            <template x-if="selectedEditLayanan">
+                <form :action="`{{ url('/admin/layanan/update') }}/${selectedEditLayanan.id}`" method="POST" class="space-y-3 text-xs">
+                    @csrf
+                    @method('PUT')
+                    <div>
+                        <label class="font-bold block mb-1">Nama Kategori Utama</label>
+                        <input type="text" name="nama_layanan" :value="selectedEditLayanan.nama_layanan" required class="w-full p-2.5 border rounded-xl font-bold">
+                    </div>
+                    <div class="flex justify-end gap-2 pt-3">
+                        <button type="button" @click="showModalEditLayanan = false" class="px-4 py-2 bg-gray-100 rounded-xl font-bold">Batal</button>
+                        <button type="submit" class="px-5 py-2 bg-[#00509E] text-white font-bold rounded-xl">Simpan Perubahan</button>
+                    </div>
+                </form>
+            </template>
+        </div>
+    </div>
+
+    <!-- MODAL EDIT SUB-LAYANAN -->
+    <div x-show="showModalEditSubLayanan" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalEditSubLayanan = false">
+            <div class="flex justify-between items-center border-b pb-3 border-gray-100">
+                <h3 class="text-base font-black flex items-center gap-1.5"><span class="material-symbols-outlined text-emerald-600">edit_note</span> Edit Sub-Layanan</h3>
+                <button type="button" @click="showModalEditSubLayanan = false" class="text-gray-400 hover:text-black"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            <template x-if="selectedEditSubLayanan">
+                <form :action="`{{ url('/admin/sub-layanan/update') }}/${selectedEditSubLayanan.id}`" method="POST" class="space-y-3 text-xs">
+                    @csrf
+                    @method('PUT')
+                    <div>
+                        <label class="font-bold block mb-1">Nama Sub-Layanan</label>
+                        <input type="text" name="nama_sub_layanan" :value="selectedEditSubLayanan.nama_sub_layanan" required class="w-full p-2.5 border rounded-xl font-bold">
+                    </div>
+                    <div class="flex justify-end gap-2 pt-3">
+                        <button type="button" @click="showModalEditSubLayanan = false" class="px-4 py-2 bg-gray-100 rounded-xl font-bold">Batal</button>
+                        <button type="submit" class="px-5 py-2 bg-emerald-600 text-white font-bold rounded-xl">Simpan Perubahan</button>
+                    </div>
                 </form>
             </template>
         </div>

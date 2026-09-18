@@ -76,8 +76,11 @@ Route::middleware(['auth'])->group(function () {
 
         // CRUD Layanan & Sub-Layanan
         Route::post('/admin/layanan/store', [AdminController::class, 'storeLayanan'])->name('admin.layanan.store');
+        Route::put('/admin/layanan/update/{id}', [AdminController::class, 'updateLayanan'])->name('admin.layanan.update');
         Route::delete('/admin/layanan/delete/{id}', [AdminController::class, 'destroyLayanan'])->name('admin.layanan.destroy');
+        
         Route::post('/admin/sub-layanan/store', [AdminController::class, 'storeSubLayanan'])->name('admin.sub_layanan.store');
+        Route::put('/admin/sub-layanan/update/{id}', [AdminController::class, 'updateSubLayanan'])->name('admin.sub_layanan.update');
         Route::delete('/admin/sub-layanan/delete/{id}', [AdminController::class, 'destroySubLayanan'])->name('admin.sub_layanan.destroy');
 
         // CRUD Staff CS & Admin Akun
