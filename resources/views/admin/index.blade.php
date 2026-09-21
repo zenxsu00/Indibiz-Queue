@@ -517,7 +517,6 @@
                             <tr>
                                 <th class="p-3">Info Pengguna</th>
                                 <th class="p-3">Hak Akses (Role)</th>
-                                <th class="p-3">Status Izin Akses</th>
                                 <th class="p-3">Sesi Loket Realtime</th>
                                 <th class="p-3 text-center">Manajemen Akun</th>
                             </tr>
@@ -537,12 +536,6 @@
                                 <td class="p-3">
                                     <span class="px-2.5 py-1 rounded-full text-[10px] font-black {{ $user->role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-emerald-100 text-emerald-700' }}">
                                         {{ strtoupper($user->role) }}
-                                    </span>
-                                </td>
-                                <td class="p-3">
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold {{ $user->is_active ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200' }}">
-                                        <span class="w-1.5 h-1.5 rounded-full {{ $user->is_active ? 'bg-emerald-500' : 'bg-rose-500' }}"></span>
-                                        <span>{{ $user->is_active ? 'Akses Aktif' : 'Akses Dikunci' }}</span>
                                     </span>
                                 </td>
                                 <td class="p-3">
@@ -572,13 +565,17 @@
                                         <button @click="selectedUser = {{ json_encode($user) }}; showModalPassAkun = true" class="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg transition-all" title="Ganti Password">
                                             <span class="material-symbols-outlined text-sm">key</span>
                                         </button>
-                                        <!-- Toggle Suspend -->
-                                        <form action="{{ route('admin.staff.toggle', $user->id) }}" method="POST">
+
+                                        <!-- TOMBOL FORCE LOGOUT AKUN NYANGKUT -->
+                                        @if($user->nomor_meja || $user->last_seen_at)
+                                        <form action="{{ route('admin.staff.force_logout', $user->id) }}" method="POST" onsubmit="return confirm('Tendang akun {{ $user->nama_lengkap }} dari lokasi loket/meja?')">
                                             @csrf
-                                            <button type="submit" class="p-1.5 {{ $user->is_active ? 'bg-rose-50 hover:bg-rose-100 text-rose-600' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600' }} rounded-lg transition-all" title="{{ $user->is_active ? 'Kunci/Nonaktifkan Akses' : 'Buka Kunci Akses' }}">
-                                                <span class="material-symbols-outlined text-sm">{{ $user->is_active ? 'lock' : 'lock_open' }}</span>
+                                            <button type="submit" class="p-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-all shadow-sm" title="Force Logout / Lepas Meja">
+                                                <span class="material-symbols-outlined text-sm">power_settings_new</span>
                                             </button>
                                         </form>
+                                        @endif
+
                                         <!-- Delete Akun -->
                                         <form action="{{ route('admin.staff.delete', $user->id) }}" method="POST" onsubmit="return confirm('PERINGATAN: Yakin menghapus akun ini permanen? Ini akan mempengaruhi data historis tiket yang ditangani staf ini.')">
                                             @csrf
@@ -591,7 +588,7 @@
                                 </td>
                             </tr>
                             @empty
-                            <tr><td colspan="5" class="p-6 text-center text-gray-400 font-bold">Belum ada akun di sistem.</td></tr>
+                            <tr><td colspan="4" class="p-6 text-center text-gray-400 font-bold">Belum ada akun di sistem.</td></tr>
                             @endforelse
                         </tbody>
                     </table>

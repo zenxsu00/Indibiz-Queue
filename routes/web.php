@@ -87,7 +87,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/admin/staff/store', [AdminController::class, 'storeStaff'])->name('admin.staff.store');
         Route::post('/admin/staff/update/{id}', [AdminController::class, 'updateStaff'])->name('admin.staff.update');
         Route::post('/admin/staff/password/{id}', [AdminController::class, 'updatePasswordStaff'])->name('admin.staff.password');
-        Route::post('/admin/staff/toggle/{id}', [AdminController::class, 'toggleStaffStatus'])->name('admin.staff.toggle');
+        Route::post('/admin/staff/force-logout/{id}', [AdminController::class, 'forceLogout'])->name('admin.staff.force_logout');
         Route::delete('/admin/staff/delete/{id}', [AdminController::class, 'destroyStaff'])->name('admin.staff.delete');
 
         // CRUD Master Meja

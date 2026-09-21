@@ -7,6 +7,7 @@ use App\Models\Layanan;
 use App\Models\SubLayanan;
 use App\Models\User;
 use App\Models\MasterMeja;
+use App\Models\CsActiveLog;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Contracts\View\View;
@@ -563,7 +564,7 @@ class AdminController extends Controller
     }
 
     // -------------------------------------------------------------
-    // FUNGSI MANAJEMEN AKUN (TAMBAH, EDIT, HAPUS)
+    // FUNGSI MANAJEMEN AKUN (TAMBAH, EDIT, FORCE LOGOUT, HAPUS)
     // -------------------------------------------------------------
     public function storeStaff(Request $request)
     {
@@ -616,14 +617,29 @@ class AdminController extends Controller
         return back()->with('success', 'Password akun berhasil diganti.');
     }
 
-    public function toggleStaffStatus($id)
+    public function forceLogout($id)
     {
         $user = User::findOrFail($id);
-        $user->is_active = !$user->is_active;
+
+        // Reset meja, penanda aktif, dan last seen
+        $user->nomor_meja = null;
+        $user->last_seen_at = null;
         $user->save();
 
-        $statusStr = $user->is_active ? 'diaktifkan' : 'ditangguhkan (disable)';
-        return back()->with('success', "Akun berhasil {$statusStr}.");
+        // Tutup log sesi CS jika masih ada yang statusnya menggantung
+        $now = Carbon::now('Asia/Jakarta');
+        CsActiveLog::where('user_id', $user->id)
+            ->whereNull('jam_selesai')
+            ->get()
+            ->each(function ($log) use ($now) {
+                $jamMulai = Carbon::parse($log->jam_mulai);
+                $log->update([
+                    'jam_selesai'  => $now,
+                    'durasi_menit' => $jamMulai->diffInMinutes($now),
+                ]);
+            });
+
+        return back()->with('success', "Sesi & lokasi meja akun {$user->nama_lengkap} (@{$user->username}) berhasil dilepas (Force Logout).");
     }
 
     public function destroyStaff($id)
