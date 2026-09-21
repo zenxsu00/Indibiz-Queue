@@ -20,7 +20,8 @@ function togglePdfCustomDates(val) {
 }
 
 function preparePdfSubmit(event) {
-    const period = document.getElementById('pdf_period_select').value;
+    const periodSelect = document.getElementById('pdf_period_select');
+    const period = periodSelect ? periodSelect.value : 'mtd';
     const startInput = document.querySelector('input[name="start_date"]');
     const endInput = document.querySelector('input[name="end_date"]');
     
@@ -74,36 +75,34 @@ function preparePdfSubmit(event) {
     return true;
 }
 
-// Event Listener DOM Ready
-document.addEventListener('DOMContentLoaded', function() {
-    const pdfSelect = document.getElementById('pdf_period_select');
-    if (pdfSelect) togglePdfCustomDates(pdfSelect.value);
-});
+// Inisialisasi Komponen Alpine JS via Alpine Event Listener
+document.addEventListener('alpine:init', () => {
 
-// Alpine Component: Grafik & Analitik
-function chartFilterComponent() {
-    return {
+    // Alpine Component: Grafik & Analitik
+    Alpine.data('chartFilterComponent', () => ({
         chartPeriod: (typeof serverPeriod !== 'undefined' && serverPeriod === 'custom') ? 'custom' : 'last30',
         isMerged: true,
         allDataSets: {},
         rawCsData: [],
         hiddenAccounts: [],
         
-        init: function() {
-            const canvasLine = document.getElementById('queueChart');
-            if (canvasLine && canvasLine.dataset.chartSets) {
-                try {
-                    this.allDataSets = JSON.parse(canvasLine.dataset.chartSets);
-                    const initialPeriod = this.chartPeriod === 'custom' ? 'last30' : this.chartPeriod;
-                    this.renderLineChart(initialPeriod);
-                    this.renderSlaCharts(initialPeriod);
-                } catch (e) { console.error(e); }
-            }
-            this.renderPieChart();
-            this.renderBarChart();
+        init() {
+            this.$nextTick(() => {
+                const canvasLine = document.getElementById('queueChart');
+                if (canvasLine && canvasLine.dataset.chartSets) {
+                    try {
+                        this.allDataSets = JSON.parse(canvasLine.dataset.chartSets);
+                        const initialPeriod = this.chartPeriod === 'custom' ? 'last30' : this.chartPeriod;
+                        this.renderLineChart(initialPeriod);
+                        this.renderSlaCharts(initialPeriod);
+                    } catch (e) { console.error('Gagal Parse Chart Data:', e); }
+                }
+                this.renderPieChart();
+                this.renderBarChart();
+            });
         },
 
-        switchChartPeriod: function(period) {
+        switchChartPeriod(period) {
             this.chartPeriod = period;
             if (period !== 'custom') {
                 this.renderLineChart(period);
@@ -111,7 +110,7 @@ function chartFilterComponent() {
             }
         },
 
-        toggleSlaMode: function(mergedStatus) {
+        toggleSlaMode(mergedStatus) {
             this.isMerged = mergedStatus;
             this.$nextTick(() => {
                 const currentPeriod = this.chartPeriod === 'custom' ? 'last30' : this.chartPeriod;
@@ -119,8 +118,8 @@ function chartFilterComponent() {
             });
         },
 
-        renderLineChart: function(periodKey) {
-            const dataSet = this.allDataSets[periodKey] || this.allDataSets['last30'];
+        renderLineChart(periodKey) {
+            const dataSet = this.allDataSets[periodKey] || this.allDataSets['last30'] || this.allDataSets['all'];
             const canvas = document.getElementById('queueChart');
             if (!canvas || !dataSet) return;
 
@@ -130,19 +129,19 @@ function chartFilterComponent() {
             globalQueueChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: dataSet.dates,
+                    labels: dataSet.dates || [],
                     datasets: [
-                        { label: 'Total Tiket Masuk', data: dataSet.total, borderColor: '#00509E', backgroundColor: 'rgba(0, 80, 158, 0.1)', fill: true, tension: 0.3 },
-                        { label: 'Layanan Selesai', data: dataSet.selesai, borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3 }
+                        { label: 'Total Tiket Masuk', data: dataSet.total || [], borderColor: '#00509E', backgroundColor: 'rgba(0, 80, 158, 0.1)', fill: true, tension: 0.3 },
+                        { label: 'Layanan Selesai', data: dataSet.selesai || [], borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3 }
                     ]
                 },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
             });
         },
 
-        renderSlaCharts: function(periodKey) {
+        renderSlaCharts(periodKey) {
             const activeKey = periodKey || (this.chartPeriod === 'custom' ? 'last30' : this.chartPeriod);
-            const dataSet = this.allDataSets[activeKey] || this.allDataSets['last30'];
+            const dataSet = this.allDataSets[activeKey] || this.allDataSets['last30'] || this.allDataSets['all'];
             if (!dataSet) return;
 
             if (this.isMerged) {
@@ -154,7 +153,7 @@ function chartFilterComponent() {
                 globalSlaMergedChart = new Chart(canvas.getContext('2d'), {
                     type: 'line',
                     data: {
-                        labels: dataSet.dates,
+                        labels: dataSet.dates || [],
                         datasets: [
                             { label: 'Avg Waktu Tunggu (Menit)', data: dataSet.avg_tunggu || [], borderColor: '#3B82F6', backgroundColor: 'rgba(59, 130, 246, 0.1)', fill: true, tension: 0.3 },
                             { label: 'Avg Durasi Konsul CS (Menit)', data: dataSet.avg_layanan || [], borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3 }
@@ -176,7 +175,7 @@ function chartFilterComponent() {
                     globalSlaTungguChart = new Chart(canvasTunggu.getContext('2d'), {
                         type: 'line',
                         data: {
-                            labels: dataSet.dates,
+                            labels: dataSet.dates || [],
                             datasets: [{ label: 'Waktu Tunggu', data: dataSet.avg_tunggu || [], borderColor: '#3B82F6', backgroundColor: 'rgba(59, 130, 246, 0.2)', fill: true, tension: 0.3 }]
                         },
                         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
@@ -188,7 +187,7 @@ function chartFilterComponent() {
                     globalSlaKonsulChart = new Chart(canvasKonsul.getContext('2d'), {
                         type: 'line',
                         data: {
-                            labels: dataSet.dates,
+                            labels: dataSet.dates || [],
                             datasets: [{ label: 'Durasi Konsul CS', data: dataSet.avg_layanan || [], borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.2)', fill: true, tension: 0.3 }]
                         },
                         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
@@ -197,7 +196,7 @@ function chartFilterComponent() {
             }
         },
 
-        renderPieChart: function() {
+        renderPieChart() {
             const canvas = document.getElementById('categoryPieChart');
             if (!canvas || !canvas.dataset.dist) return;
 
@@ -221,10 +220,10 @@ function chartFilterComponent() {
                     },
                     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
                 });
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error('Gagal Render Pie Chart:', e); }
         },
 
-        renderBarChart: function() {
+        renderBarChart() {
             const canvas = document.getElementById('csBarChart');
             if (!canvas || !canvas.dataset.cs) return;
 
@@ -260,14 +259,7 @@ function chartFilterComponent() {
                         responsive: true, 
                         maintainAspectRatio: false, 
                         plugins: { 
-                            legend: { display: false },
-                            tooltip: {
-                                backgroundColor: 'rgba(17, 24, 39, 0.9)',
-                                titleFont: { size: 13, weight: 'bold' },
-                                bodyFont: { size: 12 },
-                                padding: 10,
-                                cornerRadius: 8
-                            }
+                            legend: { display: false }
                         },
                         scales: {
                             x: { grid: { display: false, drawBorder: false } },
@@ -275,39 +267,50 @@ function chartFilterComponent() {
                         }
                     }
                 });
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error('Gagal Render Bar Chart:', e); }
         }
-    };
-}
+    }));
 
-// Alpine Component: Filter Tabel Riwayat
-function historyFilterComponent() {
-    return {
+    // Alpine Component: Filter Tabel Riwayat
+    Alpine.data('historyFilterComponent', () => ({
         daysLimit: '30',
         hideEmpty: false,
         sortField: 'raw_date',
         sortOrder: 'desc',
         rawHistory: [],
         
-        init: function() {
+        init() {
             const elem = document.getElementById('history-data-container');
             if (elem && elem.dataset.history) {
-                try { this.rawHistory = JSON.parse(elem.dataset.history); } catch (e) { this.rawHistory = []; }
+                try { 
+                    this.rawHistory = JSON.parse(elem.dataset.history); 
+                } catch (e) { 
+                    console.error('Gagal Parse Data Riwayat:', e);
+                    this.rawHistory = []; 
+                }
             }
         },
         
         get filteredHistory() {
+            if (!Array.isArray(this.rawHistory) || this.rawHistory.length === 0) return [];
+
             let data = [...this.rawHistory];
             if (this.daysLimit !== 'all') data = data.slice(0, parseInt(this.daysLimit));
             if (this.hideEmpty) data = data.filter(i => i.tiket_masuk > 0);
 
             var self = this;
             data.sort((a, b) => {
-                let valA = a[self.sortField];
-                let valB = b[self.sortField];
+                let valA = a[self.sortField] ?? '';
+                let valB = b[self.sortField] ?? '';
                 return self.sortOrder === 'asc' ? (valA > valB ? 1 : -1) : (valA < valB ? 1 : -1);
             });
             return data;
         }
-    };
-}
+    }));
+});
+
+// Event Listener DOM Ready
+document.addEventListener('DOMContentLoaded', function() {
+    const pdfSelect = document.getElementById('pdf_period_select');
+    if (pdfSelect) togglePdfCustomDates(pdfSelect.value);
+});

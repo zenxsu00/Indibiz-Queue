@@ -5,9 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Indibiz Queue</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Alpine JS & Script Eksternal Wajib Memakai Atribut 'defer' -->
+    <script defer src="{{ asset('js/admin-dashboard.js') }}"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <style>
         .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #F1F4F9; border-radius: 8px; }
@@ -348,12 +353,12 @@
                 <!-- CHART 1 -->
                 <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm">
                     <h3 class="text-sm font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2 mb-4 border-b pb-3"><span class="material-symbols-outlined text-[#00509E]">show_chart</span>1. Pendaftaran vs Selesai</h3>
-                    <div class="h-64 relative"><canvas id="queueChart" data-chart-sets='{{ json_encode($chartDataSets ?? []) }}'></canvas></div>
+                    <div class="h-64 relative"><canvas id="queueChart" data-chart-sets="{{ json_encode($chartDataSets ?? [], JSON_HEX_APOS | JSON_HEX_QUOT) }}"></canvas></div>
                 </div>
                 <!-- CHART 2 -->
                 <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
                     <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2 border-b pb-2"><span class="material-symbols-outlined text-[#00509E]">pie_chart</span>2. Kepadatan Kategori Layanan</h3>
-                    <div class="h-64 relative"><canvas id="categoryPieChart" data-dist='{{ json_encode($distribusiLayanan ?? []) }}'></canvas></div>
+                    <div class="h-64 relative"><canvas id="categoryPieChart" data-dist="{{ json_encode($distribusiLayanan ?? [], JSON_HEX_APOS | JSON_HEX_QUOT) }}"></canvas></div>
                 </div>
             </div>
 
@@ -372,7 +377,7 @@
                 </div>
             </div>
 
-            <!-- CHART 4 (MODERNISED + HIDE ACCOUNT) -->
+            <!-- CHART 4 -->
             <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3 relative">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-2 gap-3">
                     <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2">
@@ -380,7 +385,6 @@
                         4. Performa Produktivitas Staf CS per Akun
                     </h3>
                     
-                    <!-- FILTER HIDE AKUN -->
                     <div x-data="{ showFilter: false }" class="relative z-20">
                         <button @click="showFilter = !showFilter" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-all">
                             <span class="material-symbols-outlined text-[14px]">filter_alt</span> Sembunyikan Akun
@@ -400,13 +404,13 @@
                 </div>
 
                 <div class="h-64 sm:h-72 relative">
-                    <canvas id="csBarChart" data-cs='{{ json_encode($mejaCs ?? []) }}'></canvas>
+                    <canvas id="csBarChart" data-cs="{{ json_encode($mejaCs ?? [], JSON_HEX_APOS | JSON_HEX_QUOT) }}"></canvas>
                 </div>
             </div>
         </div>
 
         <!-- TAB 3: RIWAYAT OPERASIONAL REAL-TIME -->
-        <div x-show="activeTab === 'history'" id="history-data-container" data-history='{{ json_encode($historyBulanan) }}' x-data="historyFilterComponent()" class="bg-white border border-[#E0E3E8] rounded-2xl shadow-sm overflow-hidden flex flex-col space-y-4 p-6">
+        <div x-show="activeTab === 'history'" id="history-data-container" data-history="{{ json_encode($historyBulanan ?? [], JSON_HEX_APOS | JSON_HEX_QUOT) }}" x-data="historyFilterComponent()" class="bg-white border border-[#E0E3E8] rounded-2xl shadow-sm overflow-hidden flex flex-col space-y-4 p-6">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-[#E0E3E8] pb-4 gap-4">
                 <div>
                     <h3 class="text-lg font-black text-[#181C20]">Riwayat Operasional Antrean & Omset Harian</h3>
@@ -490,6 +494,9 @@
                                 <td class="p-3.5 text-right font-black text-[#181C20]" x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(row.total_omset)"></td>
                             </tr>
                         </template>
+                        <tr x-show="filteredHistory.length === 0">
+                            <td colspan="7" class="p-6 text-center text-gray-400 font-bold">Tidak ada data riwayat operasional.</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -557,25 +564,18 @@
                                 </td>
                                 <td class="p-3 text-center">
                                     <div class="flex items-center justify-center gap-1.5">
-                                        <!-- 1. Edit Profil Detail -->
                                         <button @click="selectedUser = {{ json_encode($user) }}; showModalEditAkun = true" class="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all" title="Edit Detail Profil">
                                             <span class="material-symbols-outlined text-base">edit</span>
                                         </button>
-
-                                        <!-- 2. Ganti Password -->
                                         <button @click="selectedUser = {{ json_encode($user) }}; showModalPassAkun = true" class="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg transition-all" title="Ganti Password">
                                             <span class="material-symbols-outlined text-base">key</span>
                                         </button>
-
-                                        <!-- 3. Force Logout / Lepas Meja Sesi -->
                                         <form action="{{ route('admin.staff.force_logout', $user->id) }}" method="POST" onsubmit="return confirm('Tendang/lepas lokasi meja untuk akun {{ $user->nama_lengkap }}?')">
                                             @csrf
                                             <button type="submit" class="p-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-all shadow-sm flex items-center justify-center" title="Force Logout / Lepas Sesi">
                                                 <span class="material-symbols-outlined text-base">power_settings_new</span>
                                             </button>
                                         </form>
-
-                                        <!-- 4. Hapus Akun Permanen -->
                                         <form action="{{ route('admin.staff.delete', $user->id) }}" method="POST" onsubmit="return confirm('PERINGATAN: Yakin menghapus akun {{ $user->nama_lengkap }} secara permanen?')">
                                             @csrf
                                             @method('DELETE')
@@ -639,11 +639,9 @@
                             <div @click="selectedLayananId = '{{ $lay->id }}'; selectedLayananNama = '{{ addslashes($lay->nama_layanan) }}'" :class="selectedLayananId == '{{ $lay->id }}' ? 'border-[#00509E] bg-[#00509E]/5 ring-2 ring-[#00509E]/20' : 'border-[#E0E3E8]'" class="p-3 border rounded-xl flex items-center justify-between cursor-pointer">
                                 <div><h5 class="font-extrabold text-xs text-[#181C20]">{{ $lay->nama_layanan }}</h5><span class="text-[10px] text-gray-500 font-semibold mt-0.5 block">{{ $subCount }} Sub-Layanan</span></div>
                                 <div class="flex items-center gap-1" @click.stop>
-                                    <!-- Tombol Edit Layanan Utama -->
                                     <button @click="selectedEditLayanan = {{ json_encode($lay) }}; showModalEditLayanan = true" class="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-all" title="Edit Kategori">
                                         <span class="material-symbols-outlined text-sm">edit</span>
                                     </button>
-                                    <!-- Tombol Hapus Layanan Utama -->
                                     <form action="{{ route('admin.layanan.destroy', $lay->id) }}" method="POST" onsubmit="return confirm('Hapus kategori ini?')">
                                         @csrf 
                                         @method('DELETE') 
@@ -671,11 +669,9 @@
                                     <div class="p-3 bg-[#F8F9FA] border border-[#E0E3E8] rounded-xl flex items-center justify-between">
                                         <div class="flex items-center gap-2"><span class="material-symbols-outlined text-emerald-600 text-base">subdirectory_arrow_right</span><span class="font-extrabold text-xs text-gray-800">{{ $sub->nama_sub_layanan }}</span></div>
                                         <div class="flex items-center gap-1">
-                                            <!-- Tombol Edit Sub-Layanan -->
                                             <button @click="selectedEditSubLayanan = {{ json_encode($sub) }}; showModalEditSubLayanan = true" class="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-all" title="Edit Sub-Layanan">
                                                 <span class="material-symbols-outlined text-sm">edit</span>
                                             </button>
-                                            <!-- Tombol Hapus Sub-Layanan -->
                                             <form action="{{ route('admin.sub_layanan.destroy', $sub->id) }}" method="POST" onsubmit="return confirm('Hapus sub-layanan?')">
                                                 @csrf 
                                                 @method('DELETE') 
@@ -697,9 +693,7 @@
 
     </main>
 
-    <!-- KUMPULAN MODAL POPUP -->
-
-    <!-- Modal Tambah Akun (Admin & CS) -->
+    <!-- MODAL POPUP -->
     <div x-show="showModalAkun" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalAkun = false">
             <div class="flex justify-between items-center border-b pb-3 border-gray-100">
@@ -727,7 +721,6 @@
         </div>
     </div>
 
-    <!-- Modal Edit Akun (Dilengkapi Bidang Ganti Password Opsional) -->
     <div x-show="showModalEditAkun" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalEditAkun = false">
             <h3 class="text-base font-black flex items-center gap-1.5"><span class="material-symbols-outlined text-[#00509E]">edit_square</span> Edit Detail Akun</h3>
@@ -753,7 +746,6 @@
         </div>
     </div>
 
-    <!-- Modal Ganti Password Khusus -->
     <div x-show="showModalPassAkun" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalPassAkun = false">
             <h3 class="text-base font-black flex items-center gap-1.5"><span class="material-symbols-outlined text-amber-500">lock_reset</span> Ganti Password</h3>
@@ -768,7 +760,6 @@
         </div>
     </div>
 
-    <!-- MODAL EDIT LAYANAN UTAMA -->
     <div x-show="showModalEditLayanan" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalEditLayanan = false">
             <div class="flex justify-between items-center border-b pb-3 border-gray-100">
@@ -792,7 +783,6 @@
         </div>
     </div>
 
-    <!-- MODAL EDIT SUB-LAYANAN -->
     <div x-show="showModalEditSubLayanan" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalEditSubLayanan = false">
             <div class="flex justify-between items-center border-b pb-3 border-gray-100">
@@ -816,7 +806,6 @@
         </div>
     </div>
 
-    <!-- MODAL POPUP: DETAIL TIKET ANTREAN -->
     <div x-show="showModalDetail" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-gray-100" @click.away="showModalDetail = false">
             <div class="flex justify-between items-center border-b pb-3 border-gray-100">
@@ -868,7 +857,6 @@
         </div>
     </div>
 
-    <!-- MODAL POPUP: KUSTOMISASI CETAK PDF -->
     <div x-show="showModalPdf" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-gray-100" @click.away="showModalPdf = false">
             <div class="flex justify-between items-center border-b pb-3 border-gray-100">
@@ -880,7 +868,6 @@
             </div>
 
             <form action="{{ route('admin.pdf') }}" method="GET" target="_blank" class="space-y-4 text-xs" onsubmit="return preparePdfSubmit(event)">
-                
                 <div class="space-y-2">
                     <label class="font-bold text-gray-700 block">1. Pilih Periode Waktu Laporan</label>
                     <select name="period" id="pdf_period_select" onchange="togglePdfCustomDates(this.value)" class="w-full p-2.5 border border-gray-300 rounded-xl font-bold text-gray-700">
@@ -908,7 +895,7 @@
                     <label class="font-bold text-gray-700 block mb-1">2. Filter Kategori Layanan</label>
                     <select name="layanan_id" class="w-full p-2.5 border border-gray-300 rounded-xl font-semibold">
                         <option value="">Semua Kategori Layanan</option>
-                        @foreach($layanans as $lay)
+                        @foreach($layanans as$lay)
                             <option value="{{ $lay->id }}">{{ $lay->nama_layanan }}</option>
                         @endforeach
                     </select>
@@ -950,7 +937,6 @@
         </div>
     </div>
 
-    <!-- MODAL TAMBAH MEJA -->
     <div x-show="showModalMeja" x-cloak class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalMeja = false">
             <h3 class="text-base font-black flex items-center gap-1.5"><span class="material-symbols-outlined text-emerald-600">add_box</span> Tambah Slot Meja</h3>
@@ -961,7 +947,6 @@
         </div>
     </div>
 
-    <!-- MODAL LAYANAN -->
     <div x-show="showModalLayanan" x-cloak class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalLayanan = false">
             <h3 class="text-base font-black">Tambah Kategori Layanan Utama</h3>
@@ -973,7 +958,6 @@
         </div>
     </div>
 
-    <!-- MODAL SUB-LAYANAN -->
     <div x-show="showModalSubLayanan" x-cloak class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalSubLayanan = false">
             <h3 class="text-base font-black">Tambah Sub-Layanan</h3>
@@ -991,6 +975,5 @@
     <script>
         var serverPeriod = "{{ request('period', 'all') }}";
     </script>
-    <script src="{{ asset('js/admin-dashboard.js') }}"></script>
 </body>
 </html>
