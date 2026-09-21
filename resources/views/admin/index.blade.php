@@ -39,8 +39,8 @@
           selectedEditLayanan: null,
           selectedEditSubLayanan: null,
           selectedPeriod: '{{ request('period', 'all') }}',
-          selectedLayananId: '{{ $layanans->first()?->id ?? '' }}',
-          selectedLayananNama: '{{ addslashes($layanans->first()?->nama_layanan ?? '') }}'
+          selectedLayananId: '{{ optional($layanans->first())->id ?? '' }}',
+          selectedLayananNama: '{{ addslashes(optional($layanans->first())->nama_layanan ?? '') }}'
       }">
 
     <!-- HEADER MOBILE -->
@@ -286,14 +286,14 @@
                                 <tr class="hover:bg-[#F8F9FA] transition-colors">
                                     <td class="p-3 font-mono font-bold text-[#00509E]">{{ $tiket->nomor_antrian }}</td>
                                     <td class="p-3 font-bold">
-                                        {{ $tiket->pelanggan?->nama ?? '-' }} 
-                                        <br><span class="text-[10px] text-gray-400 font-normal">{{ $tiket->pelanggan?->no_hp ?? '-' }}</span>
+                                        {{ optional($tiket->pelanggan)->nama ?? '-' }} 
+                                        <br><span class="text-[10px] text-gray-400 font-normal">{{ optional($tiket->pelanggan)->no_hp ?? '-' }}</span>
                                     </td>
                                     <td class="p-3">
-                                        <span class="bg-blue-50 text-[#00509E] px-2 py-0.5 rounded font-bold block mb-0.5">{{ $tiket->layanan?->nama_layanan ?? '-' }}</span>
-                                        <span class="text-[10px] text-gray-500 italic">{{ $tiket->subLayanan?->nama_sub_layanan ?? 'Tanpa Sub-Layanan' }}</span>
+                                        <span class="bg-blue-50 text-[#00509E] px-2 py-0.5 rounded font-bold block mb-0.5">{{ optional($tiket->layanan)->nama_layanan ?? '-' }}</span>
+                                        <span class="text-[10px] text-gray-500 italic">{{ optional($tiket->subLayanan)->nama_sub_layanan ?? 'Tanpa Sub-Layanan' }}</span>
                                     </td>
-                                    <td class="p-3 font-bold">{{ $tiket->cs?->nama_lengkap ? $tiket->cs->nama_lengkap . ' (M' . $tiket->cs->nomor_meja . ')' : '-' }}</td>
+                                    <td class="p-3 font-bold">{{ optional($tiket->cs)->nama_lengkap ? optional($tiket->cs)->nama_lengkap . ' (M' . optional($tiket->cs)->nomor_meja . ')' : '-' }}</td>
                                     <td class="p-3 text-gray-500">{{ \Carbon\Carbon::parse($tiket->waktu_dibuat)->timezone('Asia/Jakarta')->format('d/m/Y H:i') }}</td>
                                     <td class="p-3">
                                         <span class="px-2 py-0.5 rounded-full text-[10px] font-black {{ 
@@ -634,7 +634,7 @@
                     <div class="p-4 bg-[#F8F9FA] border-b flex justify-between items-center"><h4 class="font-black text-xs text-[#00509E] uppercase">Kategori Utama</h4></div>
                     <div class="p-3 space-y-2 max-h-[550px] overflow-y-auto custom-scrollbar">
                         @foreach($layanans as $lay)
-                            @php $subCount = $lay->subLayanans?->count() ?? 0; @endphp
+                            @php $subCount = optional($lay->subLayanans)->count() ?? 0; @endphp
                             <div @click="selectedLayananId = '{{ $lay->id }}'; selectedLayananNama = '{{ addslashes($lay->nama_layanan) }}'" :class="selectedLayananId == '{{ $lay->id }}' ? 'border-[#00509E] bg-[#00509E]/5 ring-2 ring-[#00509E]/20' : 'border-[#E0E3E8]'" class="p-3 border rounded-xl flex items-center justify-between cursor-pointer">
                                 <div><h5 class="font-extrabold text-xs text-[#181C20]">{{ $lay->nama_layanan }}</h5><span class="text-[10px] text-gray-500 font-semibold mt-0.5 block">{{ $subCount }} Sub-Layanan</span></div>
                                 <div class="flex items-center gap-1" @click.stop>
@@ -662,7 +662,7 @@
                     </div>
                     <div class="p-4 min-h-[300px] max-h-[550px] overflow-y-auto custom-scrollbar">
                         @foreach($layanans as $lay)
-                            @php $subList = $lay->subLayanans?->all() ?? []; @endphp
+                            @php $subList = optional($lay->subLayanans)->all() ?? []; @endphp
                             <div x-show="selectedLayananId == '{{ $lay->id }}'" class="space-y-2">
                                 @forelse($subList as $sub)
                                     <div class="p-3 bg-[#F8F9FA] border border-[#E0E3E8] rounded-xl flex items-center justify-between">
