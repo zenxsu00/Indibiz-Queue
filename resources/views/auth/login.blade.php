@@ -5,10 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login Portal - Indibiz Queue</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- File JS Eksternal -->
-    <script src="{{ asset('js/auth-login.js') }}"></script>
+    
+    <!-- Alpine JS & File JS Eksternal (Wajib menggunakan 'defer') -->
+    <script defer src="{{ asset('js/auth-login.js') }}"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
 </head>
 <body class="bg-[#F8F9FA] min-h-screen flex items-center justify-center p-4" x-data="loginComponent()">
 
@@ -16,13 +22,13 @@
         
         <!-- SWITCH TAB MODE LOGIN -->
         <div class="grid grid-cols-2 bg-gray-100 p-1.5 border-b border-[#E0E3E8]">
-            <button type="button" @click="activeTab = 'cs'" 
+            <button type="button" @click="switchTab('cs')" 
                 :class="activeTab === 'cs' ? 'bg-white text-[#00509E] shadow-sm font-extrabold' : 'text-gray-500 font-bold hover:text-gray-800'"
                 class="py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer">
                 <span class="material-symbols-outlined text-base">support_agent</span>
                 <span>Petugas CS</span>
             </button>
-            <button type="button" @click="activeTab = 'admin'" 
+            <button type="button" @click="switchTab('admin')" 
                 :class="activeTab === 'admin' ? 'bg-white text-[#EE2E24] shadow-sm font-extrabold' : 'text-gray-500 font-bold hover:text-gray-800'"
                 class="py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer">
                 <span class="material-symbols-outlined text-base">admin_panel_settings</span>
@@ -31,7 +37,7 @@
         </div>
 
         <!-- HEADER CS -->
-        <div x-show="activeTab === 'cs'" class="bg-[#00509E] text-white p-5 flex items-center gap-3">
+        <div x-show="activeTab === 'cs'" x-cloak class="bg-[#00509E] text-white p-5 flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white">
                 <span class="material-symbols-outlined text-2xl">support_agent</span>
             </div>
@@ -42,7 +48,7 @@
         </div>
 
         <!-- HEADER ADMIN -->
-        <div x-show="activeTab === 'admin'" class="bg-[#181C20] text-white p-5 flex items-center gap-3">
+        <div x-show="activeTab === 'admin'" x-cloak class="bg-[#181C20] text-white p-5 flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-[#EE2E24] flex items-center justify-center text-white">
                 <span class="material-symbols-outlined text-2xl">analytics</span>
             </div>
@@ -56,7 +62,7 @@
         <div class="p-6">
             
             <!-- FORM 1: KHUSUS PETUGAS CS -->
-            <div x-show="activeTab === 'cs'">
+            <div x-show="activeTab === 'cs'" x-cloak>
                 <div class="bg-[#F8F9FA] p-3.5 rounded-xl border border-[#E0E3E8] text-xs text-[#5D3F3B] mb-6">
                     <p class="font-bold text-[#181C20] mb-0.5">🔒 Area Petugas Loket</p>
                     Gunakan akun CS untuk membuka Konsol Pemanggilan Loket.
@@ -97,7 +103,7 @@
             </div>
 
             <!-- FORM 2: KHUSUS SUPER ADMIN -->
-            <div x-show="activeTab === 'admin'">
+            <div x-show="activeTab === 'admin'" x-cloak>
                 <div class="bg-[#F8F9FA] p-3.5 rounded-xl border border-[#E0E3E8] text-xs text-[#5D3F3B] mb-6">
                     <p class="font-bold text-[#181C20] mb-0.5">🔒 Area Super Admin</p>
                     Gunakan akun Super Admin untuk memantau analitik & omset.
