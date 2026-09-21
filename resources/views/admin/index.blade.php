@@ -5,13 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Indibiz Queue</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <script defer src="{{ asset('js/admin-dashboard.js') }}"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
     <style>
         .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #F1F4F9; border-radius: 8px; }
@@ -39,8 +35,8 @@
           selectedEditLayanan: null,
           selectedEditSubLayanan: null,
           selectedPeriod: '{{ request('period', 'all') }}',
-          selectedLayananId: '{{ optional($layanans->first())->id ?? '' }}',
-          selectedLayananNama: '{{ addslashes(optional($layanans->first())->nama_layanan ?? '') }}'
+          selectedLayananId: '{{ $layanans->first()?->id ?? '' }}',
+          selectedLayananNama: '{{ addslashes($layanans->first()?->nama_layanan ?? '') }}'
       }">
 
     <!-- HEADER MOBILE -->
@@ -286,14 +282,14 @@
                                 <tr class="hover:bg-[#F8F9FA] transition-colors">
                                     <td class="p-3 font-mono font-bold text-[#00509E]">{{ $tiket->nomor_antrian }}</td>
                                     <td class="p-3 font-bold">
-                                        {{ optional($tiket->pelanggan)->nama ?? '-' }} 
-                                        <br><span class="text-[10px] text-gray-400 font-normal">{{ optional($tiket->pelanggan)->no_hp ?? '-' }}</span>
+                                        {{ $tiket->pelanggan?->nama ?? '-' }} 
+                                        <br><span class="text-[10px] text-gray-400 font-normal">{{ $tiket->pelanggan?->no_hp ?? '-' }}</span>
                                     </td>
                                     <td class="p-3">
-                                        <span class="bg-blue-50 text-[#00509E] px-2 py-0.5 rounded font-bold block mb-0.5">{{ optional($tiket->layanan)->nama_layanan ?? '-' }}</span>
-                                        <span class="text-[10px] text-gray-500 italic">{{ optional($tiket->subLayanan)->nama_sub_layanan ?? 'Tanpa Sub-Layanan' }}</span>
+                                        <span class="bg-blue-50 text-[#00509E] px-2 py-0.5 rounded font-bold block mb-0.5">{{ $tiket->layanan?->nama_layanan ?? '-' }}</span>
+                                        <span class="text-[10px] text-gray-500 italic">{{ $tiket->subLayanan?->nama_sub_layanan ?? 'Tanpa Sub-Layanan' }}</span>
                                     </td>
-                                    <td class="p-3 font-bold">{{ optional($tiket->cs)->nama_lengkap ? optional($tiket->cs)->nama_lengkap . ' (M' . optional($tiket->cs)->nomor_meja . ')' : '-' }}</td>
+                                    <td class="p-3 font-bold">{{ $tiket->cs?->nama_lengkap ? $tiket->cs->nama_lengkap . ' (M' . $tiket->cs->nomor_meja . ')' : '-' }}</td>
                                     <td class="p-3 text-gray-500">{{ \Carbon\Carbon::parse($tiket->waktu_dibuat)->timezone('Asia/Jakarta')->format('d/m/Y H:i') }}</td>
                                     <td class="p-3">
                                         <span class="px-2 py-0.5 rounded-full text-[10px] font-black {{ 
@@ -306,7 +302,7 @@
                                     <td class="p-3 text-gray-600 max-w-[200px] truncate" title="{{ $tiket->catatan_cs ?? $tiket->ringkasan_solusi ?? '-' }}">{{ $tiket->catatan_cs ?? $tiket->ringkasan_solusi ?? '-' }}</td>
                                     <td class="p-3 text-right font-black text-[#181C20]">Rp {{ number_format($tiket->nominal_pembayaran, 0, ',', '.') }}</td>
                                     <td class="p-3 text-center">
-                                        <button @click="selectedTiket = @json($tiket); showModalDetail = true" class="px-2.5 py-1 bg-[#00509E]/10 text-[#00509E] hover:bg-[#00509E] hover:text-white rounded-lg font-bold text-[10px] transition-all cursor-pointer">Detail</button>
+                                        <button @click="selectedTiket = {{ json_encode($tiket) }}; showModalDetail = true" class="px-2.5 py-1 bg-[#00509E]/10 text-[#00509E] hover:bg-[#00509E] hover:text-white rounded-lg font-bold text-[10px] transition-all cursor-pointer">Detail</button>
                                     </td>
                                 </tr>
                             @empty
@@ -352,12 +348,12 @@
                 <!-- CHART 1 -->
                 <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm">
                     <h3 class="text-sm font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2 mb-4 border-b pb-3"><span class="material-symbols-outlined text-[#00509E]">show_chart</span>1. Pendaftaran vs Selesai</h3>
-                    <div class="h-64 relative"><canvas id="queueChart" data-chart-sets='@json($chartDataSets ?? [])'></canvas></div>
+                    <div class="h-64 relative"><canvas id="queueChart" data-chart-sets='{{ json_encode($chartDataSets ?? []) }}'></canvas></div>
                 </div>
                 <!-- CHART 2 -->
                 <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
                     <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2 border-b pb-2"><span class="material-symbols-outlined text-[#00509E]">pie_chart</span>2. Kepadatan Kategori Layanan</h3>
-                    <div class="h-64 relative"><canvas id="categoryPieChart" data-dist='@json($distribusiLayanan ?? [])'></canvas></div>
+                    <div class="h-64 relative"><canvas id="categoryPieChart" data-dist='{{ json_encode($distribusiLayanan ?? []) }}'></canvas></div>
                 </div>
             </div>
 
@@ -376,7 +372,7 @@
                 </div>
             </div>
 
-            <!-- CHART 4 -->
+            <!-- CHART 4 (MODERNISED + HIDE ACCOUNT) -->
             <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3 relative">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-2 gap-3">
                     <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2">
@@ -384,6 +380,7 @@
                         4. Performa Produktivitas Staf CS per Akun
                     </h3>
                     
+                    <!-- FILTER HIDE AKUN -->
                     <div x-data="{ showFilter: false }" class="relative z-20">
                         <button @click="showFilter = !showFilter" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-all">
                             <span class="material-symbols-outlined text-[14px]">filter_alt</span> Sembunyikan Akun
@@ -403,13 +400,13 @@
                 </div>
 
                 <div class="h-64 sm:h-72 relative">
-                    <canvas id="csBarChart" data-cs='@json($mejaCs ?? [])'></canvas>
+                    <canvas id="csBarChart" data-cs='{{ json_encode($mejaCs ?? []) }}'></canvas>
                 </div>
             </div>
         </div>
 
         <!-- TAB 3: RIWAYAT OPERASIONAL REAL-TIME -->
-        <div x-show="activeTab === 'history'" id="history-data-container" data-history='@json($historyBulanan ?? [])' x-data="historyFilterComponent()" class="bg-white border border-[#E0E3E8] rounded-2xl shadow-sm overflow-hidden flex flex-col space-y-4 p-6">
+        <div x-show="activeTab === 'history'" id="history-data-container" data-history='{{ json_encode($historyBulanan) }}' x-data="historyFilterComponent()" class="bg-white border border-[#E0E3E8] rounded-2xl shadow-sm overflow-hidden flex flex-col space-y-4 p-6">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-[#E0E3E8] pb-4 gap-4">
                 <div>
                     <h3 class="text-lg font-black text-[#181C20]">Riwayat Operasional Antrean & Omset Harian</h3>
@@ -493,9 +490,6 @@
                                 <td class="p-3.5 text-right font-black text-[#181C20]" x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(row.total_omset)"></td>
                             </tr>
                         </template>
-                        <tr x-show="filteredHistory.length === 0">
-                            <td colspan="7" class="p-6 text-center text-gray-400 font-bold">Tidak ada data riwayat operasional.</td>
-                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -563,18 +557,25 @@
                                 </td>
                                 <td class="p-3 text-center">
                                     <div class="flex items-center justify-center gap-1.5">
-                                        <button @click="selectedUser = @json($user); showModalEditAkun = true" class="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all" title="Edit Detail Profil">
+                                        <!-- 1. Edit Profil Detail -->
+                                        <button @click="selectedUser = {{ json_encode($user) }}; showModalEditAkun = true" class="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all" title="Edit Detail Profil">
                                             <span class="material-symbols-outlined text-base">edit</span>
                                         </button>
-                                        <button @click="selectedUser = @json($user); showModalPassAkun = true" class="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg transition-all" title="Ganti Password">
+
+                                        <!-- 2. Ganti Password -->
+                                        <button @click="selectedUser = {{ json_encode($user) }}; showModalPassAkun = true" class="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg transition-all" title="Ganti Password">
                                             <span class="material-symbols-outlined text-base">key</span>
                                         </button>
+
+                                        <!-- 3. Force Logout / Lepas Meja Sesi -->
                                         <form action="{{ route('admin.staff.force_logout', $user->id) }}" method="POST" onsubmit="return confirm('Tendang/lepas lokasi meja untuk akun {{ $user->nama_lengkap }}?')">
                                             @csrf
                                             <button type="submit" class="p-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-all shadow-sm flex items-center justify-center" title="Force Logout / Lepas Sesi">
                                                 <span class="material-symbols-outlined text-base">power_settings_new</span>
                                             </button>
                                         </form>
+
+                                        <!-- 4. Hapus Akun Permanen -->
                                         <form action="{{ route('admin.staff.delete', $user->id) }}" method="POST" onsubmit="return confirm('PERINGATAN: Yakin menghapus akun {{ $user->nama_lengkap }} secara permanen?')">
                                             @csrf
                                             @method('DELETE')
@@ -634,13 +635,15 @@
                     <div class="p-4 bg-[#F8F9FA] border-b flex justify-between items-center"><h4 class="font-black text-xs text-[#00509E] uppercase">Kategori Utama</h4></div>
                     <div class="p-3 space-y-2 max-h-[550px] overflow-y-auto custom-scrollbar">
                         @foreach($layanans as $lay)
-                            @php $subCount = optional($lay->subLayanans)->count() ?? 0; @endphp
+                            @php $subCount = $lay->subLayanans?->count() ?? 0; @endphp
                             <div @click="selectedLayananId = '{{ $lay->id }}'; selectedLayananNama = '{{ addslashes($lay->nama_layanan) }}'" :class="selectedLayananId == '{{ $lay->id }}' ? 'border-[#00509E] bg-[#00509E]/5 ring-2 ring-[#00509E]/20' : 'border-[#E0E3E8]'" class="p-3 border rounded-xl flex items-center justify-between cursor-pointer">
                                 <div><h5 class="font-extrabold text-xs text-[#181C20]">{{ $lay->nama_layanan }}</h5><span class="text-[10px] text-gray-500 font-semibold mt-0.5 block">{{ $subCount }} Sub-Layanan</span></div>
                                 <div class="flex items-center gap-1" @click.stop>
-                                    <button @click="selectedEditLayanan = @json($lay); showModalEditLayanan = true" class="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-all" title="Edit Kategori">
+                                    <!-- Tombol Edit Layanan Utama -->
+                                    <button @click="selectedEditLayanan = {{ json_encode($lay) }}; showModalEditLayanan = true" class="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-all" title="Edit Kategori">
                                         <span class="material-symbols-outlined text-sm">edit</span>
                                     </button>
+                                    <!-- Tombol Hapus Layanan Utama -->
                                     <form action="{{ route('admin.layanan.destroy', $lay->id) }}" method="POST" onsubmit="return confirm('Hapus kategori ini?')">
                                         @csrf 
                                         @method('DELETE') 
@@ -662,15 +665,17 @@
                     </div>
                     <div class="p-4 min-h-[300px] max-h-[550px] overflow-y-auto custom-scrollbar">
                         @foreach($layanans as $lay)
-                            @php $subList = optional($lay->subLayanans)->all() ?? []; @endphp
+                            @php $subList = $lay->subLayanans?->all() ?? []; @endphp
                             <div x-show="selectedLayananId == '{{ $lay->id }}'" class="space-y-2">
                                 @forelse($subList as $sub)
                                     <div class="p-3 bg-[#F8F9FA] border border-[#E0E3E8] rounded-xl flex items-center justify-between">
                                         <div class="flex items-center gap-2"><span class="material-symbols-outlined text-emerald-600 text-base">subdirectory_arrow_right</span><span class="font-extrabold text-xs text-gray-800">{{ $sub->nama_sub_layanan }}</span></div>
                                         <div class="flex items-center gap-1">
-                                            <button @click="selectedEditSubLayanan = @json($sub); showModalEditSubLayanan = true" class="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-all" title="Edit Sub-Layanan">
+                                            <!-- Tombol Edit Sub-Layanan -->
+                                            <button @click="selectedEditSubLayanan = {{ json_encode($sub) }}; showModalEditSubLayanan = true" class="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-all" title="Edit Sub-Layanan">
                                                 <span class="material-symbols-outlined text-sm">edit</span>
                                             </button>
+                                            <!-- Tombol Hapus Sub-Layanan -->
                                             <form action="{{ route('admin.sub_layanan.destroy', $sub->id) }}" method="POST" onsubmit="return confirm('Hapus sub-layanan?')">
                                                 @csrf 
                                                 @method('DELETE') 
@@ -692,7 +697,9 @@
 
     </main>
 
-    <!-- MODAL POPUP -->
+    <!-- KUMPULAN MODAL POPUP -->
+
+    <!-- Modal Tambah Akun (Admin & CS) -->
     <div x-show="showModalAkun" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalAkun = false">
             <div class="flex justify-between items-center border-b pb-3 border-gray-100">
@@ -720,6 +727,7 @@
         </div>
     </div>
 
+    <!-- Modal Edit Akun (Dilengkapi Bidang Ganti Password Opsional) -->
     <div x-show="showModalEditAkun" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalEditAkun = false">
             <h3 class="text-base font-black flex items-center gap-1.5"><span class="material-symbols-outlined text-[#00509E]">edit_square</span> Edit Detail Akun</h3>
@@ -745,6 +753,7 @@
         </div>
     </div>
 
+    <!-- Modal Ganti Password Khusus -->
     <div x-show="showModalPassAkun" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalPassAkun = false">
             <h3 class="text-base font-black flex items-center gap-1.5"><span class="material-symbols-outlined text-amber-500">lock_reset</span> Ganti Password</h3>
@@ -759,6 +768,7 @@
         </div>
     </div>
 
+    <!-- MODAL EDIT LAYANAN UTAMA -->
     <div x-show="showModalEditLayanan" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalEditLayanan = false">
             <div class="flex justify-between items-center border-b pb-3 border-gray-100">
@@ -782,6 +792,7 @@
         </div>
     </div>
 
+    <!-- MODAL EDIT SUB-LAYANAN -->
     <div x-show="showModalEditSubLayanan" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalEditSubLayanan = false">
             <div class="flex justify-between items-center border-b pb-3 border-gray-100">
@@ -805,6 +816,7 @@
         </div>
     </div>
 
+    <!-- MODAL POPUP: DETAIL TIKET ANTREAN -->
     <div x-show="showModalDetail" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-gray-100" @click.away="showModalDetail = false">
             <div class="flex justify-between items-center border-b pb-3 border-gray-100">
@@ -856,6 +868,7 @@
         </div>
     </div>
 
+    <!-- MODAL POPUP: KUSTOMISASI CETAK PDF -->
     <div x-show="showModalPdf" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-gray-100" @click.away="showModalPdf = false">
             <div class="flex justify-between items-center border-b pb-3 border-gray-100">
@@ -867,6 +880,7 @@
             </div>
 
             <form action="{{ route('admin.pdf') }}" method="GET" target="_blank" class="space-y-4 text-xs" onsubmit="return preparePdfSubmit(event)">
+                
                 <div class="space-y-2">
                     <label class="font-bold text-gray-700 block">1. Pilih Periode Waktu Laporan</label>
                     <select name="period" id="pdf_period_select" onchange="togglePdfCustomDates(this.value)" class="w-full p-2.5 border border-gray-300 rounded-xl font-bold text-gray-700">
@@ -894,7 +908,7 @@
                     <label class="font-bold text-gray-700 block mb-1">2. Filter Kategori Layanan</label>
                     <select name="layanan_id" class="w-full p-2.5 border border-gray-300 rounded-xl font-semibold">
                         <option value="">Semua Kategori Layanan</option>
-                        @foreach($layanans as$lay)
+                        @foreach($layanans as $lay)
                             <option value="{{ $lay->id }}">{{ $lay->nama_layanan }}</option>
                         @endforeach
                     </select>
@@ -936,6 +950,7 @@
         </div>
     </div>
 
+    <!-- MODAL TAMBAH MEJA -->
     <div x-show="showModalMeja" x-cloak class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalMeja = false">
             <h3 class="text-base font-black flex items-center gap-1.5"><span class="material-symbols-outlined text-emerald-600">add_box</span> Tambah Slot Meja</h3>
@@ -946,6 +961,7 @@
         </div>
     </div>
 
+    <!-- MODAL LAYANAN -->
     <div x-show="showModalLayanan" x-cloak class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalLayanan = false">
             <h3 class="text-base font-black">Tambah Kategori Layanan Utama</h3>
@@ -957,6 +973,7 @@
         </div>
     </div>
 
+    <!-- MODAL SUB-LAYANAN -->
     <div x-show="showModalSubLayanan" x-cloak class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalSubLayanan = false">
             <h3 class="text-base font-black">Tambah Sub-Layanan</h3>
@@ -970,9 +987,318 @@
         </div>
     </div>
 
-    <!-- SCRIPT INJECTION -->
+    <!-- SCRIPTS ENGINES -->
     <script>
+        var globalQueueChart = null;
+        var globalPieChart = null;
+        var globalSlaMergedChart = null;
+        var globalSlaTungguChart = null;
+        var globalSlaKonsulChart = null;
+        var globalBarChart = null;
+
         var serverPeriod = "{{ request('period', 'all') }}";
+
+        function togglePdfCustomDates(val) {
+            const container = document.getElementById('pdf_custom_dates_container');
+            if (!container) return;
+            if (val === 'custom') {
+                container.classList.remove('hidden');
+                container.classList.add('grid');
+            } else {
+                container.classList.add('hidden');
+                container.classList.remove('grid');
+            }
+        }
+
+        function preparePdfSubmit(event) {
+            const period = document.getElementById('pdf_period_select').value;
+            const startInput = document.querySelector('input[name="start_date"]');
+            const endInput = document.querySelector('input[name="end_date"]');
+            
+            if (period !== 'custom') {
+                const today = new Date();
+                let startDate = new Date();
+                
+                if (period === 'wtd') {
+                    const day = startDate.getDay() || 7;
+                    if (day !== 1) startDate.setHours(-24 * (day - 1));
+                } else if (period === 'mtd') {
+                    startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                } else if (period === 'last_30') {
+                    startDate.setDate(today.getDate() - 30);
+                } else if (period === 'ytd') {
+                    startDate = new Date(today.getFullYear(), 0, 1);
+                }
+
+                const formatDate = (date) => {
+                    const y = date.getFullYear();
+                    const m = String(date.getMonth() + 1).padStart(2, '0');
+                    const d = String(date.getDate()).padStart(2, '0');
+                    return `${y}-${m}-${d}`;
+                };
+
+                if(startInput) startInput.value = formatDate(startDate);
+                if(endInput) endInput.value = formatDate(today);
+            }
+
+            const summarySrc = document.getElementById('summary-content-source');
+            localStorage.setItem('pdf_summary_data', summarySrc ? summarySrc.innerHTML : '');
+
+            const lineCanvas = document.getElementById('queueChart');
+            const pieCanvas = document.getElementById('categoryPieChart');
+            const slaMerged = document.getElementById('slaMergedChart');
+            const slaTunggu = document.getElementById('slaTungguSeparateChart');
+            const slaKonsul = document.getElementById('slaKonsulSeparateChart');
+            const csBar = document.getElementById('csBarChart');
+
+            localStorage.setItem('pdf_line_data', lineCanvas ? lineCanvas.toDataURL('image/png') : '');
+            localStorage.setItem('pdf_pie_data', pieCanvas ? pieCanvas.toDataURL('image/png') : '');
+            
+            localStorage.setItem('pdf_sla_merged_data', slaMerged ? slaMerged.toDataURL('image/png') : '');
+            localStorage.setItem('pdf_sla_tunggu_data', slaTunggu ? slaTunggu.toDataURL('image/png') : '');
+            localStorage.setItem('pdf_sla_konsul_data', slaKonsul ? slaKonsul.toDataURL('image/png') : '');
+            localStorage.setItem('pdf_cs_bar_data', csBar ? csBar.toDataURL('image/png') : '');
+
+            const isMergedVisible = slaMerged && slaMerged.offsetParent !== null;
+            localStorage.setItem('pdf_sla_is_merged', isMergedVisible ? '1' : '0');
+
+            return true;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const pdfSelect = document.getElementById('pdf_period_select');
+            if (pdfSelect) togglePdfCustomDates(pdfSelect.value);
+        });
+
+        function chartFilterComponent() {
+            return {
+                chartPeriod: serverPeriod === 'custom' ? 'custom' : 'last30',
+                isMerged: true,
+                allDataSets: {},
+                rawCsData: [],
+                hiddenAccounts: [],
+                
+                init: function() {
+                    const canvasLine = document.getElementById('queueChart');
+                    if (canvasLine && canvasLine.dataset.chartSets) {
+                        try {
+                            this.allDataSets = JSON.parse(canvasLine.dataset.chartSets);
+                            const initialPeriod = this.chartPeriod === 'custom' ? 'last30' : this.chartPeriod;
+                            this.renderLineChart(initialPeriod);
+                            this.renderSlaCharts(initialPeriod);
+                        } catch (e) { console.error(e); }
+                    }
+                    this.renderPieChart();
+                    this.renderBarChart();
+                },
+
+                switchChartPeriod: function(period) {
+                    this.chartPeriod = period;
+                    if (period !== 'custom') {
+                        this.renderLineChart(period);
+                        this.renderSlaCharts(period);
+                    }
+                },
+
+                toggleSlaMode: function(mergedStatus) {
+                    this.isMerged = mergedStatus;
+                    this.$nextTick(() => {
+                        const currentPeriod = this.chartPeriod === 'custom' ? 'last30' : this.chartPeriod;
+                        this.renderSlaCharts(currentPeriod);
+                    });
+                },
+
+                renderLineChart: function(periodKey) {
+                    const dataSet = this.allDataSets[periodKey] || this.allDataSets['last30'];
+                    const canvas = document.getElementById('queueChart');
+                    if (!canvas || !dataSet) return;
+
+                    const ctx = canvas.getContext('2d');
+                    if (globalQueueChart) globalQueueChart.destroy();
+
+                    globalQueueChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: dataSet.dates,
+                            datasets: [
+                                { label: 'Total Tiket Masuk', data: dataSet.total, borderColor: '#00509E', backgroundColor: 'rgba(0, 80, 158, 0.1)', fill: true, tension: 0.3 },
+                                { label: 'Layanan Selesai', data: dataSet.selesai, borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3 }
+                            ]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
+                    });
+                },
+
+                renderSlaCharts: function(periodKey) {
+                    const activeKey = periodKey || (this.chartPeriod === 'custom' ? 'last30' : this.chartPeriod);
+                    const dataSet = this.allDataSets[activeKey] || this.allDataSets['last30'];
+                    if (!dataSet) return;
+
+                    if (this.isMerged) {
+                        const canvas = document.getElementById('slaMergedChart');
+                        if (!canvas) return;
+
+                        if (globalSlaMergedChart) globalSlaMergedChart.destroy();
+
+                        globalSlaMergedChart = new Chart(canvas.getContext('2d'), {
+                            type: 'line',
+                            data: {
+                                labels: dataSet.dates,
+                                datasets: [
+                                    { label: 'Avg Waktu Tunggu (Menit)', data: dataSet.avg_tunggu || [], borderColor: '#3B82F6', backgroundColor: 'rgba(59, 130, 246, 0.1)', fill: true, tension: 0.3 },
+                                    { label: 'Avg Durasi Konsul CS (Menit)', data: dataSet.avg_layanan || [], borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3 }
+                                ]
+                            },
+                            options: { 
+                                responsive: true, 
+                                maintainAspectRatio: false, 
+                                plugins: { legend: { position: 'top' } },
+                                scales: { y: { beginAtZero: true, title: { display: true, text: 'Waktu (Menit)' } } }
+                            }
+                        });
+                    } else {
+                        const canvasTunggu = document.getElementById('slaTungguSeparateChart');
+                        const canvasKonsul = document.getElementById('slaKonsulSeparateChart');
+
+                        if (canvasTunggu) {
+                            if (globalSlaTungguChart) globalSlaTungguChart.destroy();
+                            globalSlaTungguChart = new Chart(canvasTunggu.getContext('2d'), {
+                                type: 'line',
+                                data: {
+                                    labels: dataSet.dates,
+                                    datasets: [{ label: 'Waktu Tunggu', data: dataSet.avg_tunggu || [], borderColor: '#3B82F6', backgroundColor: 'rgba(59, 130, 246, 0.2)', fill: true, tension: 0.3 }]
+                                },
+                                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                            });
+                        }
+
+                        if (canvasKonsul) {
+                            if (globalSlaKonsulChart) globalSlaKonsulChart.destroy();
+                            globalSlaKonsulChart = new Chart(canvasKonsul.getContext('2d'), {
+                                type: 'line',
+                                data: {
+                                    labels: dataSet.dates,
+                                    datasets: [{ label: 'Durasi Konsul CS', data: dataSet.avg_layanan || [], borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.2)', fill: true, tension: 0.3 }]
+                                },
+                                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                            });
+                        }
+                    }
+                },
+
+                renderPieChart: function() {
+                    const canvas = document.getElementById('categoryPieChart');
+                    if (!canvas || !canvas.dataset.dist) return;
+
+                    try {
+                        let raw = JSON.parse(canvas.dataset.dist);
+                        if (!Array.isArray(raw)) raw = Object.values(raw);
+
+                        const labels = raw.map(i => i.nama);
+                        const data = raw.map(i => i.total);
+
+                        if (globalPieChart) globalPieChart.destroy();
+
+                        globalPieChart = new Chart(canvas.getContext('2d'), {
+                            type: 'pie',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    data: data,
+                                    backgroundColor: ['#00509E', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#64748B']
+                                }]
+                            },
+                            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+                        });
+                    } catch (e) { console.error(e); }
+                },
+
+                renderBarChart: function() {
+                    const canvas = document.getElementById('csBarChart');
+                    if (!canvas || !canvas.dataset.cs) return;
+
+                    try {
+                        if (this.rawCsData.length === 0) {
+                            this.rawCsData = JSON.parse(canvas.dataset.cs);
+                        }
+
+                        const filteredData = this.rawCsData.filter(i => {
+                            return !this.hiddenAccounts.includes(i.id.toString());
+                        });
+
+                        const labels = filteredData.map(i => i.nama + (i.nomor_meja > 0 ? ' (M' + i.nomor_meja + ')' : ''));
+                        const data = filteredData.map(i => i.total_dilayani);
+
+                        if (globalBarChart) globalBarChart.destroy();
+
+                        globalBarChart = new Chart(canvas.getContext('2d'), {
+                            type: 'bar',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    label: 'Tiket Berhasil Diselesaikan',
+                                    data: data,
+                                    backgroundColor: '#8B5CF6', 
+                                    borderRadius: 6, 
+                                    borderSkipped: false,
+                                    barPercentage: 0.6
+                                }]
+                            },
+                            options: { 
+                                indexAxis: 'y', 
+                                responsive: true, 
+                                maintainAspectRatio: false, 
+                                plugins: { 
+                                    legend: { display: false },
+                                    tooltip: {
+                                        backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                                        titleFont: { size: 13, weight: 'bold' },
+                                        bodyFont: { size: 12 },
+                                        padding: 10,
+                                        cornerRadius: 8
+                                    }
+                                },
+                                scales: {
+                                    x: { grid: { display: false, drawBorder: false } },
+                                    y: { grid: { color: '#F3F4F6', drawBorder: false } }
+                                }
+                            }
+                        });
+                    } catch (e) { console.error(e); }
+                }
+            };
+        }
+
+        function historyFilterComponent() {
+            return {
+                daysLimit: '30',
+                hideEmpty: false,
+                sortField: 'raw_date',
+                sortOrder: 'desc',
+                rawHistory: [],
+                
+                init: function() {
+                    const elem = document.getElementById('history-data-container');
+                    if (elem && elem.dataset.history) {
+                        try { this.rawHistory = JSON.parse(elem.dataset.history); } catch (e) { this.rawHistory = []; }
+                    }
+                },
+                
+                get filteredHistory() {
+                    let data = [...this.rawHistory];
+                    if (this.daysLimit !== 'all') data = data.slice(0, parseInt(this.daysLimit));
+                    if (this.hideEmpty) data = data.filter(i => i.tiket_masuk > 0);
+
+                    var self = this;
+                    data.sort((a, b) => {
+                        let valA = a[self.sortField];
+                        let valB = b[self.sortField];
+                        return self.sortOrder === 'asc' ? (valA > valB ? 1 : -1) : (valA < valB ? 1 : -1);
+                    });
+                    return data;
+                }
+            };
+        }
     </script>
 </body>
 </html>
