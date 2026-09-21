@@ -557,31 +557,29 @@
                                 </td>
                                 <td class="p-3 text-center">
                                     <div class="flex items-center justify-center gap-1.5">
-                                        <!-- Edit Profil -->
-                                        <button @click="selectedUser = {{ json_encode($user) }}; showModalEditAkun = true" class="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all" title="Edit Detail">
+                                        <!-- 1. Edit Profil Detail -->
+                                        <button @click="selectedUser = {{ json_encode($user) }}; showModalEditAkun = true" class="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all" title="Edit Detail Profil">
                                             <span class="material-symbols-outlined text-base">edit</span>
                                         </button>
 
-                                        <!-- Ganti Password -->
+                                        <!-- 2. Ganti Password -->
                                         <button @click="selectedUser = {{ json_encode($user) }}; showModalPassAkun = true" class="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg transition-all" title="Ganti Password">
                                             <span class="material-symbols-outlined text-base">key</span>
                                         </button>
 
-                                        <!-- Force Logout (Khusus akun CS yang sedang online/tersambung meja) -->
-                                        @if($user->nomor_meja)
-                                            <form action="{{ route('admin.staff.force_logout', $user->id) }}" method="POST" onsubmit="return confirm('Tendang akun {{ $user->nama_lengkap }} dari lokasi loket/meja?')">
-                                                @csrf
-                                                <button type="submit" class="p-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-all shadow-sm" title="Force Logout / Lepas Meja">
-                                                    <span class="material-symbols-outlined text-base">power_settings_new</span>
-                                                </button>
-                                            </form>
-                                        @endif
+                                        <!-- 3. Force Logout / Lepas Meja Sesi -->
+                                        <form action="{{ route('admin.staff.force_logout', $user->id) }}" method="POST" onsubmit="return confirm('Tendang/lepas lokasi meja untuk akun {{ $user->nama_lengkap }}?')">
+                                            @csrf
+                                            <button type="submit" class="p-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-all shadow-sm flex items-center justify-center" title="Force Logout / Lepas Sesi">
+                                                <span class="material-symbols-outlined text-base">power_settings_new</span>
+                                            </button>
+                                        </form>
 
-                                        <!-- Hapus Akun (Merah) -->
+                                        <!-- 4. Hapus Akun Permanen -->
                                         <form action="{{ route('admin.staff.delete', $user->id) }}" method="POST" onsubmit="return confirm('PERINGATAN: Yakin menghapus akun {{ $user->nama_lengkap }} secara permanen?')">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="p-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-all shadow-sm flex items-center justify-center" title="Hapus Akun">
+                                            <button type="submit" class="p-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-all shadow-sm flex items-center justify-center" title="Hapus Akun Permanen">
                                                 <span class="material-symbols-outlined text-base">delete</span>
                                             </button>
                                         </form>
@@ -729,7 +727,7 @@
         </div>
     </div>
 
-    <!-- Modal Edit Akun -->
+    <!-- Modal Edit Akun (Dilengkapi Bidang Ganti Password Opsional) -->
     <div x-show="showModalEditAkun" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalEditAkun = false">
             <h3 class="text-base font-black flex items-center gap-1.5"><span class="material-symbols-outlined text-[#00509E]">edit_square</span> Edit Detail Akun</h3>
@@ -745,13 +743,17 @@
                             <option value="admin" :selected="selectedUser.role === 'admin'">Admin</option>
                         </select>
                     </div>
+                    <div>
+                        <label class="font-bold block mb-1">Password Baru (Opsional)</label>
+                        <input type="password" name="password" minlength="6" class="w-full p-2.5 border rounded-xl" placeholder="Kosongkan jika tidak ingin mengubah password">
+                    </div>
                     <div class="flex justify-end gap-2 pt-3"><button type="button" @click="showModalEditAkun = false" class="px-4 py-2 bg-gray-100 rounded-xl font-bold">Batal</button><button type="submit" class="px-5 py-2 bg-[#00509E] text-white font-bold rounded-xl">Update Profil</button></div>
                 </form>
             </template>
         </div>
     </div>
 
-    <!-- Modal Ganti Password -->
+    <!-- Modal Ganti Password Khusus -->
     <div x-show="showModalPassAkun" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalPassAkun = false">
             <h3 class="text-base font-black flex items-center gap-1.5"><span class="material-symbols-outlined text-amber-500">lock_reset</span> Ganti Password</h3>

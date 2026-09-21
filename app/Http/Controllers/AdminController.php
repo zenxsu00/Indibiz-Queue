@@ -592,15 +592,22 @@ class AdminController extends Controller
         $request->validate([
             'nama_lengkap' => 'required|string|max:255',
             'username'     => 'required|string|max:255|unique:users,username,'.$id,
-            'role'         => 'required|in:admin,cs'
+            'role'         => 'required|in:admin,cs',
+            'password'     => 'nullable|string|min:6'
         ]);
 
         $user = User::findOrFail($id);
-        $user->update([
+        $data = [
             'nama_lengkap' => $request->nama_lengkap,
             'username'     => $request->username,
             'role'         => $request->role,
-        ]);
+        ];
+
+        if ($request->filled('password')) {
+            $data['password'] = Hash::make($request->password);
+        }
+
+        $user->update($data);
 
         return back()->with('success', 'Detail profil akun berhasil diperbarui.');
     }
