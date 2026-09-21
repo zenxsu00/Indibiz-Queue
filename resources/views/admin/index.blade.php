@@ -6,7 +6,6 @@
     <title>Admin Dashboard - Indibiz Queue</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Alpine JS & Script Eksternal Wajib Memakai Atribut 'defer' -->
     <script defer src="{{ asset('js/admin-dashboard.js') }}"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
@@ -307,7 +306,7 @@
                                     <td class="p-3 text-gray-600 max-w-[200px] truncate" title="{{ $tiket->catatan_cs ?? $tiket->ringkasan_solusi ?? '-' }}">{{ $tiket->catatan_cs ?? $tiket->ringkasan_solusi ?? '-' }}</td>
                                     <td class="p-3 text-right font-black text-[#181C20]">Rp {{ number_format($tiket->nominal_pembayaran, 0, ',', '.') }}</td>
                                     <td class="p-3 text-center">
-                                        <button @click="selectedTiket = {{ json_encode($tiket) }}; showModalDetail = true" class="px-2.5 py-1 bg-[#00509E]/10 text-[#00509E] hover:bg-[#00509E] hover:text-white rounded-lg font-bold text-[10px] transition-all cursor-pointer">Detail</button>
+                                        <button @click="selectedTiket = @json($tiket); showModalDetail = true" class="px-2.5 py-1 bg-[#00509E]/10 text-[#00509E] hover:bg-[#00509E] hover:text-white rounded-lg font-bold text-[10px] transition-all cursor-pointer">Detail</button>
                                     </td>
                                 </tr>
                             @empty
@@ -353,12 +352,12 @@
                 <!-- CHART 1 -->
                 <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm">
                     <h3 class="text-sm font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2 mb-4 border-b pb-3"><span class="material-symbols-outlined text-[#00509E]">show_chart</span>1. Pendaftaran vs Selesai</h3>
-                    <div class="h-64 relative"><canvas id="queueChart" data-chart-sets="{{ json_encode($chartDataSets ?? [], JSON_HEX_APOS | JSON_HEX_QUOT) }}"></canvas></div>
+                    <div class="h-64 relative"><canvas id="queueChart" data-chart-sets='@json($chartDataSets ?? [])'></canvas></div>
                 </div>
                 <!-- CHART 2 -->
                 <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
                     <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2 border-b pb-2"><span class="material-symbols-outlined text-[#00509E]">pie_chart</span>2. Kepadatan Kategori Layanan</h3>
-                    <div class="h-64 relative"><canvas id="categoryPieChart" data-dist="{{ json_encode($distribusiLayanan ?? [], JSON_HEX_APOS | JSON_HEX_QUOT) }}"></canvas></div>
+                    <div class="h-64 relative"><canvas id="categoryPieChart" data-dist='@json($distribusiLayanan ?? [])'></canvas></div>
                 </div>
             </div>
 
@@ -404,13 +403,13 @@
                 </div>
 
                 <div class="h-64 sm:h-72 relative">
-                    <canvas id="csBarChart" data-cs="{{ json_encode($mejaCs ?? [], JSON_HEX_APOS | JSON_HEX_QUOT) }}"></canvas>
+                    <canvas id="csBarChart" data-cs='@json($mejaCs ?? [])'></canvas>
                 </div>
             </div>
         </div>
 
         <!-- TAB 3: RIWAYAT OPERASIONAL REAL-TIME -->
-        <div x-show="activeTab === 'history'" id="history-data-container" data-history="{{ json_encode($historyBulanan ?? [], JSON_HEX_APOS | JSON_HEX_QUOT) }}" x-data="historyFilterComponent()" class="bg-white border border-[#E0E3E8] rounded-2xl shadow-sm overflow-hidden flex flex-col space-y-4 p-6">
+        <div x-show="activeTab === 'history'" id="history-data-container" data-history='@json($historyBulanan ?? [])' x-data="historyFilterComponent()" class="bg-white border border-[#E0E3E8] rounded-2xl shadow-sm overflow-hidden flex flex-col space-y-4 p-6">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-[#E0E3E8] pb-4 gap-4">
                 <div>
                     <h3 class="text-lg font-black text-[#181C20]">Riwayat Operasional Antrean & Omset Harian</h3>
@@ -564,10 +563,10 @@
                                 </td>
                                 <td class="p-3 text-center">
                                     <div class="flex items-center justify-center gap-1.5">
-                                        <button @click="selectedUser = {{ json_encode($user) }}; showModalEditAkun = true" class="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all" title="Edit Detail Profil">
+                                        <button @click="selectedUser = @json($user); showModalEditAkun = true" class="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all" title="Edit Detail Profil">
                                             <span class="material-symbols-outlined text-base">edit</span>
                                         </button>
-                                        <button @click="selectedUser = {{ json_encode($user) }}; showModalPassAkun = true" class="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg transition-all" title="Ganti Password">
+                                        <button @click="selectedUser = @json($user); showModalPassAkun = true" class="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg transition-all" title="Ganti Password">
                                             <span class="material-symbols-outlined text-base">key</span>
                                         </button>
                                         <form action="{{ route('admin.staff.force_logout', $user->id) }}" method="POST" onsubmit="return confirm('Tendang/lepas lokasi meja untuk akun {{ $user->nama_lengkap }}?')">
@@ -639,7 +638,7 @@
                             <div @click="selectedLayananId = '{{ $lay->id }}'; selectedLayananNama = '{{ addslashes($lay->nama_layanan) }}'" :class="selectedLayananId == '{{ $lay->id }}' ? 'border-[#00509E] bg-[#00509E]/5 ring-2 ring-[#00509E]/20' : 'border-[#E0E3E8]'" class="p-3 border rounded-xl flex items-center justify-between cursor-pointer">
                                 <div><h5 class="font-extrabold text-xs text-[#181C20]">{{ $lay->nama_layanan }}</h5><span class="text-[10px] text-gray-500 font-semibold mt-0.5 block">{{ $subCount }} Sub-Layanan</span></div>
                                 <div class="flex items-center gap-1" @click.stop>
-                                    <button @click="selectedEditLayanan = {{ json_encode($lay) }}; showModalEditLayanan = true" class="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-all" title="Edit Kategori">
+                                    <button @click="selectedEditLayanan = @json($lay); showModalEditLayanan = true" class="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-all" title="Edit Kategori">
                                         <span class="material-symbols-outlined text-sm">edit</span>
                                     </button>
                                     <form action="{{ route('admin.layanan.destroy', $lay->id) }}" method="POST" onsubmit="return confirm('Hapus kategori ini?')">
@@ -669,7 +668,7 @@
                                     <div class="p-3 bg-[#F8F9FA] border border-[#E0E3E8] rounded-xl flex items-center justify-between">
                                         <div class="flex items-center gap-2"><span class="material-symbols-outlined text-emerald-600 text-base">subdirectory_arrow_right</span><span class="font-extrabold text-xs text-gray-800">{{ $sub->nama_sub_layanan }}</span></div>
                                         <div class="flex items-center gap-1">
-                                            <button @click="selectedEditSubLayanan = {{ json_encode($sub) }}; showModalEditSubLayanan = true" class="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-all" title="Edit Sub-Layanan">
+                                            <button @click="selectedEditSubLayanan = @json($sub); showModalEditSubLayanan = true" class="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-all" title="Edit Sub-Layanan">
                                                 <span class="material-symbols-outlined text-sm">edit</span>
                                             </button>
                                             <form action="{{ route('admin.sub_layanan.destroy', $sub->id) }}" method="POST" onsubmit="return confirm('Hapus sub-layanan?')">
