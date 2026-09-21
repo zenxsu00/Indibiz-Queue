@@ -164,6 +164,15 @@ class CsController extends Controller
             return redirect()->route('login')->with('error', 'Akses akun Anda dikunci oleh Super Admin.');
         }
 
+        // --- PENANGANAN MODE SPECTATOR UNTUK ADMIN ---
+        if ($request->has('mode_spectator') && strtolower($user->role) === 'admin') {
+            $user->nomor_meja = null;
+            $user->save();
+            session()->forget('meja_terpilih');
+
+            return redirect()->route('cs.index')->with('success', 'Berhasil masuk ke CS Console dalam Mode Spectator.');
+        }
+
         $request->validate([
             'nomor_meja' => 'required|integer|gt:0',
         ]);
