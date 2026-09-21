@@ -18,7 +18,7 @@
 </head>
 <body class="bg-[#F8F9FA] min-h-screen font-sans text-[#181C20] flex flex-col lg:flex-row antialiased overflow-x-hidden selection:bg-[#EE2E24] selection:text-white" 
       x-data="{ 
-          activeTab: 'operations', 
+          activeTab: 'staff', 
           mobileMenu: false, 
           showModalAkun: false, 
           showModalEditAkun: false,
@@ -556,32 +556,33 @@
                                     @endif
                                 </td>
                                 <td class="p-3 text-center">
-                                    <div class="flex items-center justify-center gap-1">
+                                    <div class="flex items-center justify-center gap-1.5">
                                         <!-- Edit Profil -->
-                                        <button @click="selectedUser = {{ json_encode($user) }}; showModalEditAkun = true" class="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-all" title="Edit Detail">
-                                            <span class="material-symbols-outlined text-sm">edit</span>
+                                        <button @click="selectedUser = {{ json_encode($user) }}; showModalEditAkun = true" class="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all" title="Edit Detail">
+                                            <span class="material-symbols-outlined text-base">edit</span>
                                         </button>
+
                                         <!-- Ganti Password -->
                                         <button @click="selectedUser = {{ json_encode($user) }}; showModalPassAkun = true" class="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg transition-all" title="Ganti Password">
-                                            <span class="material-symbols-outlined text-sm">key</span>
+                                            <span class="material-symbols-outlined text-base">key</span>
                                         </button>
 
-                                        <!-- TOMBOL FORCE LOGOUT AKUN NYANGKUT -->
-                                        @if($user->nomor_meja || $user->last_seen_at)
-                                        <form action="{{ route('admin.staff.force_logout', $user->id) }}" method="POST" onsubmit="return confirm('Tendang akun {{ $user->nama_lengkap }} dari lokasi loket/meja?')">
-                                            @csrf
-                                            <button type="submit" class="p-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-all shadow-sm" title="Force Logout / Lepas Meja">
-                                                <span class="material-symbols-outlined text-sm">power_settings_new</span>
-                                            </button>
-                                        </form>
+                                        <!-- Force Logout (Khusus akun CS yang sedang online/tersambung meja) -->
+                                        @if($user->nomor_meja)
+                                            <form action="{{ route('admin.staff.force_logout', $user->id) }}" method="POST" onsubmit="return confirm('Tendang akun {{ $user->nama_lengkap }} dari lokasi loket/meja?')">
+                                                @csrf
+                                                <button type="submit" class="p-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-all shadow-sm" title="Force Logout / Lepas Meja">
+                                                    <span class="material-symbols-outlined text-base">power_settings_new</span>
+                                                </button>
+                                            </form>
                                         @endif
 
-                                        <!-- Delete Akun -->
-                                        <form action="{{ route('admin.staff.delete', $user->id) }}" method="POST" onsubmit="return confirm('PERINGATAN: Yakin menghapus akun ini permanen? Ini akan mempengaruhi data historis tiket yang ditangani staf ini.')">
+                                        <!-- Hapus Akun (Merah) -->
+                                        <form action="{{ route('admin.staff.delete', $user->id) }}" method="POST" onsubmit="return confirm('PERINGATAN: Yakin menghapus akun {{ $user->nama_lengkap }} secara permanen?')">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="p-1.5 bg-gray-800 hover:bg-black text-white rounded-lg transition-all" title="Hapus Akun">
-                                                <span class="material-symbols-outlined text-sm">delete_forever</span>
+                                            <button type="submit" class="p-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-all shadow-sm flex items-center justify-center" title="Hapus Akun">
+                                                <span class="material-symbols-outlined text-base">delete</span>
                                             </button>
                                         </form>
                                     </div>
