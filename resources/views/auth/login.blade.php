@@ -5,10 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login Portal - Indibiz Queue</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- File JS Eksternal -->
+    <script src="{{ asset('js/auth-login.js') }}"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 </head>
-<body class="bg-[#F8F9FA] min-h-screen flex items-center justify-center p-4" x-data="{ activeTab: 'cs' }">
+<body class="bg-[#F8F9FA] min-h-screen flex items-center justify-center p-4" x-data="loginComponent()">
 
     <div class="bg-white rounded-2xl shadow-2xl border border-[#E0E3E8] max-w-md w-full overflow-hidden transition-all">
         
@@ -74,7 +76,6 @@
                         <input type="password" name="password" required placeholder="Masukkan password" class="w-full px-4 py-3 border border-[#E0E3E8] bg-[#F8F9FA] rounded-xl text-sm font-semibold tracking-widest focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00509E]">
                     </div>
 
-                    <!-- PENANGANAN NOTIFIKASI ERROR (FLASH SESSION + VALIDATION ERRORS) -->
                     @if(session('error'))
                         <div class="p-3 bg-rose-50 border border-rose-200 text-[#BA1A1A] rounded-xl text-xs font-bold flex items-center gap-2">
                             <span class="material-symbols-outlined text-base">error</span>
@@ -116,7 +117,6 @@
                         <input type="password" name="password" required placeholder="Masukkan password admin" class="w-full px-4 py-3 border border-[#E0E3E8] bg-[#F8F9FA] rounded-xl text-sm font-semibold tracking-widest focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#EE2E24]">
                     </div>
 
-                    <!-- PENANGANAN NOTIFIKASI ERROR (FLASH SESSION + VALIDATION ERRORS) -->
                     @if(session('error'))
                         <div class="p-3 bg-rose-50 border border-rose-200 text-[#BA1A1A] rounded-xl text-xs font-bold flex items-center gap-2">
                             <span class="material-symbols-outlined text-base">error</span>
