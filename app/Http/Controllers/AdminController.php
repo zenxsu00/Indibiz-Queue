@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str; // Tambahan Helper untuk generate string acak
 use stdClass;
 
 class AdminController extends Controller
@@ -410,10 +411,22 @@ class AdminController extends Controller
         ]);
     }
 
+    /**
+     * PERBAIKAN: Fungsi Store Layanan (Membuat kode_layanan otomatis)
+     */
     public function storeLayanan(Request $request)
     {
         $request->validate(['nama_layanan' => 'required|string|max:255']);
-        Layanan::create(['nama_layanan' => $request->input('nama_layanan'), 'is_active' => true]);
+        
+        // Generate kode unik acak, misal: LYN-A1B2C
+        $kodeBaru = 'LYN-' . strtoupper(Str::random(5));
+        
+        Layanan::create([
+            'kode_layanan' => $kodeBaru,
+            'nama_layanan' => $request->input('nama_layanan'), 
+            'is_active' => true
+        ]);
+        
         return back()->with('success', 'Kategori Layanan Utama berhasil ditambahkan.');
     }
 
