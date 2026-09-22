@@ -12,7 +12,6 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str; // Tambahan Helper untuk generate string acak
 use stdClass;
 
 class AdminController extends Controller
@@ -412,17 +411,42 @@ class AdminController extends Controller
     }
 
     /**
-     * PERBAIKAN: Fungsi Store Layanan (Membuat kode_layanan otomatis)
+     * PERBAIKAN: Fungsi Store Layanan (Melanjutkan Urutan Abjad)
      */
     public function storeLayanan(Request $request)
     {
         $request->validate(['nama_layanan' => 'required|string|max:255']);
         
-        // Generate kode unik acak, misal: LYN-A1B2C
-        $kodeBaru = 'LYN-' . strtoupper(Str::random(5));
+        // Ambil semua kode layanan dari database
+        $semuaKode = Layanan::pluck('kode_layanan')->toArray();
         
+        // Filter hanya kode yang benar-benar berupa huruf (mengabaikan kode error seperti LYN-5V1VZ)
+        $kodeValid = array_filter($semuaKode, function($kode) {
+            return ctype_alpha($kode);
+        });
+
+        if (empty($kodeValid)) {
+            // Jika belum ada layanan sama sekali, mulai dari A
+            $kodeBaru = 'A';
+        } else {
+            // Urutkan untuk mendapatkan huruf terakhir (A-Z, lalu AA, AB dst)
+            usort($kodeValid, function($a, $b) {
+                if (strlen($a) == strlen($b)) {
+                    return strcmp($a, $b);
+                }
+                return strlen($a) - strlen($b);
+            });
+            
+            // Ambil abjad tertinggi/terakhir di database
+            $lastCode = end($kodeValid);
+            $kodeBaru = $lastCode;
+            
+            // Increment otomatis di PHP (contoh: 'E' menjadi 'F', 'Z' menjadi 'AA')
+            $kodeBaru++;
+        }
+
         Layanan::create([
-            'kode_layanan' => $kodeBaru,
+            'kode_layanan' => strtoupper($kodeBaru),
             'nama_layanan' => $request->input('nama_layanan'), 
             'is_active' => true
         ]);
