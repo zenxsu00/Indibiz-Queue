@@ -18,7 +18,7 @@
 </head>
 <body class="bg-[#F8F9FA] min-h-screen font-sans text-[#181C20] flex flex-col lg:flex-row antialiased overflow-x-hidden selection:bg-[#EE2E24] selection:text-white" 
       x-data="{ 
-          activeTab: 'staff', 
+          activeTab: 'operations', 
           mobileMenu: false, 
           showModalAkun: false, 
           showModalEditAkun: false,
