@@ -18,7 +18,7 @@
 </head>
 <body class="bg-[#F8F9FA] min-h-screen font-sans text-[#181C20] flex flex-col lg:flex-row antialiased overflow-x-hidden selection:bg-[#EE2E24] selection:text-white" 
       x-data="{ 
-          activeTab: 'operations', 
+          activeTab: localStorage.getItem('admin_active_tab') || 'operations', 
           mobileMenu: false, 
           showModalAkun: false, 
           showModalEditAkun: false,
@@ -37,7 +37,8 @@
           selectedPeriod: '{{ request('period', 'all') }}',
           selectedLayananId: '{{ $layanans->first()?->id ?? '' }}',
           selectedLayananNama: '{{ addslashes($layanans->first()?->nama_layanan ?? '') }}'
-      }">
+      }"
+      x-init="$watch('activeTab', value => localStorage.setItem('admin_active_tab', value))">
 
     <!-- HEADER MOBILE -->
     <header class="lg:hidden bg-[#00509E] text-white p-4 flex justify-between items-center shadow-md sticky top-0 z-40">
