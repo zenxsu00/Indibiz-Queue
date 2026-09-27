@@ -8,6 +8,7 @@ use App\Models\MasterMeja;
 use App\Models\Layanan;
 use App\Models\SubLayanan;
 use App\Models\CsActiveLog;
+use App\Models\PengaturanSistem;
 use App\Events\TiketDipanggil;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -268,16 +269,21 @@ class CsController extends Controller
                 $query->whereDate('waktu_selesai', $now->toDateString());
                 break;
 
+            case 'wtd':
+                $query->whereBetween('waktu_selesai', [$now->copy()->startOfWeek(), $now->copy()->endOfDay()]);
+                break;
+
             case 'mtd':
                 $query->whereBetween('waktu_selesai', [$now->copy()->startOfMonth(), $now->copy()->endOfDay()]);
                 break;
 
-            case 'last_30':
-                $query->whereBetween('waktu_selesai', [$now->copy()->subDays(30)->startOfDay(), $now->copy()->endOfDay()]);
+            case 'mtm':
+                $query->whereBetween('waktu_selesai', [$now->copy()->startOfYear(), $now->copy()->endOfDay()]);
                 break;
 
-            case 'ytd':
-                $query->whereBetween('waktu_selesai', [$now->copy()->startOfYear(), $now->copy()->endOfDay()]);
+            case 'last_30':
+            case '30_hari':
+                $query->whereBetween('waktu_selesai', [$now->copy()->subDays(29)->startOfDay(), $now->copy()->endOfDay()]);
                 break;
 
             case 'custom':
@@ -319,7 +325,10 @@ class CsController extends Controller
             $q->where('is_active', true);
         }])->where('is_active', true)->get();
 
-        return view('cs.history', compact('riwayatTiket', 'searchQuery', 'period', 'isCurated', 'startDate', 'endDate', 'isSpectator', 'nomorMejaTerpilih', 'layanans'));
+        // Ambil Batas Waktu Edit Tiket CS (Jam) dari Pengaturan Sistem Admin
+        $batasWaktuEditJam = (int) (PengaturanSistem::where('kunci', 'batas_waktu_edit_tiket')->value('nilai') ?? 2);
+
+        return view('cs.history', compact('riwayatTiket', 'searchQuery', 'period', 'isCurated', 'startDate', 'endDate', 'isSpectator', 'nomorMejaTerpilih', 'layanans', 'batasWaktuEditJam'));
     }
 
     public function panggilSelanjutnya()
@@ -479,9 +488,9 @@ class CsController extends Controller
         $tiket = TiketAntrian::where('id', $id)->where('user_id', $user->id)->firstOrFail();
         
         $request->validate([
-            'nama_pelanggan'     => 'nullable|string|max:255',
-            'email_pelanggan'    => 'nullable|email|max:255',
-            'no_indibiz'         => 'nullable|string|max:255',
+            'nama_pelanggan'     => 'nullable|string|max:100',
+            'email_pelanggan'    => 'nullable|email|max:100',
+            'no_indibiz'         => 'nullable|string|max:12', // DIBATASI MAKSIMAL 12 KARAKTER
             'layanan_id'         => 'nullable|exists:layanans,id',
             'sub_layanan_id'     => [
                 'nullable',
@@ -490,9 +499,9 @@ class CsController extends Controller
                     $query->where('layanan_id', $layananId);
                 }),
             ],
-            'keluhan_final'      => 'nullable|string',
-            'catatan_cs'         => 'nullable|string',
-            'metode_pembayaran'  => 'nullable|string',
+            'keluhan_final'      => 'nullable|string|max:500',
+            'catatan_cs'         => 'nullable|string|max:500',
+            'metode_pembayaran'  => 'nullable|string|max:50',
             'nominal_pembayaran' => 'nullable|numeric|min:0',
             'bukti_pembayaran'   => 'nullable|string|max:100',
             'is_curated'         => 'nullable',
@@ -527,19 +536,33 @@ class CsController extends Controller
 
     public function updateKurasi(Request $request, int $id)
     {
+        $tiket = TiketAntrian::findOrFail($id);
+
+        // PENGECEKAN KETAT BATAS WAKTU EDIT TIKET DARI PENGATURAN ADMIN
+        $batasWaktuEditJam = (int) (PengaturanSistem::where('kunci', 'batas_waktu_edit_tiket')->value('nilai') ?? 2);
+        
+        $waktuSelesai = $tiket->waktu_selesai ? Carbon::parse($tiket->waktu_selesai) : null;
+        if ($waktuSelesai) {
+            $selisihJam = $waktuSelesai->diffInHours(Carbon::now('Asia/Jakarta'));
+            if ($selisihJam >= $batasWaktuEditJam) {
+                if ($request->wantsJson()) {
+                    return response()->json(['status' => 'error', 'message' => "Batas waktu edit tiket ({$batasWaktuEditJam} jam) telah kadaluarsa."], 403);
+                }
+                return back()->with('error', "Maaf, batas waktu edit tiket ini ({$batasWaktuEditJam} jam setelah selesai) telah kadaluarsa.");
+            }
+        }
+
         $request->validate([
-            'nama_pelanggan'  => 'nullable|string|max:255',
-            'email_pelanggan' => 'nullable|email|max:255',
-            'no_indibiz'      => 'nullable|string|max:255',
+            'nama_pelanggan'  => 'nullable|string|max:100',
+            'email_pelanggan' => 'nullable|email|max:100',
+            'no_indibiz'      => 'nullable|string|max:12', // DIBATASI MAKSIMAL 12 KARAKTER
             'layanan_id'      => 'nullable|exists:layanans,id',
             'sub_layanan_id'  => 'nullable|exists:sub_layanans,id',
-            'keluhan_final'   => 'nullable|string',
-            'catatan_cs'      => 'nullable|string',
+            'keluhan_final'   => 'nullable|string|max:500',
+            'catatan_cs'      => 'nullable|string|max:500',
             'is_curated'      => 'nullable',
         ]);
 
-        $tiket = TiketAntrian::findOrFail($id);
-        
         if ($tiket->pelanggan) {
             $tiket->pelanggan->update([
                 'nama'       => $request->nama_pelanggan ?? $tiket->pelanggan->nama,

@@ -225,7 +225,6 @@
                                     @endif
                                 </div>
 
-                                <!-- STOPWATCH / TIMER PENANGANAN REALTIME (DATA DIKIRIM LEWAT HTML ATRIBUT) -->
                                 <div class="flex items-center gap-3">
                                     <div id="cs-stopwatch-box" 
                                          data-waktu-mulai="{{ $antreanAktif->waktu_mulai_konsul ?? $antreanAktif->waktu_diproses }}"
@@ -257,15 +256,18 @@
                                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                                         <div>
                                             <label class="text-[10px] font-bold text-gray-500 block mb-0.5">Nama Pelanggan</label>
-                                            <input type="text" name="nama_pelanggan" value="{{ $antreanAktif->pelanggan->nama ?? '' }}" {{ $isSpectator ? 'disabled' : '' }} required class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:border-[#00509E] focus:ring-0">
+                                            <input type="text" name="nama_pelanggan" value="{{ $antreanAktif->pelanggan->nama ?? '' }}" {{ $isSpectator ? 'disabled' : '' }} required maxlength="100" class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:border-[#00509E] focus:ring-0">
                                         </div>
                                         <div>
                                             <label class="text-[10px] font-bold text-gray-500 block mb-0.5">Email Pelanggan</label>
-                                            <input type="email" name="email_pelanggan" value="{{ $antreanAktif->pelanggan->email ?? '' }}" {{ $isSpectator ? 'disabled' : '' }} placeholder="contoh@gmail.com" class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:border-[#00509E] focus:ring-0">
+                                            <input type="email" name="email_pelanggan" value="{{ $antreanAktif->pelanggan->email ?? '' }}" {{ $isSpectator ? 'disabled' : '' }} placeholder="contoh@gmail.com" maxlength="100" class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:border-[#00509E] focus:ring-0">
                                         </div>
                                         <div>
-                                            <label class="text-[10px] font-bold text-gray-500 block mb-0.5">No. Indibiz / Service ID</label>
-                                            <input type="text" name="no_indibiz" value="{{ $antreanAktif->pelanggan->no_indibiz ?? '' }}" {{ $isSpectator ? 'disabled' : '' }} placeholder="Contoh: 12233948" class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:border-[#00509E] focus:ring-0">
+                                            <div class="flex justify-between items-center mb-0.5">
+                                                <label class="text-[10px] font-bold text-gray-500 block">No. Indibiz ID</label>
+                                                <span class="text-[9px] text-gray-400">Maks. 12</span>
+                                            </div>
+                                            <input type="text" name="no_indibiz" value="{{ $antreanAktif->pelanggan->no_indibiz ?? '' }}" {{ $isSpectator ? 'disabled' : '' }} placeholder="Contoh: 12233948" maxlength="12" class="w-full p-2 border border-gray-300 rounded-lg text-xs font-mono font-bold focus:border-[#00509E] focus:ring-0">
                                         </div>
                                     </div>
                                 </div>
@@ -316,6 +318,7 @@
                                     <textarea id="keluhan_final" 
                                               name="keluhan_final" 
                                               rows="1" 
+                                              maxlength="500"
                                               oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
                                               {{ $isSpectator ? 'disabled' : '' }} 
                                               placeholder="Ketik kustomisasi atau penyesuaian keluhan sesungguhnya jika berbeda dari Kiosk..." 
@@ -357,6 +360,7 @@
                                     <textarea id="catatan_cs" 
                                               name="catatan_cs" 
                                               rows="1" 
+                                              maxlength="500"
                                               oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
                                               {{ $isSpectator ? 'disabled' : '' }} 
                                               placeholder="Ketik catatan solusi, langkah perbaikan, atau gunakan chip bantuan di atas..." 
@@ -378,7 +382,6 @@
                         <div class="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-[#E0E3E8] shrink-0 mt-1">
                             @if(!$isSpectator)
                                 <div class="flex items-center gap-1.5">
-                                    <!-- RECALL AUDIO BUTTON (AJAX FETCH TANPA SUBMIT FORM/RELOAD) -->
                                     <button type="button" 
                                             onclick="panggilUlangAudio('{{ $antreanAktif->id }}')"
                                             title="Panggil ulang audio antrean di Layar Display TV"
@@ -387,7 +390,6 @@
                                         <span>Panggil Ulang Audio</span>
                                     </button>
 
-                                    <!-- TIDAK HADIR BUTTON -->
                                     <button type="button" 
                                             data-nomor="{{ $antreanAktif->nomor_antrian }}" 
                                             onclick="konfirmasiTidakHadir(this.getAttribute('data-nomor'))" 
@@ -473,7 +475,7 @@
                         <label class="text-[11px] font-bold text-[#181C20] block mb-1">
                             Kode / Reff Bukti QRIS <span class="text-gray-400 font-normal">(Opsional)</span>
                         </label>
-                        <input type="text" id="modal_bukti" placeholder="Contoh: TRX-9821389" class="w-full text-xs p-2.5 border border-gray-300 rounded-lg focus:border-[#00509E] focus:ring-0">
+                        <input type="text" id="modal_bukti" placeholder="Contoh: TRX-9821389" maxlength="100" class="w-full text-xs p-2.5 border border-gray-300 rounded-lg focus:border-[#00509E] focus:ring-0">
                     </div>
                 </div>
 
@@ -511,7 +513,6 @@
     </div>
 
     <script>
-        // LOGIKA STOPWATCH / TIMER PENANGANAN TIKET AKTIF (AMBIL DARI ATRIBUT HTML)
         function initStopwatch() {
             var boxElem = document.getElementById('cs-stopwatch-box');
             if (!boxElem) return;
@@ -536,7 +537,6 @@
 
                 if (timeElem) timeElem.innerText = formattedTime;
 
-                // Peringatan visual jika durasi penanganan > 15 Menit
                 if (boxElem) {
                     if (minutes >= 15) {
                         boxElem.className = "flex items-center gap-2 bg-red-900 text-white px-3 py-1.5 rounded-xl border border-red-600 shadow-md animate-pulse";
@@ -554,7 +554,6 @@
 
         document.addEventListener('DOMContentLoaded', initStopwatch);
 
-        // FUNGSI PANGGIL ULANG AUDIO VIA AJAX (TANPA RELOAD HALAMAN)
         function panggilUlangAudio(tiketId) {
             fetch('/cs-desk/panggil-ulang/' + tiketId, {
                 method: 'POST',
@@ -679,7 +678,6 @@
                     var parser = new DOMParser();
                     var doc = parser.parseFromString(html, 'text/html');
                     
-                    // HANYA UPDATE KONTEN SISI KIRI (DAFTAR ANTREAN MENUNGGU) UNTUK MENJAGA TEKS & FORM AKTIF DI SISI KANAN
                     var antreanBaru = doc.getElementById('area-antrean-realtime');
                     var antreanLama = document.getElementById('area-antrean-realtime');
 

@@ -30,7 +30,6 @@
                   this.kurasiTiket.pelanggan = { nama: '', email: '', no_indibiz: '', no_hp: '' };
               }
               this.selectedLayananId = this.kurasiTiket.layanan_id || '';
-              // Konversi ke string '1' atau '0' untuk binding toggle status
               this.kurasiTiket.is_curated = (this.kurasiTiket.is_curated == 1 || this.kurasiTiket.is_curated === true || this.kurasiTiket.is_curated === '1') ? '1' : '0';
               this.showModalKurasi = true;
           },
@@ -147,6 +146,13 @@
             </div>
         @endif
 
+        @if(session('error'))
+            <div class="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-bold flex items-center gap-2 shrink-0">
+                <span class="material-symbols-outlined text-base">error</span>
+                <span>{{ session('error') }}</span>
+            </div>
+        @endif
+
         <!-- HEADER BANNER & SELECT BAR FILTER -->
         <div class="bg-white p-3.5 lg:p-4 rounded-xl border border-[#E0E3E8] shadow-sm shrink-0 space-y-3">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
@@ -155,19 +161,21 @@
                         <span class="material-symbols-outlined text-[#00509E]">history_edu</span>
                         Riwayat Layanan Selesai & Kurasi CS
                     </h2>
-                    <p class="text-[11px] text-gray-500 font-medium">Hanya menampilkan tiket berstatus 'Selesai' untuk pencarian profil dan kurasi data.</p>
+                    <p class="text-[11px] text-gray-500 font-medium">
+                        Batas waktu kurasi/edit tiket CS diset <strong>{{ $batasWaktuEditJam }} jam</strong> setelah tiket diselesaikan.
+                    </p>
                 </div>
             </div>
 
-            <!-- FORM FILTER -->
+            <!-- FORM FILTER DISESUAIKAN DENGAN FILTER DASHBOARD UTAMA (WTD, MTD, MTM, 30 HARI, DATE TO DATE) -->
             <form action="{{ route('cs.history') }}" method="GET" class="flex flex-wrap items-center gap-2 text-xs">
                 
-                <div class="relative flex-1 min-w-[220px]">
+                <div class="relative flex-1 min-w-[200px]">
                     <input type="text" name="search" value="{{ $searchQuery }}" placeholder="Cari No HP / Email / Indibiz / Nama..." class="w-full text-xs p-2 pl-8 border border-[#E0E3E8] rounded-lg focus:border-[#00509E] focus:ring-0 font-medium">
                     <span class="material-symbols-outlined absolute left-2.5 top-2 text-gray-400 text-base">search</span>
                 </div>
 
-                <div class="w-full sm:w-auto min-w-[170px]">
+                <div class="w-full sm:w-auto min-w-[160px]">
                     <select name="is_curated" x-model="selectedCuratedStatus" @change="$el.form.submit()" class="w-full p-2 border border-[#E0E3E8] bg-gray-50 rounded-lg text-xs font-bold text-gray-700 focus:border-[#00509E] focus:ring-0 cursor-pointer">
                         <option value="all">Semua Status Kurasi</option>
                         <option value="1">✓ Selesai / Dikurasi</option>
@@ -175,14 +183,16 @@
                     </select>
                 </div>
 
-                <div class="w-full sm:w-auto min-w-[180px]">
+                <!-- SELECT FILTER PERIODE TEKS KONSISTEN -->
+                <div class="w-full sm:w-auto min-w-[170px]">
                     <select name="period" x-model="selectedPeriod" @change="$el.form.submit()" class="w-full p-2 border border-[#E0E3E8] bg-gray-50 rounded-lg text-xs font-bold text-gray-700 focus:border-[#00509E] focus:ring-0 cursor-pointer">
                         <option value="all">Semua Waktu (All Time)</option>
                         <option value="today">Hari Ini (Today)</option>
-                        <option value="mtd">Bulan Ini (Month to Date)</option>
-                        <option value="last_30">30 Hari Terakhir</option>
-                        <option value="ytd">Tahun Ini (Year to Date)</option>
-                        <option value="custom">Kustom Tanggal...</option>
+                        <option value="wtd">WTD (Week to Date)</option>
+                        <option value="mtd">MTD (Month to Date)</option>
+                        <option value="mtm">MTM (Month to Month)</option>
+                        <option value="30_hari">30 Hari Terakhir</option>
+                        <option value="custom">Date to Date (Kustom)...</option>
                     </select>
                 </div>
 
@@ -215,7 +225,7 @@
                             <th class="p-3">Layanan / Sub-Layanan</th>
                             <th class="p-3">Hasil Final / Catatan CS</th>
                             <th class="p-3">Status Penanganan</th>
-                            <th class="p-3">Waktu Selesai</th>
+                            <th class="p-3">Waktu Selesai & Sisa Edit</th>
                             <th class="p-3 text-center">Aksi</th>
                         </tr>
                     </thead>
@@ -223,6 +233,24 @@
                         @forelse($riwayatTiket as $tiket)
                             @php
                                 $isDone = ((int)$tiket->is_curated === 1 || $tiket->is_curated === true);
+                                
+                                // Hitung Sisa Waktu Edit Tiket
+                                $waktuSelesai = $tiket->waktu_selesai ? \Carbon\Carbon::parse($tiket->waktu_selesai) : null;
+                                $dapatEdit = false;
+                                $sisaWaktuText = "Kadaluarsa";
+
+                                if ($waktuSelesai) {
+                                    $batasAkhir = $waktuSelesai->copy()->addHours($batasWaktuEditJam);
+                                    $sekarang   = \Carbon\Carbon::now('Asia/Jakarta');
+
+                                    if ($sekarang->lessThan($batasAkhir)) {
+                                        $dapatEdit = true;
+                                        $diffInMin = $sekarang->diffInMinutes($batasAkhir);
+                                        $sisaJam   = floor($diffInMin / 60);
+                                        $sisaMin   = $diffInMin % 60;
+                                        $sisaWaktuText = "Sisa " . ($sisaJam > 0 ? "{$sisaJam}j " : "") . "{$sisaMin}m";
+                                    }
+                                }
                             @endphp
                             <tr class="hover:bg-[#F8F9FA] transition-colors">
                                 <td class="p-3 font-mono font-black text-[#00509E] text-sm">{{ $tiket->nomor_antrian }}</td>
@@ -249,15 +277,38 @@
                                         {{ $isDone ? '✓ Selesai / Dikurasi' : '⚠ Perlu Lapangan / Belum' }}
                                     </span>
                                 </td>
-                                <td class="p-3 text-gray-500 text-[11px]">
-                                    {{ $tiket->waktu_selesai ? \Carbon\Carbon::parse($tiket->waktu_selesai)->format('d/m/Y H:i') : '-' }} WIB
+                                <td class="p-3 text-[11px]">
+                                    <div class="text-gray-700 font-semibold">
+                                        {{ $tiket->waktu_selesai ? \Carbon\Carbon::parse($tiket->waktu_selesai)->format('d/m/Y H:i') : '-' }} WIB
+                                    </div>
+                                    <div class="mt-1">
+                                        @if($dapatEdit)
+                                            <span class="text-[9px] font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full inline-flex items-center gap-1 border border-blue-200">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
+                                                {{ $sisaWaktuText }}
+                                            </span>
+                                        @else
+                                            <span class="text-[9px] font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full inline-flex items-center gap-1 border border-gray-200">
+                                                <span class="material-symbols-outlined text-[10px]">lock</span>
+                                                Waktu Edit Habis
+                                            </span>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td class="p-3 text-center">
-                                    <button type="button" 
-                                            @click='openKurasiModal(@json($tiket))' 
-                                            class="px-2.5 py-1.5 bg-[#00509E] text-white rounded-lg font-bold text-[10px] hover:bg-[#003C7E] transition-all inline-flex items-center gap-1 shadow-sm cursor-pointer">
-                                        <span class="material-symbols-outlined text-xs">edit_note</span> Edit Kurasi
-                                    </button>
+                                    @if($dapatEdit)
+                                        <button type="button" 
+                                                @click='openKurasiModal(@json($tiket))' 
+                                                class="px-2.5 py-1.5 bg-[#00509E] text-white rounded-lg font-bold text-[10px] hover:bg-[#003C7E] transition-all inline-flex items-center gap-1 shadow-sm cursor-pointer">
+                                            <span class="material-symbols-outlined text-xs">edit_note</span> Edit Kurasi
+                                        </button>
+                                    @else
+                                        <button disabled 
+                                                title="Sesi kurasi/edit untuk tiket ini telah terkunci otomatis."
+                                                class="px-2.5 py-1.5 bg-gray-200 text-gray-400 rounded-lg font-bold text-[10px] inline-flex items-center gap-1 cursor-not-allowed">
+                                            <span class="material-symbols-outlined text-xs">lock</span> Terkunci
+                                        </button>
+                                    @endif
                                 </td>
                             </tr>
                         @empty
@@ -302,15 +353,18 @@
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <div>
                             <label class="font-bold text-gray-600 block mb-0.5">Nama Pelanggan</label>
-                            <input type="text" name="nama_pelanggan" x-model="kurasiTiket.pelanggan.nama" class="w-full p-2 border border-gray-300 rounded-lg focus:border-[#00509E] focus:ring-0">
+                            <input type="text" name="nama_pelanggan" x-model="kurasiTiket.pelanggan.nama" maxlength="100" class="w-full p-2 border border-gray-300 rounded-lg focus:border-[#00509E] focus:ring-0">
                         </div>
                         <div>
                             <label class="font-bold text-gray-600 block mb-0.5">Email Pelanggan</label>
-                            <input type="email" name="email_pelanggan" x-model="kurasiTiket.pelanggan.email" class="w-full p-2 border border-gray-300 rounded-lg focus:border-[#00509E] focus:ring-0">
+                            <input type="email" name="email_pelanggan" x-model="kurasiTiket.pelanggan.email" maxlength="100" class="w-full p-2 border border-gray-300 rounded-lg focus:border-[#00509E] focus:ring-0">
                         </div>
                         <div>
-                            <label class="font-bold text-gray-600 block mb-0.5">No. Indibiz / Service ID</label>
-                            <input type="text" name="no_indibiz" x-model="kurasiTiket.pelanggan.no_indibiz" class="w-full p-2 border border-gray-300 rounded-lg focus:border-[#00509E] focus:ring-0">
+                            <div class="flex justify-between items-center mb-0.5">
+                                <label class="font-bold text-gray-600 block">No. Indibiz ID</label>
+                                <span class="text-[9px] text-gray-400">Maks. 12</span>
+                            </div>
+                            <input type="text" name="no_indibiz" x-model="kurasiTiket.pelanggan.no_indibiz" maxlength="12" class="w-full p-2 border border-gray-300 rounded-lg focus:border-[#00509E] focus:ring-0 font-mono font-bold">
                         </div>
                     </div>
                 </div>
@@ -351,6 +405,7 @@
                     <textarea name="keluhan_final" 
                               x-model="kurasiTiket.keluhan_final" 
                               rows="1" 
+                              maxlength="500"
                               oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
                               placeholder="Hasil akhir keluhan..." 
                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:border-[#00509E] focus:ring-0 font-medium resize-none overflow-hidden transition-all"></textarea>
@@ -362,6 +417,7 @@
                     <textarea name="catatan_cs" 
                               x-model="kurasiTiket.catatan_cs" 
                               rows="1" 
+                              maxlength="500"
                               oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
                               placeholder="Catatan internal..." 
                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:border-[#00509E] focus:ring-0 font-medium resize-none overflow-hidden transition-all"></textarea>
@@ -371,11 +427,9 @@
                 <div>
                     <label class="font-bold text-gray-700 block mb-1.5">Status Penanganan Pekerjaan</label>
                     
-                    <!-- Input hidden yang akan dikirim ke Server -->
                     <input type="hidden" name="is_curated" :value="kurasiTiket.is_curated">
 
                     <div class="grid grid-cols-2 gap-2">
-                        <!-- Button Hijau: Selesai -->
                         <button type="button" 
                                 @click="kurasiTiket.is_curated = '1'" 
                                 :class="kurasiTiket.is_curated == '1' ? 'bg-emerald-600 text-white border-emerald-600 shadow-md ring-2 ring-emerald-300' : 'bg-emerald-50 text-emerald-800 border-emerald-200 opacity-50 hover:opacity-100'"
@@ -384,7 +438,6 @@
                             <span>Selesai (Hijau)</span>
                         </button>
 
-                        <!-- Button Kuning: Belum Selesai / Perlu Lapangan -->
                         <button type="button" 
                                 @click="kurasiTiket.is_curated = '0'" 
                                 :class="kurasiTiket.is_curated == '0' ? 'bg-amber-500 text-white border-amber-500 shadow-md ring-2 ring-amber-300' : 'bg-amber-50 text-amber-800 border-amber-200 opacity-50 hover:opacity-100'"
