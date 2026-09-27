@@ -17,11 +17,16 @@
           selectedService: null,
           nama: '',
           no_hp: '',
+          no_indibiz: '',
           errorMsg: '',
           isSubmitting: false,
           validasiStep1() {
               if(!this.no_hp.trim() || !this.nama.trim()){
                   this.errorMsg = 'Harap isi Nomor HP dan Nama Lengkap terlebih dahulu!';
+                  return;
+              }
+              if(this.no_indibiz && this.no_indibiz.length > 12){
+                  this.errorMsg = 'Nomor Indibiz maksimal 12 karakter!';
                   return;
               }
               this.errorMsg = '';
@@ -55,24 +60,24 @@
         @if(!$isOperational)
             <!-- ================= STATUS LOKET TUTUP / NON-OPERASIONAL ================= -->
             <div class="w-full max-w-lg mx-auto bg-white rounded-3xl border border-[#E0E3E8] shadow-xl p-8 text-center z-10 my-auto space-y-4">
-                <div class="w-20 h-20 bg-amber-50 text-amber-500 rounded-3xl flex items-center justify-center mx-auto border border-amber-100 shadow-inner">
-                    <span class="material-symbols-outlined text-5xl">support_agent</span>
+                <div class="w-20 h-20 bg-rose-50 text-rose-500 rounded-3xl flex items-center justify-center mx-auto border border-rose-100 shadow-inner">
+                    <span class="material-symbols-outlined text-5xl">schedule</span>
                 </div>
                 
                 <div>
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-800 text-[10px] font-black rounded-full uppercase tracking-wider mb-2">
-                        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                        Loket Tidak Aktif
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-100 text-rose-800 text-[10px] font-black rounded-full uppercase tracking-wider mb-2">
+                        <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                        Loket Ditutup
                     </span>
                     <h1 class="text-2xl font-black text-[#181C20]">Layanan Antrean Tutup</h1>
                     <p class="text-xs text-[#5D3F3B] mt-2 leading-relaxed">
-                        Saat ini belum ada petugas Customer Service yang bertugas atau layanan sedang di luar jam operasional. Pengambilan tiket antrean publik sementara ditutup.
+                        {{ $pesanTutup ?? 'Saat ini layanan antrean publik tidak sedang beroperasi.' }}
                     </p>
                 </div>
 
                 <div class="pt-4 border-t border-gray-100 flex items-center justify-center gap-2 text-xs text-gray-400 font-medium">
-                    <span class="material-symbols-outlined text-base">schedule</span>
-                    <span>Silakan kembali pada jam operasional kerja</span>
+                    <span class="material-symbols-outlined text-base">info</span>
+                    <span>Silakan kembali pada jadwal operasional kerja</span>
                 </div>
             </div>
         @else
@@ -80,7 +85,7 @@
             <form action="{{ route('antrean.store') }}" method="POST" @submit="isSubmitting = true" class="w-full max-w-6xl z-10 my-auto">
                 @csrf
 
-                <!-- ALERTI NOTIFIKASI ERROR (BAIK DARI FRONTEND MAUPUN BACKEND FLASH SESSION) -->
+                <!-- ALERT NOTIFIKASI ERROR (FLASH SESSION BACKEND) -->
                 @if(session('error'))
                     <div class="w-full max-w-xl mx-auto mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl text-xs font-bold flex items-center gap-2">
                         <span class="material-symbols-outlined text-base">error</span>
@@ -108,13 +113,16 @@
                         </template>
 
                         <div class="space-y-4">
+                            <!-- NAMA LENGKAP -->
                             <div class="space-y-1.5">
                                 <label class="block text-sm font-bold text-[#181C20]">Nama Lengkap <span class="text-[#EE2E24]">*</span></label>
                                 <div class="relative">
                                     <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[#5D3F3B]/60 text-xl">person</span>
-                                    <input type="text" name="nama" x-model="nama" required placeholder="Masukkan nama Anda" class="w-full pl-11 pr-4 py-3 bg-[#F8F9FA] border border-[#E7BDB7] rounded-xl text-[#181C20] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#EE2E24] transition-all font-semibold">
+                                    <input type="text" name="nama" x-model="nama" required maxlength="100" placeholder="Masukkan nama Anda" class="w-full pl-11 pr-4 py-3 bg-[#F8F9FA] border border-[#E7BDB7] rounded-xl text-[#181C20] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#EE2E24] transition-all font-semibold">
                                 </div>
                             </div>
+
+                            <!-- NOMOR HP -->
                             <div class="space-y-1.5">
                                 <label class="block text-sm font-bold text-[#181C20]">Nomor HP / WhatsApp <span class="text-[#EE2E24]">*</span></label>
                                 <div class="flex flex-col gap-1.5">
@@ -126,11 +134,30 @@
                                         inputmode="numeric"
                                         pattern="[0-9]*"
                                         placeholder="Contoh: 081234567890" 
-                                        maxlength="14"
+                                        maxlength="15"
                                         required 
-                                        class="w-full rounded-lg border border-[#E7BDB7] bg-[#F8F9FA] text-sm focus:bg-white focus:border-[#EE2E24] focus:ring-1 focus:ring-[#EE2E24] transition-colors p-3"
+                                        class="w-full rounded-lg border border-[#E7BDB7] bg-[#F8F9FA] text-sm focus:bg-white focus:border-[#EE2E24] focus:ring-1 focus:ring-[#EE2E24] transition-colors p-3 font-semibold"
                                     >
-                                    <p class="text-xs text-gray-500">nomor hp aktif</p>
+                                    <p class="text-xs text-gray-500">Nomor HP aktif untuk kirim status antrean</p>
+                                </div>
+                            </div>
+
+                            <!-- NOMOR INDIBIZ (DI-LIMIT MAKSIMAL 12 KARAKTER) -->
+                            <div class="space-y-1.5">
+                                <div class="flex justify-between items-center">
+                                    <label class="block text-sm font-bold text-[#181C20]">Nomor Indibiz / ID Pelanggan <span class="text-xs text-gray-400 font-normal">(Opsional)</span></label>
+                                    <span class="text-[10px] font-bold text-gray-400">Maks. 12 Karakter</span>
+                                </div>
+                                <div class="relative">
+                                    <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[#5D3F3B]/60 text-xl">badge</span>
+                                    <input 
+                                        type="text" 
+                                        name="no_indibiz" 
+                                        x-model="no_indibiz" 
+                                        maxlength="12" 
+                                        placeholder="Contoh: 122345678901" 
+                                        class="w-full pl-11 pr-4 py-3 bg-[#F8F9FA] border border-[#E7BDB7] rounded-xl text-[#181C20] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#EE2E24] transition-all font-mono font-semibold"
+                                    >
                                 </div>
                             </div>
 
@@ -142,7 +169,7 @@
                     </div>
                 </div>
 
-                <!-- STEP 2: PILIH LAYANAN -->
+                <!-- STEP 2: PILIH LAYANAN & DETAIL KEPERLUAN -->
                 <div x-show="step === 2" style="display: none;" x-transition.opacity.duration.300ms class="w-full flex flex-col justify-center">
                     <button type="button" @click="step = 1" class="inline-flex items-center gap-2 text-[#5D3F3B] hover:text-[#EE2E24] transition-colors font-semibold text-sm mb-6 w-fit cursor-pointer">
                         <span class="material-symbols-outlined text-lg">arrow_back</span>
@@ -187,12 +214,12 @@
                                 <div class="flex flex-col gap-4">
                                     <div class="flex flex-col gap-1.5">
                                         <label class="text-sm font-bold text-[#181C20]">Alamat Lengkap <span class="text-xs text-[#5D3F3B] font-normal">(Opsional)</span></label>
-                                        <textarea name="alamat" rows="2" placeholder="Masukkan alamat lengkap Anda" class="w-full rounded-lg border border-[#E7BDB7] bg-[#F8F9FA] text-sm focus:bg-white focus:border-[#EE2E24] focus:ring-1 focus:ring-[#EE2E24] transition-colors p-3"></textarea>
+                                        <textarea name="alamat" rows="2" maxlength="255" placeholder="Masukkan alamat lengkap Anda" class="w-full rounded-lg border border-[#E7BDB7] bg-[#F8F9FA] text-sm focus:bg-white focus:border-[#EE2E24] focus:ring-1 focus:ring-[#EE2E24] transition-colors p-3"></textarea>
                                     </div>
 
                                     <div class="flex flex-col gap-1.5">
                                         <label class="text-sm font-bold text-[#181C20]">Detail Keluhan / Keperluan <span class="text-[#EE2E24]">*</span></label>
-                                        <textarea name="keluhan_awal" rows="4" required placeholder="Jelaskan detail keluhan Anda secara singkat" class="w-full rounded-lg border border-[#E7BDB7] bg-[#F8F9FA] text-sm focus:bg-[#F8F9FA] focus:border-[#EE2E24] focus:ring-1 focus:ring-[#EE2E24] transition-colors p-3"></textarea>
+                                        <textarea name="keluhan_awal" rows="4" required maxlength="500" placeholder="Jelaskan detail keluhan Anda secara singkat" class="w-full rounded-lg border border-[#E7BDB7] bg-[#F8F9FA] text-sm focus:bg-white focus:border-[#EE2E24] focus:ring-1 focus:ring-[#EE2E24] transition-colors p-3"></textarea>
                                     </div>
 
                                     <!-- TOMBOL SUBMIT DENGAN INDIKATOR LOADING & DISABLE AUTO -->
