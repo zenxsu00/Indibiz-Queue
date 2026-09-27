@@ -8,6 +8,8 @@ use App\Models\SubLayanan;
 use App\Models\User;
 use App\Models\MasterMeja;
 use App\Models\CsActiveLog;
+use App\Models\JadwalOperasional;
+use App\Models\PengaturanSistem;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Contracts\View\View;
@@ -40,12 +42,17 @@ class AdminController extends Controller
                 $startDate = Carbon::now('Asia/Jakarta')->startOfMonth();
                 $endDate   = Carbon::now('Asia/Jakarta')->endOfDay();
                 break;
-            case 'last_30':
-                $startDate = Carbon::now('Asia/Jakarta')->subDays(29)->startOfDay();
-                $endDate   = Carbon::now('Asia/Jakarta')->endOfDay();
+            case 'mtn': // Month Next / Next Period
+                $startDate = Carbon::now('Asia/Jakarta')->addMonth()->startOfMonth();
+                $endDate   = Carbon::now('Asia/Jakarta')->addMonth()->endOfMonth();
                 break;
+            case 'mty':
             case 'ytd':
                 $startDate = Carbon::now('Asia/Jakarta')->startOfYear();
+                $endDate   = Carbon::now('Asia/Jakarta')->endOfDay();
+                break;
+            case 'last_30':
+                $startDate = Carbon::now('Asia/Jakarta')->subDays(29)->startOfDay();
                 $endDate   = Carbon::now('Asia/Jakarta')->endOfDay();
                 break;
             case 'custom':
@@ -161,7 +168,7 @@ class AdminController extends Controller
             elseif ($period === 'wtd') $labelKomparasi = "Minggu Lalu";
             elseif ($period === 'mtd') $labelKomparasi = "Bulan Lalu";
             elseif ($period === 'last_30') $labelKomparasi = "30 Hari Sebelumnya";
-            elseif ($period === 'ytd') $labelKomparasi = "Tahun Lalu";
+            elseif ($period === 'ytd' || $period === 'mty') $labelKomparasi = "Tahun Lalu";
         }
 
         $totalLalu = 0;
@@ -398,12 +405,16 @@ class AdminController extends Controller
         $startDateOut = $startDate ? $startDate : Carbon::today('Asia/Jakarta')->startOfDay();
         $endDateOut   = $endDate ? $endDate : Carbon::today('Asia/Jakarta')->endOfDay();
 
+        // JADWAL OPERASIONAL & PENGATURAN SISTEM BARU
+        $jadwalOperasional = JadwalOperasional::orderBy('hari_ke', 'asc')->get();
+        $pengaturanSistem  = PengaturanSistem::pluck('nilai', 'kunci')->toArray();
+
         return view('admin.index', compact(
             'totalHariIni', 'menunggu', 'ditransfer', 'noShowCount', 'avgSla', 'avgDurasiLayananText', 
             'avgWaktuTungguText', 'avgRating', 'totalOmset', 'distribusiLayanan', 
             'statusRatioData', 'analisisOtomatis', 'mejaCs', 'allUsers', 
             'masterMejas', 'allFilteredTickets', 'chartDataSets', 
-            'layananId', 'layanans', 'historyBulanan'
+            'layananId', 'layanans', 'historyBulanan', 'jadwalOperasional', 'pengaturanSistem'
         ))->with([
             'startDate' => $startDateOut,
             'endDate'   => $endDateOut
@@ -411,25 +422,47 @@ class AdminController extends Controller
     }
 
     /**
-     * PERBAIKAN: Fungsi Store Layanan (Melanjutkan Urutan Abjad)
+     * UPDATE JADWAL OPERASIONAL & LIMIT EDIT TIKET CS
      */
+    public function updateJadwalOperasional(Request $request)
+    {
+        $request->validate([
+            'jadwal' => 'required|array',
+            'batas_waktu_edit' => 'required|numeric|min:1|max:24',
+        ]);
+
+        foreach ($request->jadwal as $hariKe => $data) {
+            JadwalOperasional::where('hari_ke', $hariKe)->update([
+                'is_buka'   => isset($data['is_buka']) ? 1 : 0,
+                'jam_buka'  => $data['jam_buka'] ?? '08:00',
+                'jam_tutup' => $data['jam_tutup'] ?? '16:00',
+            ]);
+        }
+
+        PengaturanSistem::updateOrCreate(
+            ['kunci' => 'batas_waktu_edit_tiket'],
+            [
+                'nilai' => $request->batas_waktu_edit,
+                'deskripsi' => 'Batas waktu CS (dalam jam) untuk dapat mengedit tiket setelah tiket berstatus Selesai.'
+            ]
+        );
+
+        return back()->with('success', 'Pengaturan jam operasional & batas waktu edit berhasil diperbarui!');
+    }
+
     public function storeLayanan(Request $request)
     {
         $request->validate(['nama_layanan' => 'required|string|max:255']);
         
-        // Ambil semua kode layanan dari database
         $semuaKode = Layanan::pluck('kode_layanan')->toArray();
         
-        // Filter hanya kode yang benar-benar berupa huruf (mengabaikan kode error seperti LYN-5V1VZ)
         $kodeValid = array_filter($semuaKode, function($kode) {
             return ctype_alpha($kode);
         });
 
         if (empty($kodeValid)) {
-            // Jika belum ada layanan sama sekali, mulai dari A
             $kodeBaru = 'A';
         } else {
-            // Urutkan untuk mendapatkan huruf terakhir (A-Z, lalu AA, AB dst)
             usort($kodeValid, function($a, $b) {
                 if (strlen($a) == strlen($b)) {
                     return strcmp($a, $b);
@@ -437,11 +470,8 @@ class AdminController extends Controller
                 return strlen($a) - strlen($b);
             });
             
-            // Ambil abjad tertinggi/terakhir di database
             $lastCode = end($kodeValid);
             $kodeBaru = $lastCode;
-            
-            // Increment otomatis di PHP (contoh: 'E' menjadi 'F', 'Z' menjadi 'AA')
             $kodeBaru++;
         }
 
@@ -600,9 +630,6 @@ class AdminController extends Controller
         return response()->stream($callback, 200, $headers);
     }
 
-    // -------------------------------------------------------------
-    // FUNGSI MANAJEMEN AKUN (TAMBAH, EDIT, FORCE LOGOUT, HAPUS)
-    // -------------------------------------------------------------
     public function storeStaff(Request $request)
     {
         $request->validate([
@@ -665,12 +692,10 @@ class AdminController extends Controller
     {
         $user = User::findOrFail($id);
 
-        // Reset meja, penanda aktif, dan last seen
         $user->nomor_meja = null;
         $user->last_seen_at = null;
         $user->save();
 
-        // Tutup log sesi CS jika masih ada yang statusnya menggantung
         $now = Carbon::now('Asia/Jakarta');
         CsActiveLog::where('user_id', $user->id)
             ->whereNull('jam_selesai')

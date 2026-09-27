@@ -66,6 +66,7 @@
                 <button @click="activeTab = 'history'; mobileMenu = false" :class="activeTab === 'history' ? 'bg-white/20 text-white' : 'text-white/70'" class="w-full flex items-center p-3 font-bold rounded-xl text-xs gap-3"><span class="material-symbols-outlined">history</span> Riwayat Bulanan</button>
                 <button @click="activeTab = 'staff'; mobileMenu = false" :class="activeTab === 'staff' ? 'bg-white/20 text-white' : 'text-white/70'" class="w-full flex items-center p-3 font-bold rounded-xl text-xs gap-3"><span class="material-symbols-outlined">badge</span> Monitoring Akun & Meja</button>
                 <button @click="activeTab = 'master_layanan'; mobileMenu = false" :class="activeTab === 'master_layanan' ? 'bg-white/20 text-white' : 'text-white/70'" class="w-full flex items-center p-3 font-bold rounded-xl text-xs gap-3"><span class="material-symbols-outlined">category</span> Kelola Layanan</button>
+                <button @click="activeTab = 'schedule'; mobileMenu = false" :class="activeTab === 'schedule' ? 'bg-white/20 text-white' : 'text-white/70'" class="w-full flex items-center p-3 font-bold rounded-xl text-xs gap-3"><span class="material-symbols-outlined">schedule</span> Penjadwalan & Sistem</button>
                 <a href="{{ route('cs.select-meja') }}" class="w-full flex items-center p-3 font-bold rounded-xl text-xs gap-3 bg-amber-500 text-white shadow-sm mt-4"><span class="material-symbols-outlined">swap_horiz</span> Switch ke CS Console</a>
             </nav>
             <form action="{{ route('logout') }}" method="POST" class="pt-2 border-t border-white/10">
@@ -92,6 +93,7 @@
                 <button @click="activeTab = 'history'" :class="activeTab === 'history' ? 'bg-white/20 text-white shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'" class="w-full flex items-center px-3.5 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer"><span class="material-symbols-outlined mr-3 text-lg">history</span> <span>Riwayat Bulanan</span></button>
                 <button @click="activeTab = 'staff'" :class="activeTab === 'staff' ? 'bg-white/20 text-white shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'" class="w-full flex items-center px-3.5 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer"><span class="material-symbols-outlined mr-3 text-lg">badge</span> <span>Monitoring Akun & Meja</span></button>
                 <button @click="activeTab = 'master_layanan'" :class="activeTab === 'master_layanan' ? 'bg-white/20 text-white shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'" class="w-full flex items-center px-3.5 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer"><span class="material-symbols-outlined mr-3 text-lg">category</span> <span>Kelola Layanan</span></button>
+                <button @click="activeTab = 'schedule'" :class="activeTab === 'schedule' ? 'bg-white/20 text-white shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'" class="w-full flex items-center px-3.5 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer"><span class="material-symbols-outlined mr-3 text-lg">schedule</span> <span>Penjadwalan & Sistem</span></button>
 
                 <div class="pt-4 border-t border-white/10 mt-3">
                     <a href="{{ route('cs.select-meja') }}" class="w-full flex items-center px-3.5 py-2.5 text-xs font-bold rounded-xl bg-amber-500 hover:bg-amber-600 text-white transition-all shadow-sm"><span class="material-symbols-outlined mr-2.5 text-lg">swap_horiz</span><span>Switch ke CS Console</span></a>
@@ -131,7 +133,8 @@
                     activeTab === 'operations' ? 'Operations Dashboard' : 
                     (activeTab === 'analytics' ? 'Analitik Tren & Kepadatan Layanan' : 
                     (activeTab === 'history' ? 'Riwayat Operasional & Rekap Omset' : 
-                    (activeTab === 'staff' ? 'Monitoring Akun & Meja' : 'Kelola Master Layanan & Sub-Layanan')))
+                    (activeTab === 'staff' ? 'Monitoring Akun & Meja' : 
+                    (activeTab === 'master_layanan' ? 'Kelola Master Layanan & Sub-Layanan' : 'Penjadwalan Operasional & Pengaturan Sistem'))))
                 "></h2>
                 <p class="text-xs text-[#5D3F3B] mt-0.5">
                     Pemantauan metrik antrean, rekapitulasi data, serta konfigurasi layanan secara real-time.
@@ -151,14 +154,15 @@
         <!-- FORM FILTER UTAMA TAB OPERATIONS -->
         <form x-show="activeTab === 'operations'" action="{{ route('admin.dashboard') }}" method="GET" class="bg-white p-4 rounded-2xl border border-[#E0E3E8] shadow-sm flex flex-wrap items-end gap-3 text-xs">
             <div class="flex-1 min-w-[200px]">
-                <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Periode Waktu</label>
+                <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Periode Waktu Filter</label>
                 <select name="period" x-model="selectedPeriod" @change="if(selectedPeriod !== 'custom') $el.form.submit()" class="w-full border border-gray-300 bg-gray-50 rounded-xl p-2 font-bold text-gray-700 focus:border-[#00509E] focus:ring-0 cursor-pointer">
                     <option value="all">Semua Waktu (All Time)</option>
                     <option value="today">Hari Ini (Today)</option>
                     <option value="wtd">Minggu Ini (WTD)</option>
                     <option value="mtd">Bulan Ini (MTD)</option>
+                    <option value="mtn">Bulan Depan (MTN)</option>
+                    <option value="mty">Tahun Ini (MTY / YTD)</option>
                     <option value="last_30">30 Hari Terakhir</option>
-                    <option value="ytd">Tahun Ini (YTD)</option>
                     <option value="custom">Rentang Tanggal (Date to Date)...</option>
                 </select>
             </div>
@@ -253,7 +257,8 @@
                         <span class="text-[9px] text-[#5D3F3B] font-extrabold uppercase tracking-wider">Total Omset</span>
                         <span class="text-[8px] bg-purple-100 text-purple-800 font-black px-1 py-0.5 rounded">Omset</span>
                     </div>
-                    <span class="text-lg lg:text-xl font-black text-[#00509E]">Rp {{ number_format($totalOmset, 0, ',', '.') }}</span>
+                    <!-- NOMINAL 0 DITAMPILKAN SEBAGAI STRIP (-) -->
+                    <span class="text-lg lg:text-xl font-black text-[#00509E]">{{ $totalOmset > 0 ? 'Rp ' . number_format($totalOmset, 0, ',', '.') : '-' }}</span>
                 </div>
             </div>
 
@@ -301,7 +306,8 @@
                                         }}">{{ $tiket->status }}</span>
                                     </td>
                                     <td class="p-3 text-gray-600 max-w-[200px] truncate" title="{{ $tiket->catatan_cs ?? $tiket->ringkasan_solusi ?? '-' }}">{{ $tiket->catatan_cs ?? $tiket->ringkasan_solusi ?? '-' }}</td>
-                                    <td class="p-3 text-right font-black text-[#181C20]">Rp {{ number_format($tiket->nominal_pembayaran, 0, ',', '.') }}</td>
+                                    <!-- NOMINAL 0 DITAMPILKAN SEBAGAI STRIP (-) -->
+                                    <td class="p-3 text-right font-black text-[#181C20]">{{ $tiket->nominal_pembayaran > 0 ? 'Rp ' . number_format($tiket->nominal_pembayaran, 0, ',', '.') : '-' }}</td>
                                     <td class="p-3 text-center">
                                         <button @click="selectedTiket = {{ json_encode($tiket) }}; showModalDetail = true" class="px-2.5 py-1 bg-[#00509E]/10 text-[#00509E] hover:bg-[#00509E] hover:text-white rounded-lg font-bold text-[10px] transition-all cursor-pointer">Detail</button>
                                     </td>
@@ -488,7 +494,8 @@
                                         </template>
                                     </div>
                                 </td>
-                                <td class="p-3.5 text-right font-black text-[#181C20]" x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(row.total_omset)"></td>
+                                <!-- NOMINAL 0 DITAMPILKAN SEBAGAI STRIP (-) -->
+                                <td class="p-3.5 text-right font-black text-[#181C20]" x-text="row.total_omset > 0 ? 'Rp ' + new Intl.NumberFormat('id-ID').format(row.total_omset) : '-'"></td>
                             </tr>
                         </template>
                     </tbody>
@@ -640,11 +647,9 @@
                             <div @click="selectedLayananId = '{{ $lay->id }}'; selectedLayananNama = '{{ addslashes($lay->nama_layanan) }}'" :class="selectedLayananId == '{{ $lay->id }}' ? 'border-[#00509E] bg-[#00509E]/5 ring-2 ring-[#00509E]/20' : 'border-[#E0E3E8]'" class="p-3 border rounded-xl flex items-center justify-between cursor-pointer">
                                 <div><h5 class="font-extrabold text-xs text-[#181C20]">{{ $lay->nama_layanan }}</h5><span class="text-[10px] text-gray-500 font-semibold mt-0.5 block">{{ $subCount }} Sub-Layanan</span></div>
                                 <div class="flex items-center gap-1" @click.stop>
-                                    <!-- Tombol Edit Layanan Utama -->
                                     <button @click="selectedEditLayanan = {{ json_encode($lay) }}; showModalEditLayanan = true" class="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-all" title="Edit Kategori">
                                         <span class="material-symbols-outlined text-sm">edit</span>
                                     </button>
-                                    <!-- Tombol Hapus Layanan Utama -->
                                     <form action="{{ route('admin.layanan.destroy', $lay->id) }}" method="POST" onsubmit="return confirm('Hapus kategori ini?')">
                                         @csrf 
                                         @method('DELETE') 
@@ -672,11 +677,9 @@
                                     <div class="p-3 bg-[#F8F9FA] border border-[#E0E3E8] rounded-xl flex items-center justify-between">
                                         <div class="flex items-center gap-2"><span class="material-symbols-outlined text-emerald-600 text-base">subdirectory_arrow_right</span><span class="font-extrabold text-xs text-gray-800">{{ $sub->nama_sub_layanan }}</span></div>
                                         <div class="flex items-center gap-1">
-                                            <!-- Tombol Edit Sub-Layanan -->
                                             <button @click="selectedEditSubLayanan = {{ json_encode($sub) }}; showModalEditSubLayanan = true" class="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-all" title="Edit Sub-Layanan">
                                                 <span class="material-symbols-outlined text-sm">edit</span>
                                             </button>
-                                            <!-- Tombol Hapus Sub-Layanan -->
                                             <form action="{{ route('admin.sub_layanan.destroy', $sub->id) }}" method="POST" onsubmit="return confirm('Hapus sub-layanan?')">
                                                 @csrf 
                                                 @method('DELETE') 
@@ -694,6 +697,69 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- TAB 6 (BARU): PENJADWALAN & PENGATURAN SISTEM -->
+        <div x-show="activeTab === 'schedule'" class="space-y-6">
+            <form action="{{ route('admin.operasional.update') }}" method="POST" class="bg-white p-6 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-6">
+                @csrf
+                <div>
+                    <h3 class="text-base font-black text-[#181C20] flex items-center gap-2 border-b pb-3 border-gray-100">
+                        <span class="material-symbols-outlined text-[#00509E]">schedule</span>
+                        Pengaturan Jam Operasional & Hari Kerja CS
+                    </h3>
+                    <p class="text-xs text-gray-500 mt-1">
+                        Atur hari aktif dan jam buka/tutup antrean. Antrean pelanggan akan otomatis aktif atau tutup sesuai dengan jadwal yang diset di bawah ini.
+                    </p>
+                </div>
+
+                <div class="space-y-3">
+                    @foreach($jadwalOperasional ?? [] as $jadwal)
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 bg-[#F8F9FA] rounded-xl border border-gray-200 gap-3">
+                            <div class="flex items-center gap-3 w-40">
+                                <input type="checkbox" name="jadwal[{{ $jadwal->hari_ke }}][is_buka]" value="1" id="hari_{{ $jadwal->hari_ke }}" {{ $jadwal->is_buka ? 'checked' : '' }} class="w-4 h-4 rounded text-[#00509E] focus:ring-0 cursor-pointer">
+                                <label for="hari_{{ $jadwal->hari_ke }}" class="font-extrabold text-xs text-gray-800 cursor-pointer">{{ $jadwal->nama_hari }}</label>
+                            </div>
+
+                            <div class="flex items-center gap-2 text-xs">
+                                <span class="text-gray-500 font-semibold text-[11px]">Jam Buka:</span>
+                                <input type="time" name="jadwal[{{ $jadwal->hari_ke }}][jam_buka]" value="{{ \Carbon\Carbon::parse($jadwal->jam_buka)->format('H:i') }}" class="p-2 border border-gray-300 rounded-lg font-bold bg-white focus:border-[#00509E]">
+                                
+                                <span class="text-gray-500 font-semibold text-[11px] ml-2">Jam Tutup:</span>
+                                <input type="time" name="jadwal[{{ $jadwal->hari_ke }}][jam_tutup]" value="{{ \Carbon\Carbon::parse($jadwal->jam_tutup)->format('H:i') }}" class="p-2 border border-gray-300 rounded-lg font-bold bg-white focus:border-[#00509E]">
+                            </div>
+
+                            <div>
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-black {{ $jadwal->is_buka ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700' }}">
+                                    {{ $jadwal->is_buka ? 'Beroperasi' : 'Libur/Tutup' }}
+                                </span>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                <div class="pt-4 border-t border-gray-100 space-y-4">
+                    <h3 class="text-base font-black text-[#181C20] flex items-center gap-2">
+                        <span class="material-symbols-outlined text-amber-500">timer</span>
+                        Pengaturan Tiket CS
+                    </h3>
+                    
+                    <div class="max-w-md">
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Batas Waktu Edit Tiket CS (Jam)</label>
+                        <div class="flex items-center gap-2">
+                            <input type="number" name="batas_waktu_edit" value="{{ $pengaturanSistem['batas_waktu_edit_tiket'] ?? 2 }}" min="1" max="24" required class="w-24 p-2.5 border border-gray-300 rounded-xl font-bold text-center">
+                            <span class="text-xs font-semibold text-gray-600">Jam setelah tiket Selesai</span>
+                        </div>
+                        <p class="text-[11px] text-gray-400 mt-1">Petugas CS tidak dapat mengedit detail tiket jika sudah melewati batas waktu jam yang ditentukan ini.</p>
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <button type="submit" class="px-6 py-2.5 bg-[#00509E] hover:bg-[#003B75] text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer">
+                        <span class="material-symbols-outlined text-base">save</span> Simpan Semua Pengaturan
+                    </button>
+                </div>
+            </form>
         </div>
 
     </main>

@@ -74,6 +74,9 @@ Route::middleware(['auth'])->group(function () {
         // MENDUKUNG GET DAN POST AGAR TIDAK ERROR 414 REQUEST-URI TOO LARGE
         Route::match(['get', 'post'], '/admin-dashboard/pdf', [AdminController::class, 'cetakPdf'])->name('admin.pdf');
 
+        // ROUTE BARU: PENJADWALAN & PENGATURAN SISTEM
+        Route::post('/admin/operasional/update', [AdminController::class, 'updateJadwalOperasional'])->name('admin.operasional.update');
+
         // CRUD Layanan & Sub-Layanan
         Route::post('/admin/layanan/store', [AdminController::class, 'storeLayanan'])->name('admin.layanan.store');
         Route::put('/admin/layanan/update/{id}', [AdminController::class, 'updateLayanan'])->name('admin.layanan.update');
