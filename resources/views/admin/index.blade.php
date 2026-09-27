@@ -323,33 +323,81 @@
 
         <!-- TAB 2: ANALITIK LAYANAN -->
         <div x-show="activeTab === 'analytics'" x-data="chartFilterComponent()" class="space-y-6">
-            <!-- Filter Analytics -->
-            <div class="bg-white p-4 rounded-2xl border border-[#E0E3E8] shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                <div class="flex items-center gap-2"><span class="material-symbols-outlined text-[#00509E]">tune</span><span class="text-xs font-black uppercase tracking-wider text-[#181C20]">Filter Periode Grafik Analitik</span></div>
-                <div class="flex flex-wrap items-center gap-1.5 bg-gray-100 p-1 rounded-xl text-xs font-bold w-full md:w-auto">
-                    <button type="button" @click="switchChartPeriod('wtd')" :class="chartPeriod === 'wtd' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">WTD</button>
-                    <button type="button" @click="switchChartPeriod('mtd')" :class="chartPeriod === 'mtd' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">MTD</button>
-                    <button type="button" @click="switchChartPeriod('mtm')" :class="chartPeriod === 'mtm' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">MTM</button>
-                    <button type="button" @click="switchChartPeriod('last30')" :class="chartPeriod === 'last30' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer">30 Hari</button>
-                    <button type="button" @click="switchChartPeriod('custom')" :class="chartPeriod === 'custom' ? 'bg-[#00509E] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'" class="px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1"><span class="material-symbols-outlined text-xs">calendar_today</span> Date to Date</button>
+            
+            <!-- FILTER PERIODE GRAFIK ANALITIK (SEGMENTED PILL BAR) -->
+            <div class="bg-white rounded-2xl border border-[#E0E3E8] p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+                
+                <!-- JUDUL SECTION -->
+                <div class="flex items-center gap-2.5">
+                    <div class="p-2 bg-[#00509E]/10 text-[#00509E] rounded-xl flex items-center justify-center">
+                        <span class="material-symbols-outlined text-lg">tune</span>
+                    </div>
+                    <h3 class="text-xs font-black uppercase tracking-wider text-[#181C20]">
+                        FILTER PERIODE GRAFIK ANALITIK
+                    </h3>
                 </div>
-            </div>
 
-            <!-- FORM INPUT TANGGAL -->
-            <form x-show="chartPeriod === 'custom'" x-cloak action="{{ route('admin.dashboard') }}" method="GET" class="bg-blue-50/70 border border-blue-200 p-4 rounded-2xl flex flex-wrap items-end gap-3 text-xs">
-                <input type="hidden" name="period" value="custom">
-                <div>
-                    <label class="text-[10px] font-black text-gray-500 uppercase block mb-1">Dari Tanggal (Start Date)</label>
-                    <input type="date" name="start_date" value="{{ request('start_date', $startDate->format('Y-m-d')) }}" class="border border-gray-300 rounded-xl p-2 font-semibold bg-white">
-                </div>
-                <div>
-                    <label class="text-[10px] font-black text-gray-500 uppercase block mb-1">Sampai Tanggal (End Date)</label>
-                    <input type="date" name="end_date" value="{{ request('end_date', $endDate->format('Y-m-d')) }}" class="border border-gray-300 rounded-xl p-2 font-semibold bg-white">
-                </div>
-                <button type="submit" class="px-4 py-2 bg-[#00509E] text-white font-bold rounded-xl flex items-center gap-1 shadow-sm hover:bg-[#003B75] cursor-pointer">
-                    <span class="material-symbols-outlined text-sm">filter_alt</span> Terapkan Tanggal
-                </button>
-            </form>
+                <!-- BARIS BUTTON SEGMENTED CONTROL -->
+                <form action="{{ route('admin.dashboard') }}" method="GET" id="form-filter-periode" class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+                    
+                    <!-- CONTAINER KAPSUL (PILL BAR) -->
+                    <div class="inline-flex items-center p-1 bg-[#F1F4F9] rounded-2xl border border-[#E0E3E8] gap-1">
+                        
+                        <!-- BUTTON WTD -->
+                        <button type="button" 
+                                @click="switchChartPeriod('wtd')"
+                                :class="chartPeriod === 'wtd' ? 'bg-[#00509E] text-white shadow-md font-black' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/50'"
+                                class="px-4 py-2 rounded-xl text-xs transition-all duration-200 cursor-pointer">
+                            WTD
+                        </button>
+
+                        <!-- BUTTON MTD -->
+                        <button type="button" 
+                                @click="switchChartPeriod('mtd')"
+                                :class="chartPeriod === 'mtd' ? 'bg-[#00509E] text-white shadow-md font-black' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/50'"
+                                class="px-4 py-2 rounded-xl text-xs transition-all duration-200 cursor-pointer">
+                            MTD
+                        </button>
+
+                        <!-- BUTTON MTM -->
+                        <button type="button" 
+                                @click="switchChartPeriod('mtm')"
+                                :class="chartPeriod === 'mtm' ? 'bg-[#00509E] text-white shadow-md font-black' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/50'"
+                                class="px-4 py-2 rounded-xl text-xs transition-all duration-200 cursor-pointer">
+                            MTM
+                        </button>
+
+                        <!-- BUTTON 30 HARI -->
+                        <button type="button" 
+                                @click="switchChartPeriod('last30')"
+                                :class="chartPeriod === 'last30' ? 'bg-[#00509E] text-white shadow-md font-black' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/50'"
+                                class="px-4 py-2 rounded-xl text-xs transition-all duration-200 cursor-pointer">
+                            30 Hari
+                        </button>
+
+                        <!-- BUTTON DATE TO DATE -->
+                        <button type="button" 
+                                @click="switchChartPeriod('custom')"
+                                :class="chartPeriod === 'custom' ? 'bg-[#00509E] text-white shadow-md font-black' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/50'"
+                                class="px-4 py-2 rounded-xl text-xs transition-all duration-200 flex items-center gap-1.5 cursor-pointer">
+                            <span class="material-symbols-outlined text-sm">calendar_today</span>
+                            <span>Date to Date</span>
+                        </button>
+                    </div>
+
+                    <!-- INPUT RANGE TANGGAL KUSTOM (TAMPIL SAAT SELECT DATE TO DATE) -->
+                    <div x-show="chartPeriod === 'custom'" x-cloak x-transition class="flex items-center gap-1.5 bg-[#F1F4F9] p-1.5 border border-[#E0E3E8] rounded-2xl text-xs">
+                        <input type="hidden" name="period" value="custom">
+                        <input type="date" name="start_date" value="{{ request('start_date', $startDate->format('Y-m-d')) }}" class="bg-white border border-gray-300 rounded-xl px-2.5 py-1 text-xs font-bold text-gray-800 focus:outline-none focus:border-[#00509E]">
+                        <span class="text-gray-400 font-bold">-</span>
+                        <input type="date" name="end_date" value="{{ request('end_date', $endDate->format('Y-m-d')) }}" class="bg-white border border-gray-300 rounded-xl px-2.5 py-1 text-xs font-bold text-gray-800 focus:outline-none focus:border-[#00509E]">
+                        <button type="submit" class="px-3 py-1 bg-[#00509E] hover:bg-[#003C7E] text-white rounded-xl font-bold text-xs shadow-sm transition-all cursor-pointer">
+                            Terapkan
+                        </button>
+                    </div>
+
+                </form>
+            </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- CHART 1 -->
@@ -699,7 +747,7 @@
             </div>
         </div>
 
-        <!-- TAB 6 (BARU): PENJADWALAN & PENGATURAN SISTEM -->
+        <!-- TAB 6: PENJADWALAN & PENGATURAN SISTEM -->
         <div x-show="activeTab === 'schedule'" class="space-y-6">
             <form action="{{ route('admin.operasional.update') }}" method="POST" class="bg-white p-6 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-6">
                 @csrf
