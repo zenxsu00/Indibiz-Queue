@@ -156,16 +156,6 @@
             <div id="box-antrean-menunggu" class="flex flex-col gap-2.5 lg:gap-3 overflow-y-auto custom-scrollbar flex-1 pr-1.5">
                 <!-- List Antrean Menunggu dirender via JS -->
             </div>
-
-            <div class="mt-4 pt-3 border-t border-slate-800 shrink-0 bg-slate-900/50 p-3 rounded-xl border border-slate-800/50 flex items-center justify-between">
-                <div>
-                    <p class="text-xs font-bold text-white leading-tight">Pantau Antrean di Ponsel</p>
-                    <p class="text-[10px] text-slate-400 mt-1">Scan QR Code pada struk tiket</p>
-                </div>
-                <div class="w-9 h-9 bg-white text-slate-900 rounded-xl flex items-center justify-center font-black shrink-0">
-                    <span class="material-symbols-outlined text-xl">qr_code_2</span>
-                </div>
-            </div>
         </div>
 
     </main>
@@ -412,7 +402,6 @@
             }
         }
 
-        // FUNGSI RENDER MEJA DIPERBESAR
         function renderMejaGridDinamis(mejaList) {
             var gridElem = document.getElementById('grid-meja-pelayanan');
             if (!mejaList || mejaList.length === 0) {
@@ -515,7 +504,6 @@
 
         setInterval(updateMejaTimers, 1000);
 
-        // FUNGSI RENDER ANTREAN BERIKUTNYA DIPERBAIKI (TEXT DIATAS, EST DIBAWAH, RATA KANAN)
         function renderAntreanMenunggu(listMenunggu) {
             var container = document.getElementById('box-antrean-menunggu');
             document.getElementById('total-menunggu').innerText = (listMenunggu ? listMenunggu.length : 0) + ' Menunggu';

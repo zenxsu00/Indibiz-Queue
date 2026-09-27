@@ -151,52 +151,87 @@
             </div>
         </div>
 
-        <!-- FORM FILTER UTAMA TAB OPERATIONS -->
-        <form x-show="activeTab === 'operations'" action="{{ route('admin.dashboard') }}" method="GET" class="bg-white p-4 rounded-2xl border border-[#E0E3E8] shadow-sm flex flex-wrap items-end gap-3 text-xs">
-            <div class="flex-1 min-w-[200px]">
-                <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Periode Waktu Filter</label>
-                <select name="period" x-model="selectedPeriod" @change="if(selectedPeriod !== 'custom') $el.form.submit()" class="w-full border border-gray-300 bg-gray-50 rounded-xl p-2 font-bold text-gray-700 focus:border-[#00509E] focus:ring-0 cursor-pointer">
-                    <option value="wtd">WTD (Minggu Ini)</option>
-                    <option value="mtd">MTD (Bulan Ini)</option>
-                    <option value="mtm">MTM (Month to Month)</option>
-                    <option value="last_30">30 Hari Terakhir</option>
-                    <option value="custom">Date to Date...</option>
-                </select>
+        <!-- FORM FILTER UTAMA TAB OPERATIONS (PILL BAR UI IDENTIK ANALITIK) -->
+        <form x-show="activeTab === 'operations'" action="{{ route('admin.dashboard') }}" method="GET" class="bg-white rounded-2xl border border-[#E0E3E8] p-4 shadow-sm flex flex-col lg:flex-row items-center justify-between gap-4">
+            
+            <!-- JUDUL FILTER OPERATIONS -->
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-blue-50 text-[#00509E] rounded-xl flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-lg">tune</span>
+                </div>
+                <h3 class="text-xs font-black uppercase tracking-wider text-[#181C20]">
+                    FILTER PERIODE & KATEGORI OPERATIONS
+                </h3>
             </div>
 
-            <template x-if="selectedPeriod === 'custom'">
-                <div class="flex flex-wrap items-center gap-2">
-                    <div>
-                        <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Dari Tanggal</label>
-                        <input type="date" name="start_date" value="{{ request('start_date', $startDate->format('Y-m-d')) }}" class="border border-gray-300 rounded-xl p-2 font-semibold">
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Sampai Tanggal</label>
-                        <input type="date" name="end_date" value="{{ request('end_date', $endDate->format('Y-m-d')) }}" class="border border-gray-300 rounded-xl p-2 font-semibold">
-                    </div>
-                    <button type="submit" class="px-3.5 py-2 bg-[#00509E] text-white font-bold rounded-xl flex items-center gap-1 shadow-sm hover:bg-[#003B75]">
-                        <span class="material-symbols-outlined text-sm">filter_alt</span> Terapkan
+            <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-end">
+                <input type="hidden" name="period" x-model="selectedPeriod">
+
+                <!-- PILL BAR PERIOD SEGMENTED CONTROL -->
+                <div class="inline-flex items-center p-1.5 bg-[#F1F4F9] rounded-2xl border border-[#E0E3E8] gap-1 text-xs">
+                    <button type="button" 
+                            @click="selectedPeriod = 'wtd'; $el.form.submit()"
+                            :class="selectedPeriod === 'wtd' ? 'bg-[#00509E] text-white font-extrabold shadow-sm rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/40 rounded-xl'"
+                            class="px-4 py-1.5 transition-all duration-200 cursor-pointer">
+                        WTD
+                    </button>
+
+                    <button type="button" 
+                            @click="selectedPeriod = 'mtd'; $el.form.submit()"
+                            :class="selectedPeriod === 'mtd' ? 'bg-[#00509E] text-white font-extrabold shadow-sm rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/40 rounded-xl'"
+                            class="px-4 py-1.5 transition-all duration-200 cursor-pointer">
+                        MTD
+                    </button>
+
+                    <button type="button" 
+                            @click="selectedPeriod = 'mtm'; $el.form.submit()"
+                            :class="selectedPeriod === 'mtm' ? 'bg-[#00509E] text-white font-extrabold shadow-sm rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/40 rounded-xl'"
+                            class="px-4 py-1.5 transition-all duration-200 cursor-pointer">
+                        MTM
+                    </button>
+
+                    <button type="button" 
+                            @click="selectedPeriod = 'last_30'; $el.form.submit()"
+                            :class="selectedPeriod === 'last_30' || selectedPeriod === 'last30' ? 'bg-[#00509E] text-white font-extrabold shadow-md rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/40 rounded-xl'"
+                            class="px-4 py-1.5 transition-all duration-200 cursor-pointer">
+                        30 Hari
+                    </button>
+
+                    <button type="button" 
+                            @click="selectedPeriod = 'custom'"
+                            :class="selectedPeriod === 'custom' ? 'bg-[#00509E] text-white font-extrabold shadow-sm rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/40 rounded-xl'"
+                            class="px-3.5 py-1.5 transition-all duration-200 flex items-center gap-1.5 cursor-pointer">
+                        <span class="material-symbols-outlined text-sm">calendar_today</span>
+                        <span>Date to Date</span>
                     </button>
                 </div>
-            </template>
 
-            <div class="flex-1 min-w-[180px]">
-                <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Filter Kategori</label>
-                <select name="layanan_id" @change="$el.form.submit()" class="w-full border border-gray-300 rounded-xl p-2 font-semibold focus:border-[#00509E] focus:ring-0">
-                    <option value="">Semua Kategori</option>
-                    @foreach($layanans as $lay)
-                        <option value="{{ $lay->id }}" {{ $layananId == $lay->id ? 'selected' : '' }}>{{ $lay->nama_layanan }}</option>
-                    @endforeach
-                </select>
-            </div>
+                <!-- SELECT KATEGORI LAYANAN -->
+                <div class="min-w-[170px]">
+                    <select name="layanan_id" @change="$el.form.submit()" class="w-full border border-gray-300 bg-gray-50 rounded-xl p-2 font-bold text-gray-700 focus:border-[#00509E] focus:ring-0 text-xs cursor-pointer">
+                        <option value="">Semua Kategori</option>
+                        @foreach($layanans as $lay)
+                            <option value="{{ $lay->id }}" {{ $layananId == $lay->id ? 'selected' : '' }}>{{ $lay->nama_layanan }}</option>
+                        @endforeach
+                    </select>
+                </div>
 
-            @if(request('period') || request('layanan_id') || request('start_date'))
-                <div class="pb-0.5">
-                    <a href="{{ route('admin.dashboard') }}" class="px-3 py-2 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl font-bold flex items-center gap-1 hover:bg-rose-100 transition-all">
+                <!-- INPUT RANGE DATE TO DATE -->
+                <div x-show="selectedPeriod === 'custom'" x-cloak x-transition class="flex items-center gap-1.5 bg-[#F1F4F9] p-1.5 border border-[#E0E3E8] rounded-2xl text-xs">
+                    <input type="date" name="start_date" value="{{ request('start_date', $startDate->format('Y-m-d')) }}" class="bg-white border border-gray-300 rounded-xl px-2.5 py-1 text-xs font-bold text-gray-800 focus:outline-none focus:border-[#00509E]">
+                    <span class="text-gray-400 font-bold">-</span>
+                    <input type="date" name="end_date" value="{{ request('end_date', $endDate->format('Y-m-d')) }}" class="bg-white border border-gray-300 rounded-xl px-2.5 py-1 text-xs font-bold text-gray-800 focus:outline-none focus:border-[#00509E]">
+                    <button type="submit" class="px-3 py-1 bg-[#00509E] hover:bg-[#003C7E] text-white rounded-xl font-bold text-xs shadow-sm transition-all cursor-pointer">
+                        Terapkan
+                    </button>
+                </div>
+
+                @if(request('period') || request('layanan_id') || request('start_date'))
+                    <a href="{{ route('admin.dashboard') }}" class="px-3 py-2 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl font-bold flex items-center gap-1 hover:bg-rose-100 transition-all text-xs">
                         <span class="material-symbols-outlined text-sm">restart_alt</span> Reset
                     </a>
-                </div>
-            @endif
+                @endif
+            </div>
         </form>
 
         <!-- TAB 1: OPERATIONS -->
@@ -457,7 +492,7 @@
             </div>
         </div>
 
-        <!-- TAB 3: RIWAYAT OPERASIONAL REAL-TIME -->
+        <!-- TAB 3: RIWAYAT OPERASIONAL REAL-TIME (PILL BAR UI IDENTIK ANALITIK) -->
         <div x-show="activeTab === 'history'" id="history-data-container" data-history='{{ json_encode($historyBulanan) }}' x-data="historyFilterComponent()" class="bg-white border border-[#E0E3E8] rounded-2xl shadow-sm overflow-hidden flex flex-col space-y-4 p-6">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-[#E0E3E8] pb-4 gap-4">
                 <div>
@@ -467,40 +502,68 @@
                 <span class="text-xs font-bold bg-[#00509E]/10 text-[#00509E] px-3 py-1 rounded-full" x-text="'Total ' + filteredHistory.length + ' Baris Tampil'"></span>
             </div>
 
-            <div class="bg-[#F8F9FA] p-3.5 rounded-xl border border-[#E0E3E8] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-                <div>
-                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Jangka Waktu Periode</label>
-                    <select x-model="daysLimit" class="w-full border border-gray-300 rounded-lg p-2 font-semibold bg-white cursor-pointer">
-                        <option value="wtd">WTD (Minggu Ini)</option>
-                        <option value="mtd">MTD (Bulan Ini)</option>
-                        <option value="mtm">MTM (Month to Month)</option>
-                        <option value="30">30 Hari Terakhir</option>
-                        <option value="all">Semua Data Operasional</option>
-                    </select>
+            <!-- BARIS FILTER UTAMA RIWAYAT (PILL BAR) -->
+            <div class="bg-[#F8F9FA] p-4 rounded-2xl border border-[#E0E3E8] flex flex-col lg:flex-row items-center justify-between gap-4 text-xs">
+                
+                <!-- KANAN/KIRI: OPSI PERIODE DENGAN KAPSUL PILL BAR -->
+                <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                    <span class="text-[10px] font-black text-gray-400 uppercase mr-1 block">Periode:</span>
+                    <div class="inline-flex items-center p-1.5 bg-white rounded-2xl border border-[#E0E3E8] gap-1">
+                        <button type="button" 
+                                @click="daysLimit = 'wtd'"
+                                :class="daysLimit === 'wtd' ? 'bg-[#00509E] text-white font-extrabold shadow-sm rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-gray-100 rounded-xl'"
+                                class="px-4 py-1.5 transition-all duration-200 cursor-pointer">
+                            WTD
+                        </button>
+                        <button type="button" 
+                                @click="daysLimit = 'mtd'"
+                                :class="daysLimit === 'mtd' ? 'bg-[#00509E] text-white font-extrabold shadow-sm rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-gray-100 rounded-xl'"
+                                class="px-4 py-1.5 transition-all duration-200 cursor-pointer">
+                            MTD
+                        </button>
+                        <button type="button" 
+                                @click="daysLimit = 'mtm'"
+                                :class="daysLimit === 'mtm' ? 'bg-[#00509E] text-white font-extrabold shadow-sm rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-gray-100 rounded-xl'"
+                                class="px-4 py-1.5 transition-all duration-200 cursor-pointer">
+                            MTM
+                        </button>
+                        <button type="button" 
+                                @click="daysLimit = '30'"
+                                :class="daysLimit === '30' ? 'bg-[#00509E] text-white font-extrabold shadow-md rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-gray-100 rounded-xl'"
+                                class="px-4 py-1.5 transition-all duration-200 cursor-pointer">
+                            30 Hari
+                        </button>
+                        <button type="button" 
+                                @click="daysLimit = 'all'"
+                                :class="daysLimit === 'all' ? 'bg-[#00509E] text-white font-extrabold shadow-sm rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-gray-100 rounded-xl'"
+                                class="px-3.5 py-1.5 transition-all duration-200 cursor-pointer">
+                            Semua Data
+                        </button>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Urutkan Berdasarkan</label>
-                    <select x-model="sortField" class="w-full border border-gray-300 rounded-lg p-2 font-semibold bg-white cursor-pointer">
-                        <option value="raw_date">Tanggal</option>
-                        <option value="tiket_masuk">Tiket Masuk</option>
-                        <option value="tiket_dilayani">Tiket Dilayani</option>
-                        <option value="sudah_diproses">Sudah Diproses (Selesai)</option>
-                        <option value="belum_diproses">Belum Diproses (Menunggu)</option>
-                        <option value="total_omset">Jumlah Transaksi (Omset)</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Arah Urutan</label>
-                    <select x-model="sortOrder" class="w-full border border-gray-300 rounded-lg p-2 font-semibold bg-white cursor-pointer">
-                        <option value="desc">Terbanyak / Terbaru</option>
-                        <option value="asc">Tersedikit / Terlama</option>
-                    </select>
-                </div>
-                <div class="flex items-end pb-1">
-                    <label class="inline-flex items-center cursor-pointer select-none">
+
+                <!-- PENGATURAN PENGURUTAN & TOGGLE HARI KOSONG -->
+                <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-end">
+                    <div class="flex items-center gap-2">
+                        <label class="text-[10px] font-black text-gray-400 uppercase">Urutkan:</label>
+                        <select x-model="sortField" class="border border-gray-300 rounded-xl p-2 font-bold text-gray-700 bg-white focus:outline-none focus:border-[#00509E] cursor-pointer">
+                            <option value="raw_date">Tanggal</option>
+                            <option value="tiket_masuk">Tiket Masuk</option>
+                            <option value="tiket_dilayani">Tiket Dilayani</option>
+                            <option value="sudah_diproses">Selesai</option>
+                            <option value="belum_diproses">Menunggu</option>
+                            <option value="total_omset">Omset</option>
+                        </select>
+                        <select x-model="sortOrder" class="border border-gray-300 rounded-xl p-2 font-bold text-gray-700 bg-white focus:outline-none focus:border-[#00509E] cursor-pointer">
+                            <option value="desc">Terbaru / Terbanyak</option>
+                            <option value="asc">Terlama / Tersedikit</option>
+                        </select>
+                    </div>
+
+                    <label class="inline-flex items-center cursor-pointer select-none bg-white px-3 py-2 rounded-xl border border-gray-200">
                         <input type="checkbox" x-model="hideEmpty" class="sr-only peer">
-                        <div class="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-[#00509E] relative after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
-                        <span class="ml-2 text-xs font-bold text-[#181C20]">Sembunyikan Hari Kosong</span>
+                        <div class="w-8 h-4.5 bg-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-[#00509E] relative after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all"></div>
+                        <span class="ml-2 text-xs font-bold text-[#181C20]">Sembunyikan Kosong</span>
                     </label>
                 </div>
             </div>
@@ -1396,11 +1459,9 @@
                 
                 get filteredHistory() {
                     let data = [...this.rawHistory];
-                    if (this.daysLimit === '7') data = data.slice(0, 7);
-                    else if (this.daysLimit === '14') data = data.slice(0, 14);
-                    else if (this.daysLimit === '30') data = data.slice(0, 30);
-                    else if (this.daysLimit === 'wtd') data = data.slice(0, 7);
+                    if (this.daysLimit === 'wtd') data = data.slice(0, 7);
                     else if (this.daysLimit === 'mtd' || this.daysLimit === 'mtm') data = data.slice(0, 30);
+                    else if (this.daysLimit === '30') data = data.slice(0, 30);
 
                     if (this.hideEmpty) data = data.filter(i => i.tiket_masuk > 0);
 
