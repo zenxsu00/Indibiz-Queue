@@ -52,9 +52,10 @@
     </header>
 
     <main class="relative overflow-hidden min-h-[calc(100vh-80px)] flex flex-col items-center p-4 sm:p-6 lg:p-8">
-        <!-- Watermark -->
-        <div class="absolute inset-0 pointer-events-none flex items-center justify-center opacity-[0.03] z-0">
-            <span class="material-symbols-outlined text-[400px] sm:text-[800px] text-[#00509E]">grid_view</span>
+        
+        <!-- WATERMARK LOGO ICON INDIBIZ SANGAT TIPIS -->
+        <div class="absolute inset-0 pointer-events-none flex items-center justify-center opacity-[0.03] z-0 select-none overflow-hidden">
+            <img src="{{ asset('img/LogoIcon.png') }}" alt="Watermark Indibiz" class="w-[350px] sm:w-[650px] lg:w-[800px] object-contain grayscale">
         </div>
 
         @if(!$isOperational)
@@ -104,7 +105,7 @@
                         <p class="text-xs sm:text-sm text-slate-600 mt-1.5 max-w-md">Silakan masukkan data diri Anda untuk mendapatkan tiket antrean instan.</p>
                     </div>
 
-                    <div class="w-full bg-white rounded-2xl shadow-xl border border-slate-200/80 p-6 sm:p-8 text-left">
+                    <div class="w-full bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200/80 p-6 sm:p-8 text-left">
                         <template x-if="errorMsg">
                             <div class="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl text-xs font-bold flex items-center gap-2">
                                 <span class="material-symbols-outlined text-base">error</span>
@@ -187,8 +188,8 @@
                             <!-- Looping Data Layanan -->
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 @foreach($layanans as $layanan)
-                                <label class="relative rounded-xl p-6 flex flex-col items-center text-center gap-3 transition-all cursor-pointer bg-white border border-slate-200 hover:border-[#00509E] hover:shadow-md"
-                                       :class="{ 'border-2 border-[#00509E] shadow-lg ring-2 ring-[#00509E]/20 bg-blue-50/30': selectedService == {{ $layanan->id }} }">
+                                <label class="relative rounded-xl p-6 flex flex-col items-center text-center gap-3 transition-all cursor-pointer bg-white/95 backdrop-blur-md border border-slate-200 hover:border-[#00509E] hover:shadow-md"
+                                       :class="{ 'border-2 border-[#00509E] shadow-lg ring-2 ring-[#00509E]/20 bg-blue-50/40': selectedService == {{ $layanan->id }} }">
                                     
                                     <input type="radio" name="layanan_id" value="{{ $layanan->id }}" class="hidden" x-model="selectedService" required>
                                     
@@ -208,7 +209,7 @@
 
                         <!-- Kanan: Form Keluhan -->
                         <section class="lg:col-span-5 flex flex-col gap-4">
-                            <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-md">
+                            <div class="bg-white/95 backdrop-blur-md border border-slate-200 rounded-2xl p-6 shadow-md">
                                 <h3 class="text-lg font-extrabold text-[#0A3967] mb-4 pb-3 border-b border-slate-100">Detail Keperluan</h3>
                                 
                                 <div class="flex flex-col gap-4">

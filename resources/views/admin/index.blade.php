@@ -35,8 +35,8 @@
           selectedEditLayanan: null,
           selectedEditSubLayanan: null,
           selectedPeriod: '{{ request('period', 'last_30') }}',
-          selectedLayananId: '{{ $layanans->first()?->id ?? '' }}',
-          selectedLayananNama: '{{ addslashes($layanans->first()?->nama_layanan ?? '') }}'
+          selectedLayananId: '{{ optional($layanans->first())->id ?? '' }}',
+          selectedLayananNama: '{{ addslashes(optional($layanans->first())->nama_layanan ?? '') }}'
       }"
       x-init="$watch('activeTab', value => localStorage.setItem('admin_active_tab', value))">
 
@@ -151,63 +151,60 @@
             </div>
         </div>
 
-        <!-- FORM FILTER UTAMA TAB OPERATIONS (PILL BAR UI IDENTIK ANALITIK) -->
-        <form x-show="activeTab === 'operations'" action="{{ route('admin.dashboard') }}" method="GET" class="bg-white rounded-2xl border border-[#E0E3E8] p-4 shadow-sm flex flex-col lg:flex-row items-center justify-between gap-4">
+        <!-- FORM FILTER UTAMA TAB OPERATIONS -->
+        <form x-show="activeTab === 'operations'" action="{{ route('admin.dashboard') }}" method="GET" class="bg-white rounded-2xl border border-[#E0E3E8] p-4 shadow-sm flex flex-col xl:flex-row items-center justify-between gap-4">
             
-            <!-- JUDUL FILTER OPERATIONS -->
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 shrink-0">
                 <div class="w-9 h-9 bg-blue-50 text-[#00509E] rounded-xl flex items-center justify-center shrink-0">
                     <span class="material-symbols-outlined text-lg">tune</span>
                 </div>
                 <h3 class="text-xs font-black uppercase tracking-wider text-[#181C20]">
-                    FILTER PERIODE & KATEGORI OPERATIONS
+                    FILTER PERIODE & KATEGORI
                 </h3>
             </div>
 
-            <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-end">
-                <input type="hidden" name="period" x-model="selectedPeriod">
+            <div class="flex flex-wrap items-center gap-3 w-full xl:w-auto justify-start xl:justify-end">
+                <input type="hidden" name="period" :value="selectedPeriod">
 
-                <!-- PILL BAR PERIOD SEGMENTED CONTROL -->
-                <div class="inline-flex items-center p-1.5 bg-[#F1F4F9] rounded-2xl border border-[#E0E3E8] gap-1 text-xs">
+                <div class="inline-flex items-center p-1 bg-[#F1F4F9] rounded-2xl border border-[#E0E3E8] gap-1 text-xs">
                     <button type="button" 
-                            @click="selectedPeriod = 'wtd'; $el.form.submit()"
+                            @click="selectedPeriod = 'wtd'; $nextTick(() => $el.form.submit())"
                             :class="selectedPeriod === 'wtd' ? 'bg-[#00509E] text-white font-extrabold shadow-sm rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/40 rounded-xl'"
-                            class="px-4 py-1.5 transition-all duration-200 cursor-pointer">
+                            class="px-3.5 py-1.5 transition-all duration-200 cursor-pointer">
                         WTD
                     </button>
 
                     <button type="button" 
-                            @click="selectedPeriod = 'mtd'; $el.form.submit()"
+                            @click="selectedPeriod = 'mtd'; $nextTick(() => $el.form.submit())"
                             :class="selectedPeriod === 'mtd' ? 'bg-[#00509E] text-white font-extrabold shadow-sm rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/40 rounded-xl'"
-                            class="px-4 py-1.5 transition-all duration-200 cursor-pointer">
+                            class="px-3.5 py-1.5 transition-all duration-200 cursor-pointer">
                         MTD
                     </button>
 
                     <button type="button" 
-                            @click="selectedPeriod = 'mtm'; $el.form.submit()"
+                            @click="selectedPeriod = 'mtm'; $nextTick(() => $el.form.submit())"
                             :class="selectedPeriod === 'mtm' ? 'bg-[#00509E] text-white font-extrabold shadow-sm rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/40 rounded-xl'"
-                            class="px-4 py-1.5 transition-all duration-200 cursor-pointer">
+                            class="px-3.5 py-1.5 transition-all duration-200 cursor-pointer">
                         MTM
                     </button>
 
                     <button type="button" 
-                            @click="selectedPeriod = 'last_30'; $el.form.submit()"
+                            @click="selectedPeriod = 'last_30'; $nextTick(() => $el.form.submit())"
                             :class="selectedPeriod === 'last_30' || selectedPeriod === 'last30' ? 'bg-[#00509E] text-white font-extrabold shadow-md rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/40 rounded-xl'"
-                            class="px-4 py-1.5 transition-all duration-200 cursor-pointer">
+                            class="px-3.5 py-1.5 transition-all duration-200 cursor-pointer">
                         30 Hari
                     </button>
 
                     <button type="button" 
                             @click="selectedPeriod = 'custom'"
                             :class="selectedPeriod === 'custom' ? 'bg-[#00509E] text-white font-extrabold shadow-sm rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/40 rounded-xl'"
-                            class="px-3.5 py-1.5 transition-all duration-200 flex items-center gap-1.5 cursor-pointer">
+                            class="px-3 py-1.5 transition-all duration-200 flex items-center gap-1.5 cursor-pointer">
                         <span class="material-symbols-outlined text-sm">calendar_today</span>
                         <span>Date to Date</span>
                     </button>
                 </div>
 
-                <!-- SELECT KATEGORI LAYANAN -->
-                <div class="min-w-[170px]">
+                <div class="min-w-[160px]">
                     <select name="layanan_id" @change="$el.form.submit()" class="w-full border border-gray-300 bg-gray-50 rounded-xl p-2 font-bold text-gray-700 focus:border-[#00509E] focus:ring-0 text-xs cursor-pointer">
                         <option value="">Semua Kategori</option>
                         @foreach($layanans as $lay)
@@ -216,11 +213,10 @@
                     </select>
                 </div>
 
-                <!-- INPUT RANGE DATE TO DATE -->
                 <div x-show="selectedPeriod === 'custom'" x-cloak x-transition class="flex items-center gap-1.5 bg-[#F1F4F9] p-1.5 border border-[#E0E3E8] rounded-2xl text-xs">
-                    <input type="date" name="start_date" value="{{ request('start_date', $startDate->format('Y-m-d')) }}" class="bg-white border border-gray-300 rounded-xl px-2.5 py-1 text-xs font-bold text-gray-800 focus:outline-none focus:border-[#00509E]">
+                    <input type="date" name="start_date" value="{{ request('start_date', $startDate->format('Y-m-d')) }}" class="bg-white border border-gray-300 rounded-xl px-2 py-1 text-xs font-bold text-gray-800 focus:outline-none focus:border-[#00509E]">
                     <span class="text-gray-400 font-bold">-</span>
-                    <input type="date" name="end_date" value="{{ request('end_date', $endDate->format('Y-m-d')) }}" class="bg-white border border-gray-300 rounded-xl px-2.5 py-1 text-xs font-bold text-gray-800 focus:outline-none focus:border-[#00509E]">
+                    <input type="date" name="end_date" value="{{ request('end_date', $endDate->format('Y-m-d')) }}" class="bg-white border border-gray-300 rounded-xl px-2 py-1 text-xs font-bold text-gray-800 focus:outline-none focus:border-[#00509E]">
                     <button type="submit" class="px-3 py-1 bg-[#00509E] hover:bg-[#003C7E] text-white rounded-xl font-bold text-xs shadow-sm transition-all cursor-pointer">
                         Terapkan
                     </button>
@@ -236,7 +232,6 @@
 
         <!-- TAB 1: OPERATIONS -->
         <div x-show="activeTab === 'operations'" class="space-y-6">
-            <!-- RINGKASAN ANALISIS OTOMATIS TREN OPERASIONAL -->
             <div class="bg-white p-4 rounded-2xl border border-[#E0E3E8] shadow-sm flex items-center gap-3">
                 <span class="material-symbols-outlined text-[#00509E] text-2xl">insights</span>
                 <div class="flex-1">
@@ -250,7 +245,6 @@
                 </span>
             </div>
 
-            <!-- METRIK CARDS (5 KARTU UTAMA) -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
                 <div class="bg-white border border-[#E0E3E8] rounded-2xl p-4 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1.5 bg-[#00509E]"></div>
@@ -289,7 +283,6 @@
                         <span class="text-[9px] text-[#5D3F3B] font-extrabold uppercase tracking-wider">Total Omset</span>
                         <span class="text-[8px] bg-purple-100 text-purple-800 font-black px-1 py-0.5 rounded">Omset</span>
                     </div>
-                    <!-- NOMINAL 0 DITAMPILKAN SEBAGAI STRIP (-) -->
                     <span class="text-lg lg:text-xl font-black text-[#00509E]">{{ $totalOmset > 0 ? 'Rp ' . number_format($totalOmset, 0, ',', '.') : '-' }}</span>
                 </div>
             </div>
@@ -320,14 +313,14 @@
                                 <tr class="hover:bg-[#F8F9FA] transition-colors">
                                     <td class="p-3 font-mono font-bold text-[#00509E]">{{ $tiket->nomor_antrian }}</td>
                                     <td class="p-3 font-bold">
-                                        {{ $tiket->pelanggan?->nama ?? '-' }} 
-                                        <br><span class="text-[10px] text-gray-400 font-normal">{{ $tiket->pelanggan?->no_hp ?? '-' }}</span>
+                                        {{ optional($tiket->pelanggan)->nama ?? '-' }} 
+                                        <br><span class="text-[10px] text-gray-400 font-normal">{{ optional($tiket->pelanggan)->no_hp ?? '-' }}</span>
                                     </td>
                                     <td class="p-3">
-                                        <span class="bg-blue-50 text-[#00509E] px-2 py-0.5 rounded font-bold block mb-0.5">{{ $tiket->layanan?->nama_layanan ?? '-' }}</span>
-                                        <span class="text-[10px] text-gray-500 italic">{{ $tiket->subLayanan?->nama_sub_layanan ?? 'Tanpa Sub-Layanan' }}</span>
+                                        <span class="bg-blue-50 text-[#00509E] px-2 py-0.5 rounded font-bold block mb-0.5">{{ optional($tiket->layanan)->nama_layanan ?? '-' }}</span>
+                                        <span class="text-[10px] text-gray-500 italic">{{ optional($tiket->subLayanan)->nama_sub_layanan ?? 'Tanpa Sub-Layanan' }}</span>
                                     </td>
-                                    <td class="p-3 font-bold">{{ $tiket->cs?->nama_lengkap ? $tiket->cs->nama_lengkap . ' (M' . $tiket->cs->nomor_meja . ')' : '-' }}</td>
+                                    <td class="p-3 font-bold">{{ optional($tiket->cs)->nama_lengkap ? $tiket->cs->nama_lengkap . ' (M' . $tiket->cs->nomor_meja . ')' : '-' }}</td>
                                     <td class="p-3 text-gray-500">{{ \Carbon\Carbon::parse($tiket->waktu_dibuat)->timezone('Asia/Jakarta')->format('d/m/Y H:i') }}</td>
                                     <td class="p-3">
                                         <span class="px-2 py-0.5 rounded-full text-[10px] font-black {{ 
@@ -338,7 +331,6 @@
                                         }}">{{ $tiket->status }}</span>
                                     </td>
                                     <td class="p-3 text-gray-600 max-w-[200px] truncate" title="{{ $tiket->catatan_cs ?? $tiket->ringkasan_solusi ?? '-' }}">{{ $tiket->catatan_cs ?? $tiket->ringkasan_solusi ?? '-' }}</td>
-                                    <!-- NOMINAL 0 DITAMPILKAN SEBAGAI STRIP (-) -->
                                     <td class="p-3 text-right font-black text-[#181C20]">{{ $tiket->nominal_pembayaran > 0 ? 'Rp ' . number_format($tiket->nominal_pembayaran, 0, ',', '.') : '-' }}</td>
                                     <td class="p-3 text-center">
                                         <button @click="selectedTiket = {{ json_encode($tiket) }}; showModalDetail = true" class="px-2.5 py-1 bg-[#00509E]/10 text-[#00509E] hover:bg-[#00509E] hover:text-white rounded-lg font-bold text-[10px] transition-all cursor-pointer">Detail</button>
@@ -355,11 +347,7 @@
 
         <!-- TAB 2: ANALITIK LAYANAN -->
         <div x-show="activeTab === 'analytics'" x-data="chartFilterComponent()" class="space-y-6">
-            
-            <!-- FILTER PERIODE GRAFIK ANALITIK (SEGMENTED OVAL PILL BAR IDENTIK SCREENSHOT) -->
             <div class="bg-white rounded-2xl border border-[#E0E3E8] p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
-                
-                <!-- JUDUL SECTION -->
                 <div class="flex items-center gap-3">
                     <div class="w-9 h-9 bg-blue-50 text-[#00509E] rounded-xl flex items-center justify-center shrink-0">
                         <span class="material-symbols-outlined text-lg">tune</span>
@@ -369,60 +357,50 @@
                     </h3>
                 </div>
 
-                <!-- BARIS BUTTON SEGMENTED CONTROL -->
                 <form action="{{ route('admin.dashboard') }}" method="GET" id="form-filter-periode" class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
-                    
-                    <!-- WRAPPER ABU-ABU TERANG DENGAN ROUNDED FULL / OVAL -->
-                    <div class="inline-flex items-center p-1.5 bg-[#F1F4F9] rounded-2xl border border-[#E0E3E8] gap-1 text-xs">
-                        
-                        <!-- BUTTON WTD -->
+                    <div class="inline-flex items-center p-1 bg-[#F1F4F9] rounded-2xl border border-[#E0E3E8] gap-1 text-xs">
                         <button type="button" 
                                 @click="switchChartPeriod('wtd')"
                                 :class="chartPeriod === 'wtd' ? 'bg-[#00509E] text-white font-extrabold shadow-sm rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/40 rounded-xl'"
-                                class="px-4 py-1.5 transition-all duration-200 cursor-pointer">
+                                class="px-3.5 py-1.5 transition-all duration-200 cursor-pointer">
                             WTD
                         </button>
 
-                        <!-- BUTTON MTD -->
                         <button type="button" 
                                 @click="switchChartPeriod('mtd')"
                                 :class="chartPeriod === 'mtd' ? 'bg-[#00509E] text-white font-extrabold shadow-sm rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/40 rounded-xl'"
-                                class="px-4 py-1.5 transition-all duration-200 cursor-pointer">
+                                class="px-3.5 py-1.5 transition-all duration-200 cursor-pointer">
                             MTD
                         </button>
 
-                        <!-- BUTTON MTM -->
                         <button type="button" 
                                 @click="switchChartPeriod('mtm')"
                                 :class="chartPeriod === 'mtm' ? 'bg-[#00509E] text-white font-extrabold shadow-sm rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/40 rounded-xl'"
-                                class="px-4 py-1.5 transition-all duration-200 cursor-pointer">
+                                class="px-3.5 py-1.5 transition-all duration-200 cursor-pointer">
                             MTM
                         </button>
 
-                        <!-- BUTTON 30 HARI -->
                         <button type="button" 
                                 @click="switchChartPeriod('last30')"
                                 :class="chartPeriod === 'last30' ? 'bg-[#00509E] text-white font-extrabold shadow-md rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/40 rounded-xl'"
-                                class="px-4 py-1.5 transition-all duration-200 cursor-pointer">
+                                class="px-3.5 py-1.5 transition-all duration-200 cursor-pointer">
                             30 Hari
                         </button>
 
-                        <!-- BUTTON DATE TO DATE -->
                         <button type="button" 
                                 @click="switchChartPeriod('custom')"
                                 :class="chartPeriod === 'custom' ? 'bg-[#00509E] text-white font-extrabold shadow-sm rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/40 rounded-xl'"
-                                class="px-3.5 py-1.5 transition-all duration-200 flex items-center gap-1.5 cursor-pointer">
+                                class="px-3 py-1.5 transition-all duration-200 flex items-center gap-1.5 cursor-pointer">
                             <span class="material-symbols-outlined text-sm">calendar_today</span>
                             <span>Date to Date</span>
                         </button>
                     </div>
 
-                    <!-- INPUT RANGE TANGGAL KUSTOM (TAMPIL SAAT SELECT DATE TO DATE) -->
                     <div x-show="chartPeriod === 'custom'" x-cloak x-transition class="flex items-center gap-1.5 bg-[#F1F4F9] p-1.5 border border-[#E0E3E8] rounded-2xl text-xs">
                         <input type="hidden" name="period" value="custom">
-                        <input type="date" name="start_date" value="{{ request('start_date', $startDate->format('Y-m-d')) }}" class="bg-white border border-gray-300 rounded-xl px-2.5 py-1 text-xs font-bold text-gray-800 focus:outline-none focus:border-[#00509E]">
+                        <input type="date" name="start_date" value="{{ request('start_date', $startDate->format('Y-m-d')) }}" class="bg-white border border-gray-300 rounded-xl px-2 py-1 text-xs font-bold text-gray-800 focus:outline-none focus:border-[#00509E]">
                         <span class="text-gray-400 font-bold">-</span>
-                        <input type="date" name="end_date" value="{{ request('end_date', $endDate->format('Y-m-d')) }}" class="bg-white border border-gray-300 rounded-xl px-2.5 py-1 text-xs font-bold text-gray-800 focus:outline-none focus:border-[#00509E]">
+                        <input type="date" name="end_date" value="{{ request('end_date', $endDate->format('Y-m-d')) }}" class="bg-white border border-gray-300 rounded-xl px-2 py-1 text-xs font-bold text-gray-800 focus:outline-none focus:border-[#00509E]">
                         <button type="submit" class="px-3 py-1 bg-[#00509E] hover:bg-[#003C7E] text-white rounded-xl font-bold text-xs shadow-sm transition-all cursor-pointer">
                             Terapkan
                         </button>
@@ -432,19 +410,16 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- CHART 1 -->
                 <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm">
                     <h3 class="text-sm font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2 mb-4 border-b pb-3"><span class="material-symbols-outlined text-[#00509E]">show_chart</span>1. Pendaftaran vs Selesai</h3>
-                    <div class="h-64 relative"><canvas id="queueChart" data-chart-sets='{{ json_encode($chartDataSets ?? []) }}'></canvas></div>
+                    <div class="h-64 relative"><canvas id="queueChart" data-chart-sets="{{ json_encode($chartDataSets ?? []) }}"></canvas></div>
                 </div>
-                <!-- CHART 2 -->
                 <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
                     <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2 border-b pb-2"><span class="material-symbols-outlined text-[#00509E]">pie_chart</span>2. Kepadatan Kategori Layanan</h3>
-                    <div class="h-64 relative"><canvas id="categoryPieChart" data-dist='{{ json_encode($distribusiLayanan ?? []) }}'></canvas></div>
+                    <div class="h-64 relative"><canvas id="categoryPieChart" data-dist="{{ json_encode($distribusiLayanan ?? []) }}"></canvas></div>
                 </div>
             </div>
 
-            <!-- CHART 3 -->
             <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3 flex flex-col justify-between">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b pb-2">
                     <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2"><span class="material-symbols-outlined text-blue-600">timeline</span>3. Waktu Tunggu vs Durasi Konsul CS</h3>
@@ -459,7 +434,6 @@
                 </div>
             </div>
 
-            <!-- CHART 4 (MODERNISED + HIDE ACCOUNT) -->
             <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3 relative">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-2 gap-3">
                     <h3 class="text-xs font-black text-[#181C20] uppercase tracking-wider flex items-center gap-2">
@@ -467,7 +441,6 @@
                         4. Performa Produktivitas Staf CS per Akun
                     </h3>
                     
-                    <!-- FILTER HIDE AKUN -->
                     <div x-data="{ showFilter: false }" class="relative z-20">
                         <button @click="showFilter = !showFilter" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-all">
                             <span class="material-symbols-outlined text-[14px]">filter_alt</span> Sembunyikan Akun
@@ -487,13 +460,13 @@
                 </div>
 
                 <div class="h-64 sm:h-72 relative">
-                    <canvas id="csBarChart" data-cs='{{ json_encode($mejaCs ?? []) }}'></canvas>
+                    <canvas id="csBarChart" data-cs="{{ json_encode($mejaCs ?? []) }}"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- TAB 3: RIWAYAT OPERASIONAL REAL-TIME (PILL BAR UI IDENTIK ANALITIK) -->
-        <div x-show="activeTab === 'history'" id="history-data-container" data-history='{{ json_encode($historyBulanan) }}' x-data="historyFilterComponent()" class="bg-white border border-[#E0E3E8] rounded-2xl shadow-sm overflow-hidden flex flex-col space-y-4 p-6">
+        <!-- TAB 3: RIWAYAT OPERASIONAL REAL-TIME -->
+        <div x-show="activeTab === 'history'" id="history-data-container" data-history="{{ json_encode($historyBulanan ?? []) }}" x-data="historyFilterComponent()" class="bg-white border border-[#E0E3E8] rounded-2xl shadow-sm overflow-hidden flex flex-col space-y-4 p-6">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-[#E0E3E8] pb-4 gap-4">
                 <div>
                     <h3 class="text-lg font-black text-[#181C20]">Riwayat Operasional Antrean & Omset Harian</h3>
@@ -502,48 +475,57 @@
                 <span class="text-xs font-bold bg-[#00509E]/10 text-[#00509E] px-3 py-1 rounded-full" x-text="'Total ' + filteredHistory.length + ' Baris Tampil'"></span>
             </div>
 
-            <!-- BARIS FILTER UTAMA RIWAYAT (PILL BAR) -->
-            <div class="bg-[#F8F9FA] p-4 rounded-2xl border border-[#E0E3E8] flex flex-col lg:flex-row items-center justify-between gap-4 text-xs">
-                
-                <!-- KANAN/KIRI: OPSI PERIODE DENGAN KAPSUL PILL BAR -->
-                <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-                    <span class="text-[10px] font-black text-gray-400 uppercase mr-1 block">Periode:</span>
-                    <div class="inline-flex items-center p-1.5 bg-white rounded-2xl border border-[#E0E3E8] gap-1">
+            <div class="bg-[#F8F9FA] p-4 rounded-2xl border border-[#E0E3E8] flex flex-col xl:flex-row items-center justify-between gap-4 text-xs">
+                <div class="flex flex-wrap items-center gap-2 w-full xl:w-auto">
+                    <span class="text-[10px] font-black text-gray-400 uppercase mr-1 block shrink-0">Periode:</span>
+                    <div class="inline-flex flex-wrap items-center p-1 bg-white rounded-2xl border border-[#E0E3E8] gap-1">
                         <button type="button" 
                                 @click="daysLimit = 'wtd'"
                                 :class="daysLimit === 'wtd' ? 'bg-[#00509E] text-white font-extrabold shadow-sm rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-gray-100 rounded-xl'"
-                                class="px-4 py-1.5 transition-all duration-200 cursor-pointer">
+                                class="px-3.5 py-1.5 transition-all duration-200 cursor-pointer">
                             WTD
                         </button>
                         <button type="button" 
                                 @click="daysLimit = 'mtd'"
                                 :class="daysLimit === 'mtd' ? 'bg-[#00509E] text-white font-extrabold shadow-sm rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-gray-100 rounded-xl'"
-                                class="px-4 py-1.5 transition-all duration-200 cursor-pointer">
+                                class="px-3.5 py-1.5 transition-all duration-200 cursor-pointer">
                             MTD
                         </button>
                         <button type="button" 
                                 @click="daysLimit = 'mtm'"
                                 :class="daysLimit === 'mtm' ? 'bg-[#00509E] text-white font-extrabold shadow-sm rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-gray-100 rounded-xl'"
-                                class="px-4 py-1.5 transition-all duration-200 cursor-pointer">
+                                class="px-3.5 py-1.5 transition-all duration-200 cursor-pointer">
                             MTM
                         </button>
                         <button type="button" 
                                 @click="daysLimit = '30'"
                                 :class="daysLimit === '30' ? 'bg-[#00509E] text-white font-extrabold shadow-md rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-gray-100 rounded-xl'"
-                                class="px-4 py-1.5 transition-all duration-200 cursor-pointer">
+                                class="px-3.5 py-1.5 transition-all duration-200 cursor-pointer">
                             30 Hari
                         </button>
                         <button type="button" 
                                 @click="daysLimit = 'all'"
                                 :class="daysLimit === 'all' ? 'bg-[#00509E] text-white font-extrabold shadow-sm rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-gray-100 rounded-xl'"
-                                class="px-3.5 py-1.5 transition-all duration-200 cursor-pointer">
+                                class="px-3 py-1.5 transition-all duration-200 cursor-pointer">
                             Semua Data
                         </button>
+                        <button type="button" 
+                                @click="daysLimit = 'custom'"
+                                :class="daysLimit === 'custom' ? 'bg-[#00509E] text-white font-extrabold shadow-sm rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-gray-100 rounded-xl'"
+                                class="px-3 py-1.5 transition-all duration-200 flex items-center gap-1.5 cursor-pointer">
+                            <span class="material-symbols-outlined text-sm">calendar_today</span>
+                            <span>Date to Date</span>
+                        </button>
+                    </div>
+
+                    <div x-show="daysLimit === 'custom'" x-cloak x-transition class="flex items-center gap-1.5 bg-white p-1 border border-[#E0E3E8] rounded-2xl text-xs">
+                        <input type="date" x-model="startDateCustom" class="bg-gray-50 border border-gray-300 rounded-xl px-2 py-1 text-xs font-bold text-gray-800 focus:outline-none focus:border-[#00509E]">
+                        <span class="text-gray-400 font-bold">-</span>
+                        <input type="date" x-model="endDateCustom" class="bg-gray-50 border border-gray-300 rounded-xl px-2 py-1 text-xs font-bold text-gray-800 focus:outline-none focus:border-[#00509E]">
                     </div>
                 </div>
 
-                <!-- PENGATURAN PENGURUTAN & TOGGLE HARI KOSONG -->
-                <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-end">
+                <div class="flex flex-wrap items-center gap-3 w-full xl:w-auto justify-end">
                     <div class="flex items-center gap-2">
                         <label class="text-[10px] font-black text-gray-400 uppercase">Urutkan:</label>
                         <select x-model="sortField" class="border border-gray-300 rounded-xl p-2 font-bold text-gray-700 bg-white focus:outline-none focus:border-[#00509E] cursor-pointer">
@@ -560,7 +542,7 @@
                         </select>
                     </div>
 
-                    <label class="inline-flex items-center cursor-pointer select-none bg-white px-3 py-2 rounded-xl border border-gray-200">
+                    <label class="inline-flex items-center cursor-pointer select-none bg-white px-3 py-2 rounded-xl border border-gray-200 shadow-sm">
                         <input type="checkbox" x-model="hideEmpty" class="sr-only peer">
                         <div class="w-8 h-4.5 bg-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-[#00509E] relative after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all"></div>
                         <span class="ml-2 text-xs font-bold text-[#181C20]">Sembunyikan Kosong</span>
@@ -603,7 +585,6 @@
                                         </template>
                                     </div>
                                 </td>
-                                <!-- NOMINAL 0 DITAMPILKAN SEBAGAI STRIP (-) -->
                                 <td class="p-3.5 text-right font-black text-[#181C20]" x-text="row.total_omset > 0 ? 'Rp ' + new Intl.NumberFormat('id-ID').format(row.total_omset) : '-'"></td>
                             </tr>
                         </template>
@@ -622,7 +603,6 @@
                 </div>
             </div>
 
-            <!-- DAFTAR AKUN PENGGUNA -->
             <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3">
                 <div class="flex items-center justify-between border-b border-[#E0E3E8] pb-3 mb-2">
                     <h3 class="text-xs font-black uppercase text-[#181C20]">Katalog Akun Pengguna Sistem (Admin & CS)</h3>
@@ -674,25 +654,18 @@
                                 </td>
                                 <td class="p-3 text-center">
                                     <div class="flex items-center justify-center gap-1.5">
-                                        <!-- 1. Edit Profil Detail -->
                                         <button @click="selectedUser = {{ json_encode($user) }}; showModalEditAkun = true" class="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all" title="Edit Detail Profil">
                                             <span class="material-symbols-outlined text-base">edit</span>
                                         </button>
-
-                                        <!-- 2. Ganti Password -->
                                         <button @click="selectedUser = {{ json_encode($user) }}; showModalPassAkun = true" class="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg transition-all" title="Ganti Password">
                                             <span class="material-symbols-outlined text-base">key</span>
                                         </button>
-
-                                        <!-- 3. Force Logout / Lepas Meja Sesi -->
                                         <form action="{{ route('admin.staff.force_logout', $user->id) }}" method="POST" onsubmit="return confirm('Tendang/lepas lokasi meja untuk akun {{ $user->nama_lengkap }}?')">
                                             @csrf
                                             <button type="submit" class="p-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-all shadow-sm flex items-center justify-center" title="Force Logout / Lepas Sesi">
                                                 <span class="material-symbols-outlined text-base">power_settings_new</span>
                                             </button>
                                         </form>
-
-                                        <!-- 4. Hapus Akun Permanen -->
                                         <form action="{{ route('admin.staff.delete', $user->id) }}" method="POST" onsubmit="return confirm('PERINGATAN: Yakin menghapus akun {{ $user->nama_lengkap }} secara permanen?')">
                                             @csrf
                                             @method('DELETE')
@@ -711,7 +684,6 @@
                 </div>
             </div>
 
-            <!-- KATALOG MEJA FISIK -->
             <div class="bg-white p-5 rounded-2xl border border-[#E0E3E8] shadow-sm space-y-3 mt-4">
                 <h3 class="text-xs font-black uppercase text-[#181C20] border-b border-[#E0E3E8] pb-3">Katalog Ketersediaan Slot Meja Loket Fisik</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pt-2">
@@ -747,12 +719,13 @@
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                <!-- KATEGORI UTAMA -->
                 <div class="lg:col-span-5 bg-white rounded-2xl border border-[#E0E3E8] shadow-sm overflow-hidden flex flex-col">
                     <div class="p-4 bg-[#F8F9FA] border-b flex justify-between items-center"><h4 class="font-black text-xs text-[#00509E] uppercase">Kategori Utama</h4></div>
                     <div class="p-3 space-y-2 max-h-[550px] overflow-y-auto custom-scrollbar">
                         @foreach($layanans as $lay)
-                            @php $subCount = $lay->subLayanans?->count() ?? 0; @endphp
+                            @php 
+                                $subCount = is_countable($lay->subLayanans) ? count($lay->subLayanans) : 0; 
+                            @endphp
                             <div @click="selectedLayananId = '{{ $lay->id }}'; selectedLayananNama = '{{ addslashes($lay->nama_layanan) }}'" :class="selectedLayananId == '{{ $lay->id }}' ? 'border-[#00509E] bg-[#00509E]/5 ring-2 ring-[#00509E]/20' : 'border-[#E0E3E8]'" class="p-3 border rounded-xl flex items-center justify-between cursor-pointer">
                                 <div><h5 class="font-extrabold text-xs text-[#181C20]">{{ $lay->nama_layanan }}</h5><span class="text-[10px] text-gray-500 font-semibold mt-0.5 block">{{ $subCount }} Sub-Layanan</span></div>
                                 <div class="flex items-center gap-1" @click.stop>
@@ -772,7 +745,6 @@
                     </div>
                 </div>
 
-                <!-- SUB LAYANAN -->
                 <div class="lg:col-span-7 bg-white rounded-2xl border border-[#E0E3E8] shadow-sm overflow-hidden flex flex-col">
                     <div class="p-4 bg-emerald-50/60 border-b flex items-center justify-between">
                         <div><span class="text-[9px] font-black text-emerald-700 uppercase">SUB-LAYANAN UNTUK:</span><h4 class="font-black text-sm text-[#181C20]" x-text="selectedLayananNama || 'Pilih Kategori'"></h4></div>
@@ -780,7 +752,9 @@
                     </div>
                     <div class="p-4 min-h-[300px] max-h-[550px] overflow-y-auto custom-scrollbar">
                         @foreach($layanans as $lay)
-                            @php $subList = $lay->subLayanans?->all() ?? []; @endphp
+                            @php 
+                                $subList = isset($lay->subLayanans) ? $lay->subLayanans : []; 
+                            @endphp
                             <div x-show="selectedLayananId == '{{ $lay->id }}'" class="space-y-2">
                                 @forelse($subList as $sub)
                                     <div class="p-3 bg-[#F8F9FA] border border-[#E0E3E8] rounded-xl flex items-center justify-between">
@@ -875,7 +849,7 @@
 
     <!-- KUMPULAN MODAL POPUP -->
 
-    <!-- Modal Tambah Akun (Admin & CS) -->
+    <!-- Modal Tambah Akun -->
     <div x-show="showModalAkun" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalAkun = false">
             <div class="flex justify-between items-center border-b pb-3 border-gray-100">
@@ -903,12 +877,12 @@
         </div>
     </div>
 
-    <!-- Modal Edit Akun (Dilengkapi Bidang Ganti Password Opsional) -->
+    <!-- Modal Edit Akun -->
     <div x-show="showModalEditAkun" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalEditAkun = false">
             <h3 class="text-base font-black flex items-center gap-1.5"><span class="material-symbols-outlined text-[#00509E]">edit_square</span> Edit Detail Akun</h3>
             <template x-if="selectedUser">
-                <form :action="`{{ url('/admin/staff/update') }}/${selectedUser.id}`" method="POST" class="space-y-3 text-xs">
+                <form :action="'{{ url('/admin/staff/update') }}/' + selectedUser.id" method="POST" class="space-y-3 text-xs">
                     @csrf
                     <div><label class="font-bold block mb-1">Nama Lengkap</label><input type="text" name="nama_lengkap" :value="selectedUser.nama_lengkap" required class="w-full p-2.5 border rounded-xl"></div>
                     <div><label class="font-bold block mb-1">Username</label><input type="text" name="username" :value="selectedUser.username" required class="w-full p-2.5 border rounded-xl"></div>
@@ -929,12 +903,12 @@
         </div>
     </div>
 
-    <!-- Modal Ganti Password Khusus -->
+    <!-- Modal Ganti Password -->
     <div x-show="showModalPassAkun" x-cloak class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4" @click.away="showModalPassAkun = false">
             <h3 class="text-base font-black flex items-center gap-1.5"><span class="material-symbols-outlined text-amber-500">lock_reset</span> Ganti Password</h3>
             <template x-if="selectedUser">
-                <form :action="`{{ url('/admin/staff/password') }}/${selectedUser.id}`" method="POST" class="space-y-3 text-xs">
+                <form :action="'{{ url('/admin/staff/password') }}/' + selectedUser.id" method="POST" class="space-y-3 text-xs">
                     @csrf
                     <p class="text-gray-500 mb-2">Reset kata sandi untuk akun: <strong class="text-gray-800" x-text="selectedUser.nama_lengkap"></strong></p>
                     <div><label class="font-bold block mb-1">Password Baru</label><input type="password" name="password" required minlength="6" class="w-full p-2.5 border rounded-xl" placeholder="Minimal 6 Karakter"></div>
@@ -952,7 +926,7 @@
                 <button type="button" @click="showModalEditLayanan = false" class="text-gray-400 hover:text-black"><span class="material-symbols-outlined">close</span></button>
             </div>
             <template x-if="selectedEditLayanan">
-                <form :action="`{{ url('/admin/layanan/update') }}/${selectedEditLayanan.id}`" method="POST" class="space-y-3 text-xs">
+                <form :action="'{{ url('/admin/layanan/update') }}/' + selectedEditLayanan.id" method="POST" class="space-y-3 text-xs">
                     @csrf
                     @method('PUT')
                     <div>
@@ -976,7 +950,7 @@
                 <button type="button" @click="showModalEditSubLayanan = false" class="text-gray-400 hover:text-black"><span class="material-symbols-outlined">close</span></button>
             </div>
             <template x-if="selectedEditSubLayanan">
-                <form :action="`{{ url('/admin/sub-layanan/update') }}/${selectedEditSubLayanan.id}`" method="POST" class="space-y-3 text-xs">
+                <form :action="'{{ url('/admin/sub-layanan/update') }}/' + selectedEditSubLayanan.id" method="POST" class="space-y-3 text-xs">
                     @csrf
                     @method('PUT')
                     <div>
@@ -1448,6 +1422,8 @@
                 hideEmpty: false,
                 sortField: 'raw_date',
                 sortOrder: 'desc',
+                startDateCustom: '{{ request('start_date', $startDate->format('Y-m-d')) }}',
+                endDateCustom: '{{ request('end_date', $endDate->format('Y-m-d')) }}',
                 rawHistory: [],
                 
                 init: function() {
@@ -1462,6 +1438,13 @@
                     if (this.daysLimit === 'wtd') data = data.slice(0, 7);
                     else if (this.daysLimit === 'mtd' || this.daysLimit === 'mtm') data = data.slice(0, 30);
                     else if (this.daysLimit === '30') data = data.slice(0, 30);
+                    else if (this.daysLimit === 'custom') {
+                        var start = this.startDateCustom;
+                        var end = this.endDateCustom;
+                        if (start && end) {
+                            data = data.filter(i => i.raw_date >= start && i.raw_date <= end);
+                        }
+                    }
 
                     if (this.hideEmpty) data = data.filter(i => i.tiket_masuk > 0);
 
