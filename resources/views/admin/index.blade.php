@@ -34,7 +34,7 @@
           selectedUser: null,
           selectedEditLayanan: null,
           selectedEditSubLayanan: null,
-          selectedPeriod: '{{ request('period', 'all') }}',
+          selectedPeriod: '{{ request('period', 'last_30') }}',
           selectedLayananId: '{{ $layanans->first()?->id ?? '' }}',
           selectedLayananNama: '{{ addslashes($layanans->first()?->nama_layanan ?? '') }}'
       }"
@@ -156,14 +156,11 @@
             <div class="flex-1 min-w-[200px]">
                 <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">Periode Waktu Filter</label>
                 <select name="period" x-model="selectedPeriod" @change="if(selectedPeriod !== 'custom') $el.form.submit()" class="w-full border border-gray-300 bg-gray-50 rounded-xl p-2 font-bold text-gray-700 focus:border-[#00509E] focus:ring-0 cursor-pointer">
-                    <option value="all">Semua Waktu (All Time)</option>
-                    <option value="today">Hari Ini (Today)</option>
-                    <option value="wtd">Minggu Ini (WTD)</option>
-                    <option value="mtd">Bulan Ini (MTD)</option>
-                    <option value="mtn">Bulan Depan (MTN)</option>
-                    <option value="mty">Tahun Ini (MTY / YTD)</option>
+                    <option value="wtd">WTD (Minggu Ini)</option>
+                    <option value="mtd">MTD (Bulan Ini)</option>
+                    <option value="mtm">MTM (Month to Month)</option>
                     <option value="last_30">30 Hari Terakhir</option>
-                    <option value="custom">Rentang Tanggal (Date to Date)...</option>
+                    <option value="custom">Date to Date...</option>
                 </select>
             </div>
 
@@ -324,12 +321,12 @@
         <!-- TAB 2: ANALITIK LAYANAN -->
         <div x-show="activeTab === 'analytics'" x-data="chartFilterComponent()" class="space-y-6">
             
-            <!-- FILTER PERIODE GRAFIK ANALITIK (SEGMENTED PILL BAR) -->
+            <!-- FILTER PERIODE GRAFIK ANALITIK (SEGMENTED OVAL PILL BAR IDENTIK SCREENSHOT) -->
             <div class="bg-white rounded-2xl border border-[#E0E3E8] p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
                 
                 <!-- JUDUL SECTION -->
-                <div class="flex items-center gap-2.5">
-                    <div class="p-2 bg-[#00509E]/10 text-[#00509E] rounded-xl flex items-center justify-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-blue-50 text-[#00509E] rounded-xl flex items-center justify-center shrink-0">
                         <span class="material-symbols-outlined text-lg">tune</span>
                     </div>
                     <h3 class="text-xs font-black uppercase tracking-wider text-[#181C20]">
@@ -340,46 +337,46 @@
                 <!-- BARIS BUTTON SEGMENTED CONTROL -->
                 <form action="{{ route('admin.dashboard') }}" method="GET" id="form-filter-periode" class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
                     
-                    <!-- CONTAINER KAPSUL (PILL BAR) -->
-                    <div class="inline-flex items-center p-1 bg-[#F1F4F9] rounded-2xl border border-[#E0E3E8] gap-1">
+                    <!-- WRAPPER ABU-ABU TERANG DENGAN ROUNDED FULL / OVAL -->
+                    <div class="inline-flex items-center p-1.5 bg-[#F1F4F9] rounded-2xl border border-[#E0E3E8] gap-1 text-xs">
                         
                         <!-- BUTTON WTD -->
                         <button type="button" 
                                 @click="switchChartPeriod('wtd')"
-                                :class="chartPeriod === 'wtd' ? 'bg-[#00509E] text-white shadow-md font-black' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/50'"
-                                class="px-4 py-2 rounded-xl text-xs transition-all duration-200 cursor-pointer">
+                                :class="chartPeriod === 'wtd' ? 'bg-[#00509E] text-white font-extrabold shadow-sm rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/40 rounded-xl'"
+                                class="px-4 py-1.5 transition-all duration-200 cursor-pointer">
                             WTD
                         </button>
 
                         <!-- BUTTON MTD -->
                         <button type="button" 
                                 @click="switchChartPeriod('mtd')"
-                                :class="chartPeriod === 'mtd' ? 'bg-[#00509E] text-white shadow-md font-black' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/50'"
-                                class="px-4 py-2 rounded-xl text-xs transition-all duration-200 cursor-pointer">
+                                :class="chartPeriod === 'mtd' ? 'bg-[#00509E] text-white font-extrabold shadow-sm rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/40 rounded-xl'"
+                                class="px-4 py-1.5 transition-all duration-200 cursor-pointer">
                             MTD
                         </button>
 
                         <!-- BUTTON MTM -->
                         <button type="button" 
                                 @click="switchChartPeriod('mtm')"
-                                :class="chartPeriod === 'mtm' ? 'bg-[#00509E] text-white shadow-md font-black' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/50'"
-                                class="px-4 py-2 rounded-xl text-xs transition-all duration-200 cursor-pointer">
+                                :class="chartPeriod === 'mtm' ? 'bg-[#00509E] text-white font-extrabold shadow-sm rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/40 rounded-xl'"
+                                class="px-4 py-1.5 transition-all duration-200 cursor-pointer">
                             MTM
                         </button>
 
                         <!-- BUTTON 30 HARI -->
                         <button type="button" 
                                 @click="switchChartPeriod('last30')"
-                                :class="chartPeriod === 'last30' ? 'bg-[#00509E] text-white shadow-md font-black' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/50'"
-                                class="px-4 py-2 rounded-xl text-xs transition-all duration-200 cursor-pointer">
+                                :class="chartPeriod === 'last30' ? 'bg-[#00509E] text-white font-extrabold shadow-md rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/40 rounded-xl'"
+                                class="px-4 py-1.5 transition-all duration-200 cursor-pointer">
                             30 Hari
                         </button>
 
                         <!-- BUTTON DATE TO DATE -->
                         <button type="button" 
                                 @click="switchChartPeriod('custom')"
-                                :class="chartPeriod === 'custom' ? 'bg-[#00509E] text-white shadow-md font-black' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/50'"
-                                class="px-4 py-2 rounded-xl text-xs transition-all duration-200 flex items-center gap-1.5 cursor-pointer">
+                                :class="chartPeriod === 'custom' ? 'bg-[#00509E] text-white font-extrabold shadow-sm rounded-xl' : 'text-gray-600 hover:text-gray-900 font-bold hover:bg-white/40 rounded-xl'"
+                                class="px-3.5 py-1.5 transition-all duration-200 flex items-center gap-1.5 cursor-pointer">
                             <span class="material-symbols-outlined text-sm">calendar_today</span>
                             <span>Date to Date</span>
                         </button>
@@ -472,12 +469,13 @@
 
             <div class="bg-[#F8F9FA] p-3.5 rounded-xl border border-[#E0E3E8] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                 <div>
-                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Jangka Waktu Hari</label>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Jangka Waktu Periode</label>
                     <select x-model="daysLimit" class="w-full border border-gray-300 rounded-lg p-2 font-semibold bg-white cursor-pointer">
-                        <option value="7">7 Hari Terakhir</option>
-                        <option value="14">14 Hari Terakhir</option>
+                        <option value="wtd">WTD (Minggu Ini)</option>
+                        <option value="mtd">MTD (Bulan Ini)</option>
+                        <option value="mtm">MTM (Month to Month)</option>
                         <option value="30">30 Hari Terakhir</option>
-                        <option value="all">Semua Data (30 Hari Full)</option>
+                        <option value="all">Semua Data Operasional</option>
                     </select>
                 </div>
                 <div>
@@ -999,11 +997,10 @@
                 <div class="space-y-2">
                     <label class="font-bold text-gray-700 block">1. Pilih Periode Waktu Laporan</label>
                     <select name="period" id="pdf_period_select" onchange="togglePdfCustomDates(this.value)" class="w-full p-2.5 border border-gray-300 rounded-xl font-bold text-gray-700">
-                        <option value="today">Hari Ini (Today)</option>
-                        <option value="wtd">Minggu Ini (WTD)</option>
-                        <option value="mtd" selected>Bulan Ini (MTD)</option>
-                        <option value="last_30">30 Hari Terakhir</option>
-                        <option value="ytd">Tahun Ini (YTD)</option>
+                        <option value="wtd">WTD (Minggu Ini)</option>
+                        <option value="mtd">MTD (Bulan Ini)</option>
+                        <option value="mtm">MTM (Month to Month)</option>
+                        <option value="last_30" selected>30 Hari Terakhir</option>
                         <option value="custom">Rentang Tanggal (Date to Date)...</option>
                     </select>
 
@@ -1111,7 +1108,7 @@
         var globalSlaKonsulChart = null;
         var globalBarChart = null;
 
-        var serverPeriod = "{{ request('period', 'all') }}";
+        var serverPeriod = "{{ request('period', 'last_30') }}";
 
         function togglePdfCustomDates(val) {
             const container = document.getElementById('pdf_custom_dates_container');
@@ -1137,12 +1134,10 @@
                 if (period === 'wtd') {
                     const day = startDate.getDay() || 7;
                     if (day !== 1) startDate.setHours(-24 * (day - 1));
-                } else if (period === 'mtd') {
+                } else if (period === 'mtd' || period === 'mtm') {
                     startDate = new Date(today.getFullYear(), today.getMonth(), 1);
                 } else if (period === 'last_30') {
                     startDate.setDate(today.getDate() - 30);
-                } else if (period === 'ytd') {
-                    startDate = new Date(today.getFullYear(), 0, 1);
                 }
 
                 const formatDate = (date) => {
@@ -1187,7 +1182,7 @@
 
         function chartFilterComponent() {
             return {
-                chartPeriod: serverPeriod === 'custom' ? 'custom' : 'last30',
+                chartPeriod: serverPeriod === 'custom' ? 'custom' : (['wtd', 'mtd', 'mtm', 'last30', 'last_30'].includes(serverPeriod) ? serverPeriod : 'last30'),
                 isMerged: true,
                 allDataSets: {},
                 rawCsData: [],
@@ -1224,7 +1219,7 @@
                 },
 
                 renderLineChart: function(periodKey) {
-                    const dataSet = this.allDataSets[periodKey] || this.allDataSets['last30'];
+                    const dataSet = this.allDataSets[periodKey] || this.allDataSets['last30'] || this.allDataSets['last_30'];
                     const canvas = document.getElementById('queueChart');
                     if (!canvas || !dataSet) return;
 
@@ -1246,7 +1241,7 @@
 
                 renderSlaCharts: function(periodKey) {
                     const activeKey = periodKey || (this.chartPeriod === 'custom' ? 'last30' : this.chartPeriod);
-                    const dataSet = this.allDataSets[activeKey] || this.allDataSets['last30'];
+                    const dataSet = this.allDataSets[activeKey] || this.allDataSets['last30'] || this.allDataSets['last_30'];
                     if (!dataSet) return;
 
                     if (this.isMerged) {
@@ -1401,7 +1396,12 @@
                 
                 get filteredHistory() {
                     let data = [...this.rawHistory];
-                    if (this.daysLimit !== 'all') data = data.slice(0, parseInt(this.daysLimit));
+                    if (this.daysLimit === '7') data = data.slice(0, 7);
+                    else if (this.daysLimit === '14') data = data.slice(0, 14);
+                    else if (this.daysLimit === '30') data = data.slice(0, 30);
+                    else if (this.daysLimit === 'wtd') data = data.slice(0, 7);
+                    else if (this.daysLimit === 'mtd' || this.daysLimit === 'mtm') data = data.slice(0, 30);
+
                     if (this.hideEmpty) data = data.filter(i => i.tiket_masuk > 0);
 
                     var self = this;
