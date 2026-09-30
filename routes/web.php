@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\TiketController;
 use App\Http\Controllers\CsController;
@@ -19,83 +18,187 @@ Route::get('/', function () {
     return redirect()->route('antrean.index');
 });
 
-Route::get('/clear-all-cache', function () {
-    if (request('key') !== 'indibiz123') {
-        return response('Akses ditolak! Kunci rahasia salah.', 403);
-    }
-
-    Artisan::call('config:clear');
-    Artisan::call('route:clear');
-    Artisan::call('cache:clear');
-    Artisan::call('view:clear');
-
-    return 'Semua cache Laravel (config, route, cache, view) berhasil dibersihkan!';
-});
-
+// ========================================================================
 // 1. MODUL PELANGGAN (PUBLIC)
-Route::get('/antrean', [TiketController::class, 'index'])->name('antrean.index');
-Route::post('/antrean', [TiketController::class, 'store'])->name('antrean.store');
-Route::get('/antrean/{id}', [TiketController::class, 'showTiket'])->name('antrean.tiket'); 
+// ========================================================================
 
-Route::get('/display-antrean', [DisplayController::class, 'index'])->name('antrean.display');
+Route::get('/antrean', [TiketController::class, 'index'])
+    ->name('antrean.index');
+
+Route::post('/antrean', [TiketController::class, 'store'])
+    ->name('antrean.store');
+
+Route::get('/antrean/{id}', [TiketController::class, 'showTiket'])
+    ->name('antrean.tiket');
+
+
+// ========================================================================
+// 2. DISPLAY ANTREAN & TEXT-TO-SPEECH
+// ========================================================================
+
+Route::get('/display-antrean', [DisplayController::class, 'index'])
+    ->name('antrean.display');
+
 Route::get('/api/display-antrean-data', [DisplayController::class, 'getDataJson']);
+
 Route::post('/api/elevenlabs-tts', [DisplayController::class, 'ttsElevenLabs']);
 
-// 2. MODUL AUTHENTICATION (LOGIN/LOGOUT)
-Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-Route::post('/login', [AuthController::class, 'login'])->name('login.post');
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// 3. MODUL TERPROTEKSI (WAJIB LOGIN)
+// ========================================================================
+// 3. MODUL AUTHENTICATION
+// ========================================================================
+
+Route::get('/login', [AuthController::class, 'showLogin'])
+    ->name('login');
+
+Route::post('/login', [AuthController::class, 'login'])
+    ->name('login.post');
+
+Route::post('/logout', [AuthController::class, 'logout'])
+    ->name('logout');
+
+
+// ========================================================================
+// 4. MODUL TERPROTEKSI (WAJIB LOGIN)
+// ========================================================================
+
 Route::middleware(['auth'])->group(function () {
-    
+
+    // --------------------------------------------------------------------
     // Pilih Meja & Console CS
-    Route::get('/cs/pilih-meja', [CsController::class, 'selectMeja'])->name('cs.select-meja');
-    Route::post('/cs/pilih-meja', [CsController::class, 'setMeja'])->name('cs.process-meja');
-    Route::get('/cs/leave', [CsController::class, 'leaveConsole'])->name('cs.leave');
-    Route::post('/cs/ping-heartbeat', [CsController::class, 'pingHeartbeat'])->name('cs.ping');
+    // --------------------------------------------------------------------
 
-    Route::get('/cs-desk', [CsController::class, 'index'])->name('cs.index');
-    Route::get('/cs/history', [CsController::class, 'historyPage'])->name('cs.history');
-    Route::post('/cs-desk/panggil-selanjutnya', [CsController::class, 'panggilSelanjutnya'])->name('cs.panggil_selanjutnya');
-    Route::post('/cs-desk/panggil-spesifik/{id}', [CsController::class, 'panggilSpesifik'])->name('cs.panggil_spesifik');
-    Route::post('/cs-desk/panggil-ulang/{id}', [CsController::class, 'panggilUlang'])->name('cs.panggil_ulang');
-    Route::post('/cs-desk/batal-atau-kembalikan/{id}', [CsController::class, 'batalAtauKembalikan'])->name('cs.batal_atau_kembalikan');
-    Route::post('/cs-desk/selesaikan/{id}', [CsController::class, 'selesaikanTiket'])->name('cs.selesaikan');
-    
-    // Route Kurasi CS
-    Route::post('/cs-desk/kurasi/{id}', [CsController::class, 'updateKurasi'])->name('cs.update_kurasi');
+    Route::get('/cs/pilih-meja', [CsController::class, 'selectMeja'])
+        ->name('cs.select-meja');
 
-    // 4. MODUL SUPER ADMIN (KHUSUS ROLE ADMIN)
+    Route::post('/cs/pilih-meja', [CsController::class, 'setMeja'])
+        ->name('cs.process-meja');
+
+    Route::get('/cs/leave', [CsController::class, 'leaveConsole'])
+        ->name('cs.leave');
+
+    Route::post('/cs/ping-heartbeat', [CsController::class, 'pingHeartbeat'])
+        ->name('cs.ping');
+
+
+    // --------------------------------------------------------------------
+    // Console CS
+    // --------------------------------------------------------------------
+
+    Route::get('/cs-desk', [CsController::class, 'index'])
+        ->name('cs.index');
+
+    Route::get('/cs/history', [CsController::class, 'historyPage'])
+        ->name('cs.history');
+
+    Route::post('/cs-desk/panggil-selanjutnya', [CsController::class, 'panggilSelanjutnya'])
+        ->name('cs.panggil_selanjutnya');
+
+    Route::post('/cs-desk/panggil-spesifik/{id}', [CsController::class, 'panggilSpesifik'])
+        ->name('cs.panggil_spesifik');
+
+    Route::post('/cs-desk/panggil-ulang/{id}', [CsController::class, 'panggilUlang'])
+        ->name('cs.panggil_ulang');
+
+    Route::post('/cs-desk/batal-atau-kembalikan/{id}', [CsController::class, 'batalAtauKembalikan'])
+        ->name('cs.batal_atau_kembalikan');
+
+    Route::post('/cs-desk/selesaikan/{id}', [CsController::class, 'selesaikanTiket'])
+        ->name('cs.selesaikan');
+
+
+    // --------------------------------------------------------------------
+    // Kurasi CS
+    // --------------------------------------------------------------------
+
+    Route::post('/cs-desk/kurasi/{id}', [CsController::class, 'updateKurasi'])
+        ->name('cs.update_kurasi');
+
+
+    // ====================================================================
+    // 5. SUPER ADMIN
+    // ====================================================================
+
     Route::middleware(['role:admin'])->group(function () {
-        Route::get('/admin-dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
-        Route::get('/admin-dashboard/export', [AdminController::class, 'exportCsv'])->name('admin.export');
-        
-        // MENDUKUNG GET DAN POST AGAR TIDAK ERROR 414 REQUEST-URI TOO LARGE
-        Route::match(['get', 'post'], '/admin-dashboard/pdf', [AdminController::class, 'cetakPdf'])->name('admin.pdf');
 
-        // ROUTE BARU: PENJADWALAN & PENGATURAN SISTEM
-        Route::post('/admin/operasional/update', [AdminController::class, 'updateJadwalOperasional'])->name('admin.operasional.update');
+        // Dashboard
+        Route::get('/admin-dashboard', [AdminController::class, 'index'])
+            ->name('admin.dashboard');
 
+        // Export CSV
+        Route::get('/admin-dashboard/export', [AdminController::class, 'exportCsv'])
+            ->name('admin.export');
+
+        // Cetak PDF
+        // Mendukung GET dan POST agar tidak mengalami masalah
+        // 414 Request-URI Too Large pada data filter tertentu.
+        Route::match(['get', 'post'], '/admin-dashboard/pdf', [AdminController::class, 'cetakPdf'])
+            ->name('admin.pdf');
+
+
+        // ----------------------------------------------------------------
+        // Penjadwalan & Pengaturan Sistem
+        // ----------------------------------------------------------------
+
+        Route::post('/admin/operasional/update', [AdminController::class, 'updateJadwalOperasional'])
+            ->name('admin.operasional.update');
+
+
+        // ----------------------------------------------------------------
         // CRUD Layanan & Sub-Layanan
-        Route::post('/admin/layanan/store', [AdminController::class, 'storeLayanan'])->name('admin.layanan.store');
-        Route::put('/admin/layanan/update/{id}', [AdminController::class, 'updateLayanan'])->name('admin.layanan.update');
-        Route::delete('/admin/layanan/delete/{id}', [AdminController::class, 'destroyLayanan'])->name('admin.layanan.destroy');
-        
-        Route::post('/admin/sub-layanan/store', [AdminController::class, 'storeSubLayanan'])->name('admin.sub_layanan.store');
-        Route::put('/admin/sub-layanan/update/{id}', [AdminController::class, 'updateSubLayanan'])->name('admin.sub_layanan.update');
-        Route::delete('/admin/sub-layanan/delete/{id}', [AdminController::class, 'destroySubLayanan'])->name('admin.sub_layanan.destroy');
+        // ----------------------------------------------------------------
 
-        // CRUD Staff CS & Admin Akun
-        Route::post('/admin/staff/store', [AdminController::class, 'storeStaff'])->name('admin.staff.store');
-        Route::post('/admin/staff/update/{id}', [AdminController::class, 'updateStaff'])->name('admin.staff.update');
-        Route::post('/admin/staff/password/{id}', [AdminController::class, 'updatePasswordStaff'])->name('admin.staff.password');
-        Route::post('/admin/staff/force-logout/{id}', [AdminController::class, 'forceLogout'])->name('admin.staff.force_logout');
-        Route::delete('/admin/staff/delete/{id}', [AdminController::class, 'destroyStaff'])->name('admin.staff.delete');
+        Route::post('/admin/layanan/store', [AdminController::class, 'storeLayanan'])
+            ->name('admin.layanan.store');
 
+        Route::put('/admin/layanan/update/{id}', [AdminController::class, 'updateLayanan'])
+            ->name('admin.layanan.update');
+
+        Route::delete('/admin/layanan/delete/{id}', [AdminController::class, 'destroyLayanan'])
+            ->name('admin.layanan.destroy');
+
+
+        Route::post('/admin/sub-layanan/store', [AdminController::class, 'storeSubLayanan'])
+            ->name('admin.sub_layanan.store');
+
+        Route::put('/admin/sub-layanan/update/{id}', [AdminController::class, 'updateSubLayanan'])
+            ->name('admin.sub_layanan.update');
+
+        Route::delete('/admin/sub-layanan/delete/{id}', [AdminController::class, 'destroySubLayanan'])
+            ->name('admin.sub_layanan.destroy');
+
+
+        // ----------------------------------------------------------------
+        // CRUD Staff CS & Admin
+        // ----------------------------------------------------------------
+
+        Route::post('/admin/staff/store', [AdminController::class, 'storeStaff'])
+            ->name('admin.staff.store');
+
+        Route::post('/admin/staff/update/{id}', [AdminController::class, 'updateStaff'])
+            ->name('admin.staff.update');
+
+        Route::post('/admin/staff/password/{id}', [AdminController::class, 'updatePasswordStaff'])
+            ->name('admin.staff.password');
+
+        Route::post('/admin/staff/force-logout/{id}', [AdminController::class, 'forceLogout'])
+            ->name('admin.staff.force_logout');
+
+        Route::delete('/admin/staff/delete/{id}', [AdminController::class, 'destroyStaff'])
+            ->name('admin.staff.delete');
+
+
+        // ----------------------------------------------------------------
         // CRUD Master Meja
-        Route::post('/admin/meja/store', [StaffManagementController::class, 'storeMeja'])->name('admin.meja.store');
-        Route::post('/admin/meja/toggle/{id}', [StaffManagementController::class, 'toggleMeja'])->name('admin.meja.toggle');
-        Route::delete('/admin/meja/delete/{id}', [StaffManagementController::class, 'destroyMeja'])->name('admin.meja.delete');
+        // ----------------------------------------------------------------
+
+        Route::post('/admin/meja/store', [StaffManagementController::class, 'storeMeja'])
+            ->name('admin.meja.store');
+
+        Route::post('/admin/meja/toggle/{id}', [StaffManagementController::class, 'toggleMeja'])
+            ->name('admin.meja.toggle');
+
+        Route::delete('/admin/meja/delete/{id}', [StaffManagementController::class, 'destroyMeja'])
+            ->name('admin.meja.delete');
     });
 });
