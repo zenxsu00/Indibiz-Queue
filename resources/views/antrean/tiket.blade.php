@@ -268,68 +268,8 @@
 
     </main>
 
-    <footer class="border-t border-slate-200/80 bg-white/90 backdrop-blur-md">
-      <div class="max-w-xl mx-auto px-5 py-6 sm:py-7">
-        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-5">
-
-          <div class="text-center sm:text-left">
-            <div class="flex items-center justify-center sm:justify-start gap-2">
-              <img src="{{ asset('img/LogoIcon.png') }}" alt="Logo Indibiz" class="h-8 w-8 object-contain">
-              <div>
-                <p class="text-sm font-extrabold text-[#0A3967]">Indibiz Customer Service Desk</p>
-                <p class="text-[10px] text-slate-400 font-medium">
-                  Indibiz by Telkom Indonesia &bull; Witel Bandung
-                </p>
-              </div>
-            </div>
-            <p class="mt-3 text-[10px] leading-relaxed text-slate-400 max-w-sm mx-auto sm:mx-0">
-              Sistem antrean layanan pelanggan untuk mendukung proses pelayanan Indibiz
-              secara lebih tertib, cepat, dan nyaman.
-            </p>
-          </div>
-
-          <div class="text-center sm:text-right">
-            <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-2">
-              Informasi &amp; Kanal Resmi
-            </p>
-
-            <div class="flex flex-wrap items-center justify-center sm:justify-end gap-2">
-              <a href="https://indibiz.co.id" target="_blank" rel="noopener noreferrer"
-                 class="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 border border-blue-100 px-2.5 py-1.5 text-[10px] font-bold text-[#00509E] hover:bg-blue-100 transition-colors"
-                 aria-label="Website resmi Indibiz">
-                <span class="material-symbols-outlined text-sm">language</span>
-                indibiz.co.id
-              </a>
-
-              <a href="https://www.instagram.com/indibiz.id/" target="_blank" rel="noopener noreferrer"
-                 class="inline-flex items-center gap-1.5 rounded-lg bg-pink-50 border border-pink-100 px-2.5 py-1.5 text-[10px] font-bold text-pink-600 hover:bg-pink-100 transition-colors"
-                 aria-label="Instagram resmi Indibiz">
-                <span class="material-symbols-outlined text-sm">photo_camera</span>
-                @indibiz.id
-              </a>
-
-              <a href="https://www.instagram.com/indibizcare/" target="_blank" rel="noopener noreferrer"
-                 class="inline-flex items-center gap-1.5 rounded-lg bg-slate-50 border border-slate-200 px-2.5 py-1.5 text-[10px] font-bold text-slate-600 hover:bg-slate-100 transition-colors"
-                 aria-label="Instagram Indibiz Care">
-                <span class="material-symbols-outlined text-sm">support_agent</span>
-                @indibizcare
-              </a>
-            </div>
-
-            <p class="mt-2 text-[9px] leading-relaxed text-slate-400">
-              Gunakan kanal resmi untuk informasi layanan, bantuan, dan informasi produk Indibiz.
-            </p>
-          </div>
-        </div>
-
-        <div class="mt-5 pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2 text-[9px] text-slate-400">
-          <p>&copy; {{ date('Y') }} Indibiz Customer Service Desk. All Rights Reserved.</p>
-          <div class="flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-            <span>Layanan Digital Area Witel Bandung</span>
-          </div>
-        </div>
-      </div>
+    <footer class="py-4 text-center text-[11px] text-slate-400 border-t border-slate-200/60 bg-white/80 backdrop-blur-md">
+      <p>&copy; {{ date('Y') }} Indibiz Service Desk &bull; All Rights Reserved</p>
     </footer>
 
     <script>
