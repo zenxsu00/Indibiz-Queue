@@ -34,9 +34,9 @@
           selectedUser: null,
           selectedEditLayanan: null,
           selectedEditSubLayanan: null,
-          selectedPeriod: '{{ request('period', 'last_30') }}',
-          selectedLayananId: '{{ optional($layanans->first())->id ?? '' }}',
-          selectedLayananNama: '{{ addslashes(optional($layanans->first())->nama_layanan ?? '') }}'
+          selectedPeriod: '{{ request("period", "last_30") }}',
+          selectedLayananId: '{{ optional($layanans->first())->id ?? "" }}',
+          selectedLayananNama: '{{ addslashes(optional($layanans->first())->nama_layanan ?? "") }}'
       }"
       x-init="$watch('activeTab', value => localStorage.setItem('admin_active_tab', value))">
 
@@ -1422,8 +1422,8 @@
                 hideEmpty: false,
                 sortField: 'raw_date',
                 sortOrder: 'desc',
-                startDateCustom: '{{ request('start_date', $startDate->format('Y-m-d')) }}',
-                endDateCustom: '{{ request('end_date', $endDate->format('Y-m-d')) }}',
+                startDateCustom: '{{ request("start_date", $startDate->format("Y-m-d")) }}',
+                endDateCustom: '{{ request("end_date", $endDate->format("Y-m-d")) }}',
                 rawHistory: [],
                 
                 init: function() {
